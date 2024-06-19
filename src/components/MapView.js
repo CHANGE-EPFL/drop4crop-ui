@@ -5,10 +5,10 @@ import L from 'leaflet';
 
 const UpdateLayer = ({ wmsParams }) => {
   const map = useMap();
-
+  console.log("Loading layer: ", wmsParams);
   useEffect(() => {
       const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
-      layers: wmsParams.layer,
+      layers: wmsParams,
       format: "image/png",
       transparent: true,
       version: "1.3.0",
@@ -23,6 +23,7 @@ const UpdateLayer = ({ wmsParams }) => {
 };
 
 const MapView = ({ wmsParams }) => {
+
   return (
       <MapContainer
           center={[0, 0]}
@@ -30,12 +31,12 @@ const MapView = ({ wmsParams }) => {
           style={{ height: "100vh", width: "100%" }}
           zoomControl={false}
       >
-    <ZoomControl position="bottomright" />
-      <UpdateLayer wmsParams={wmsParams} />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+    <ZoomControl position="bottomright" />
+      <UpdateLayer wmsParams={wmsParams} />
     </MapContainer>
   );
 };
