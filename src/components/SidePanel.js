@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWheatAwn, faWater, faCloudSun, faCogs, faCog, faInfoCircle,faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import { faWheatAwn, faWater, faCloudSun, faCogs, faCog, faInfoCircle, faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import './SidePanel.css';
 
-const SidePanel = ({ onLayerSelect }) => {
+const SidePanel = ({ onLayerSelect, selectedTime }) => {
   const [crops, setCrops] = useState([]);
   const [globalWaterModels, setGlobalWaterModels] = useState([]);
   const [climateModels, setClimateModels] = useState([]);
   const [scenarios, setScenarios] = useState([]);
   const [variables, setVariables] = useState([]);
+  const [timePeriods, setTimePeriods] = useState([]);
   const [activePanel, setActivePanel] = useState(null);
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
@@ -18,58 +19,103 @@ const SidePanel = ({ onLayerSelect }) => {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Mock data fetch
       const mockCrops = [
-        { id: 'crop1', name: 'Crop 1' },
-        { id: 'crop2', name: 'Crop 2' },
+        { id: 'barley', name: 'Barley', enabled: false },
+        { id: 'potato', name: 'Potato', enabled: false },
+        { id: 'rice', name: 'Rice', enabled: false },
+        { id: 'soy', name: 'Soy', enabled: false },
+        { id: 'sugarcane', name: 'Sugar Cane', enabled: false },
+        { id: 'wheat', name: 'Wheat', enabled: true },
       ];
+
       const mockGlobalWaterModels = [
-        { id: 'cwatm', name: 'CWatM' },
+        { id: 'cwatm', name: 'CWatM', enabled: false },
+        { id: 'h08', name: 'H08', enabled: false },
+        { id: 'lpjml', name: 'LPJmL', enabled: false },
+        { id: 'matsiro', name: 'MATSIRO', enabled: false },
+        { id: 'pcr-globwb', name: 'PCR-GLOBWB', enabled: true },
+        { id: 'watergap2', name: 'WaterGAP2', enabled: false },
+        { id: 'watergap2-2c', name: 'WaterGAP2-2c', enabled: false },
       ];
+
       const mockClimateModels = [
-        { id: 'gfdl-esm2m', name: 'GFDL-ESM2M' },
+        { id: 'gfdl-esm2m', name: 'GFDL-ESM2M', enabled: true },
+        { id: 'hadgem2-es', name: 'HadGEM2-ES', enabled: true },
+        { id: 'ipsl-cm5a-lr', name: 'IPSL-CM5A-LR', enabled: true },
+        { id: 'miroc5', name: 'MIROC5', enabled: true },
       ];
+
       const mockScenarios = [
-        { id: 'rcp26', name: 'RCP 2.6' },
-        { id: 'rcp60', name: 'RCP 6.0' },
+        { id: 'historical', name: 'Historical', enabled: true },
+        { id: 'rcp26', name: 'RCP 2.6', enabled: true },
+        { id: 'rcp60', name: 'RCP 6.0', enabled: true },
+        { id: 'rcp85', name: 'RCP 8.5', enabled: true },
       ];
+
+      const mockTimePeriods = [
+        { id: '2000', name: '2000', enabled: true },
+        { id: '2010', name: '2010', enabled: true },
+        { id: '2020', name: '2020', enabled: true },
+        { id: '2030', name: '2030', enabled: true },
+        { id: '2040', name: '2040', enabled: true },
+        { id: '2050', name: '2050', enabled: true },
+        { id: '2060', name: '2060', enabled: true },
+        { id: '2070', name: '2070', enabled: true },
+        { id: '2080', name: '2080', enabled: true },
+        { id: '2090', name: '2090', enabled: true },
+      ];
+
+      const mockSocioEconomicScenarios = [
+        { id: '2005soc', name: '2005soc', enabled: true },
+        { id: 'histsoc', name: 'histsoc', enabled: true },
+      ];
+
       const mockVariables = [
-        { id: 'vwc_sub', name: 'VWC_sub' },
-        // Add other variables as needed
+        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: true },
+        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: true },
+        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: true },
+        { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: true },
+        { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: true },
+        { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton', enabled: true },
+        { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: true },
+        { id: 'wfb', name: 'Blue Water Footprint', abbreviation: 'WFb', unit: 'm³', enabled: true },
+        { id: 'wfg', name: 'Green Water Footprint', abbreviation: 'WFg', unit: 'm³', enabled: true },
+        { id: 'etb', name: 'Blue Evapotranspiration', abbreviation: 'ETb', unit: 'mm', enabled: true },
+        { id: 'etg', name: 'Green Evapotranspiration', abbreviation: 'ETg', unit: 'mm', enabled: true },
+        { id: 'rb', name: 'Blue Renewability Rate', abbreviation: 'Rb', unit: 'mm', enabled: true },
+        { id: 'rg', name: 'Green Renewability Rate', abbreviation: 'Rg', unit: 'mm', enabled: true },
+        { id: 'wdb', name: 'Blue Water Debt', abbreviation: 'WDb', unit: 'years', enabled: true },
+        { id: 'wdg', name: 'Green Water Debt', abbreviation: 'WDg', unit: 'years', enabled: true },
       ];
+
       setCrops(mockCrops);
       setGlobalWaterModels(mockGlobalWaterModels);
       setClimateModels(mockClimateModels);
       setScenarios(mockScenarios);
       setVariables(mockVariables);
+      setTimePeriods(mockTimePeriods);
+
+    // Select the first "enabled" item in each list
+    setSelectedCrop(mockCrops.find(crop => crop.enabled));
+    setSelectedGlobalWaterModel(mockGlobalWaterModels.find(model => model.enabled));
+    setSelectedClimateModel(mockClimateModels.find(model => model.enabled));
+    setSelectedScenario(mockScenarios.find(scenario => scenario.enabled));
+    setSelectedVariable(mockVariables.find(variable => variable.enabled));
     };
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (selectedCrop && selectedGlobalWaterModel && selectedClimateModel && selectedScenario && selectedVariable) {
+      const layerName = `${selectedCrop.id}_${selectedGlobalWaterModel.id}_${selectedClimateModel.id}_${selectedScenario.id}_${selectedVariable.id}_${selectedTime}`;
+        //   onLayerSelect(layerName);
+        console.log(layerName)
+    }
+  }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable, selectedTime]);
+
   const handlePanelClick = (panel) => {
     setActivePanel(activePanel === panel ? null : panel);
-  };
-
-  const handleSelection = (type, item) => {
-    switch (type) {
-      case 'crop':
-        setSelectedCrop(item);
-        break;
-      case 'globalWaterModel':
-        setSelectedGlobalWaterModel(item);
-        break;
-      case 'climateModel':
-        setSelectedClimateModel(item);
-        break;
-      case 'scenario':
-        setSelectedScenario(item);
-        break;
-      case 'variable':
-        setSelectedVariable(item);
-        break;
-      default:
-        break;
-    }
-    onLayerSelect(item.id); // Adjust according to your needs
   };
 
   return (
@@ -107,7 +153,7 @@ const SidePanel = ({ onLayerSelect }) => {
           <div className="button-content">
             <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
             <span>Variable</span>
-            <span className="current-selection">{selectedVariable ? selectedVariable.name : ''}</span>
+            <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation}` : ''}</span>
           </div>
         </button>
       </div>
@@ -137,7 +183,8 @@ const SidePanel = ({ onLayerSelect }) => {
                 name="crop"
                 value={crop.id}
                 checked={selectedCrop && selectedCrop.id === crop.id}
-                onChange={() => handleSelection('crop', crop)}
+                disabled={!crop.enabled}
+                onChange={() => setSelectedCrop(crop)}
               />
               <label htmlFor={crop.id}>{crop.name}</label>
             </div>
@@ -154,8 +201,9 @@ const SidePanel = ({ onLayerSelect }) => {
                 id={model.id}
                 name="globalWaterModel"
                 value={model.id}
+                disabled={!model.enabled}
                 checked={selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id}
-                onChange={() => handleSelection('globalWaterModel', model)}
+                onChange={() => setSelectedGlobalWaterModel(model)}
               />
               <label htmlFor={model.id}>{model.name}</label>
             </div>
@@ -172,8 +220,9 @@ const SidePanel = ({ onLayerSelect }) => {
                 id={model.id}
                 name="climateModel"
                 value={model.id}
+                disabled={!model.enabled}
                 checked={selectedClimateModel && selectedClimateModel.id === model.id}
-                onChange={() => handleSelection('climateModel', model)}
+                onChange={() => setSelectedClimateModel(model)}
               />
               <label htmlFor={model.id}>{model.name}</label>
             </div>
@@ -190,8 +239,9 @@ const SidePanel = ({ onLayerSelect }) => {
                 id={scenario.id}
                 name="scenario"
                 value={scenario.id}
+                disabled={!scenario.enabled}
                 checked={selectedScenario && selectedScenario.id === scenario.id}
-                onChange={() => handleSelection('scenario', scenario)}
+                onChange={() => setSelectedScenario(scenario)}
               />
               <label htmlFor={scenario.id}>{scenario.name}</label>
             </div>
@@ -208,10 +258,11 @@ const SidePanel = ({ onLayerSelect }) => {
                 id={variable.id}
                 name="variable"
                 value={variable.id}
+                disabled={!variable.enabled}
                 checked={selectedVariable && selectedVariable.id === variable.id}
-                onChange={() => handleSelection('variable', variable)}
+                onChange={() => setSelectedVariable(variable)}
               />
-              <label htmlFor={variable.id}>{variable.name}</label>
+              <label htmlFor={variable.id}>{variable.name} [{variable.unit}]</label>
             </div>
           ))}
         </div>
