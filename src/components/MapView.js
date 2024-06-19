@@ -7,6 +7,7 @@ import axios from 'axios';
 const UpdateLayer = ({ wmsParams }) => {
   const map = useMap();
   useEffect(() => {
+    console.log("Loading layer: ", wmsParams)
     const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
       layers: wmsParams,
       format: "image/png",
