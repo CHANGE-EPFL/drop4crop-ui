@@ -1,25 +1,21 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import MapView from './components/MapView';
+import SidePanel from './components/SidePanel';
+import './App.css'; // Ensure this is imported
 
-function App() {
+const App = () => {
+  const [wmsParams, setWmsParams] = useState({ layer: 'ocd_0-5cm_mean' });
+
+  const handleLayerSelect = (layerId) => {
+    setWmsParams({ layer: layerId });
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ display: 'flex', height: '100vh' }}> {/* Ensure full height */}
+      <SidePanel onLayerSelect={handleLayerSelect} />
+      <MapView wmsParams={wmsParams} />
     </div>
   );
-}
+};
 
 export default App;

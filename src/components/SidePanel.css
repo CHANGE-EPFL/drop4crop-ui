@@ -1,0 +1,119 @@
+.side-panel {
+    width: 100px;
+    /* Increase sidebar width */
+    padding: 0;
+    background: #282c34;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    height: 100vh;
+    border-right: 1px solid #444;
+    justify-content: space-between;
+    /* To push the bottom buttons to the bottom */
+}
+
+.button-group {
+    width: 100%;
+}
+
+.button-group.top {
+    flex-grow: 1;
+    /* Allow the top group to grow and push the bottom group down */
+}
+
+.button-group.bottom {
+    margin-top: auto;
+    /* Push this group to the bottom */
+}
+
+.button-group button {
+    width: 100%;
+    height: 100px;
+    /* Increase button height */
+    background-color: #4a4a4a;
+    color: #d3d3d3;
+    /* Muted text color */
+    border: none;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    /* Adjust text size */
+    padding: 4px;
+    /* Add padding */
+    box-sizing: border-box;
+    /* Ensure padding is included in the width and height */
+}
+
+.button-group button:last-child {
+    border-bottom: none;
+}
+
+.button-group button:hover,
+.button-group button.active {
+    background-color: #616161;
+    /* Slightly different color for active state */
+}
+
+.button-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    /* Center text */
+    width: 100%;
+    /* Ensure content takes full width */
+    height: 100%;
+    /* Ensure content takes full height */
+    justify-content: center;
+    /* Center content vertically */
+}
+
+.button-content span {
+    display: block;
+}
+
+.current-selection {
+    font-size: 10px;
+    margin-top: 5px;
+    color: #b0b0b0;
+    /* Muted color for current selection text */
+    height: 14px;
+    /* Fixed height to prevent shifting */
+}
+
+.popup {
+    position: absolute;
+    left: 100px;
+    /* Adjust according to sidebar width */
+    top: 10px;
+    width: 250px;
+    background: #333;
+    color: #d3d3d3;
+    /* Muted text color */
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    z-index: 1000;
+    border-radius: 5px;
+}
+
+.popup h3 {
+    margin-top: 0;
+    color: #b0b0b0;
+    /* Muted color for headings */
+}
+
+.popup p {
+    margin: 0;
+    color: #b0b0b0;
+    /* Muted color for paragraphs */
+}
+
+.popup label {
+    color: #d3d3d3;
+    /* Muted text color for labels */
+}
