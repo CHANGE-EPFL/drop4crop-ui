@@ -21,11 +21,11 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
     const fetchData = async () => {
       // Mock data fetch
       const mockCrops = [
-        { id: 'barley', name: 'Barley', enabled: false },
-        { id: 'potato', name: 'Potato', enabled: false },
-        { id: 'rice', name: 'Rice', enabled: false },
-        { id: 'soy', name: 'Soy', enabled: false },
-        { id: 'sugarcane', name: 'Sugar Cane', enabled: false },
+        { id: 'barley', name: 'Barley', enabled: true },
+        { id: 'potato', name: 'Potato', enabled: true },
+        { id: 'rice', name: 'Rice', enabled: true },
+        { id: 'soy', name: 'Soy', enabled: true },
+        { id: 'sugarcane', name: 'Sugar Cane', enabled: true },
         { id: 'wheat', name: 'Wheat', enabled: true },
       ];
 
