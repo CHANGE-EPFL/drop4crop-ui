@@ -1,8 +1,30 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, useMap, ZoomControl, useMapEvent, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, ZoomControl, useMapEvent, LayersControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
+
+export const BaseLayers = () => {
+  const { BaseLayer } = LayersControl;
+  // Set z index to 1 to make sure the base layer is always below the WMS layer
+  return (
+    <LayersControl>
+    <BaseLayer checked name="CartoDB Dark">
+    <TileLayer url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+      attribution= '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains='abcd' maxZoom={20}
+          zIndex={1}
+    />
+    </BaseLayer>
+    <BaseLayer name="OpenStreetMap">
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          opacity={0.5}
+          zIndex={1}
+        />
+    </BaseLayer>
+</LayersControl>)
+};
 
 const UpdateLayer = ({ wmsParams }) => {
   const map = useMap();
@@ -58,15 +80,17 @@ const MapClickHandler = ({ wmsParams }) => {
 const MapView = ({ wmsParams }) => {
   return (
     <MapContainer
-      center={[40.416775, -3.703790]}  // Centered on Madrid
-      zoom={6}
+      center={[35, 20]}
+      zoom={4}
       style={{ height: "100vh", width: "100%" }}
       zoomControl={false}
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
+      <BaseLayers />
+      {/* <TileLayer provider="OpenStreetMap.Mapnik" /> */}
+        {/* url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" */}
+        {/* attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' */}
+      {/* /> */}
+      {/* <BaseMap /> */}
       <ZoomControl position="bottomright" />
       <UpdateLayer wmsParams={wmsParams} />
       <MapClickHandler wmsParams={wmsParams} />
