@@ -19,7 +19,7 @@ const App = () => {
 
   // Update the map layer with any change on the selected layer or time
   useEffect(() => {
-    setLayerName(`ne:${selectedLayer}_${selectedTime}`);
+    setLayerName(`drop4crop:${selectedLayer}_${selectedTime}`);
   }, [selectedLayer, selectedTime]);
 
   return (
