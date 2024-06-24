@@ -4,37 +4,15 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
 
-export const BaseLayers = () => {
-  const { BaseLayer } = LayersControl;
-  // Set z index to 1 to make sure the base layer is always below the WMS layer
-  return (
-    <LayersControl>
-    <BaseLayer checked name="CartoDB Dark">
-    <TileLayer url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-      attribution= '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          subdomains='abcd' maxZoom={20}
-          zIndex={1}
-    />
-    </BaseLayer>
-    <BaseLayer name="OpenStreetMap">
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          opacity={0.5}
-          zIndex={1}
-        />
-    </BaseLayer>
-</LayersControl>)
-};
-
 const UpdateLayer = ({ wmsParams }) => {
   const map = useMap();
   useEffect(() => {
-    console.log("Loading layer: ", wmsParams)
     const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
       layers: wmsParams,
       format: "image/png",
       transparent: true,
       version: "1.3.0",
+      zIndex: 2 // Setting zIndex to ensure WMS layer is on top
     }).addTo(map);
 
     return () => {
@@ -44,7 +22,6 @@ const UpdateLayer = ({ wmsParams }) => {
 
   return null;
 };
-
 
 const MapClickHandler = ({ wmsParams }) => {
   const map = useMap();
@@ -78,21 +55,29 @@ const MapClickHandler = ({ wmsParams }) => {
 };
 
 const MapView = ({ wmsParams }) => {
+  const corner1 = L.latLng(-90, -200)
+  const corner2 = L.latLng(90, 200)
+  const bounds = L.latLngBounds(corner1, corner2)
+
   return (
     <MapContainer
       center={[35, 20]}
       zoom={4}
-      style={{ height: "100vh", width: "100%" }}
+      style={{ height: "100vh", width: "100%"}}
       zoomControl={false}
+      maxBoundsViscosity={1.0}
+      maxBounds={bounds}
+      minZoom={3}
     >
-      <BaseLayers />
-      {/* <TileLayer provider="OpenStreetMap.Mapnik" /> */}
-        {/* url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" */}
-        {/* attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' */}
-      {/* /> */}
-      {/* <BaseMap /> */}
-      <ZoomControl position="bottomright" />
       <UpdateLayer wmsParams={wmsParams} />
+      <TileLayer
+          url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains='abcd'
+          maxZoom={20}
+          zIndex={0} // Ensuring the base layer is below the WMS layer
+        />
+      <ZoomControl position="bottomright" />
       <MapClickHandler wmsParams={wmsParams} />
     </MapContainer>
   );
