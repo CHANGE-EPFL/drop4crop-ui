@@ -72,12 +72,12 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
       ];
 
       const mockVariables = [
-        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: true },
-        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: true },
-        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: true },
+        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
         { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: true },
         { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: true },
-        { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton', enabled: true },
+        { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton', enabled: false },
         { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: true },
         { id: 'wfb', name: 'Blue Water Footprint', abbreviation: 'WFb', unit: 'm³', enabled: true },
         { id: 'wfg', name: 'Green Water Footprint', abbreviation: 'WFg', unit: 'm³', enabled: true },
