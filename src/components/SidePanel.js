@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWheatAwn, faWater, faCloudSun, faCogs, faCog, faInfoCircle, faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import {
+  faWheatAwn, faWater, faCloudSun, faCogs,
+  faCog, faInfoCircle, faLayerGroup,
+} from '@fortawesome/free-solid-svg-icons';
+import GrassIcon from '@mui/icons-material/Grass';
 import './SidePanel.css';
 
 const SidePanel = ({ onLayerSelect }) => {
@@ -103,7 +107,7 @@ const SidePanel = ({ onLayerSelect }) => {
       <div className="button-group top">
         <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
           <div className="button-content">
-            <FontAwesomeIcon icon={faWheatAwn} size="2xl" />
+            <GrassIcon />
             <span>Crop</span>
             <span className="current-selection">{selectedCrop ? selectedCrop.name : ''}</span>
           </div>
