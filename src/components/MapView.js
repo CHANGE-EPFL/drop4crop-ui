@@ -1,24 +1,89 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, useMap, ZoomControl, useMapEvent, LayersControl } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import {
+  MapContainer,
+  TileLayer,
+  useMap,
+  ZoomControl,
+  useMapEvent,
+} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
 
 const UpdateLayer = ({ wmsParams }) => {
   const map = useMap();
-  useEffect(() => {
-    const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
-      layers: wmsParams,
-      format: "image/png",
-      transparent: true,
-      version: "1.3.0",
-      zIndex: 2 // Setting zIndex to ensure WMS layer is on top
-    }).addTo(map);
+  // const [layerExists, setLayerExists] = useState(null);
 
-    return () => {
-      map.removeLayer(wmsLayer);
-    };
-  }, [wmsParams, map]);
+  // useEffect(() => {
+  //   const checkLayerExists = async () => {
+  //     try {
+  //       const response = await axios.get("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
+  //         params: {
+  //           service: 'WMS',
+  //           version: '1.1.0',
+  //           request: 'GetCapabilities',
+  //           tiled: true,
+  //         },
+  //       });
+
+  //       console.log(response);
+  //       if (response.status === 200) {
+
+  //         const parser = new DOMParser();
+  //         const xmlDoc = parser.parseFromString(response.data, 'text/xml');
+  //         const layers = xmlDoc.getElementsByTagName('Layer');
+  //         let layerFound = false;
+
+  //         for (let i = 0; i < layers.length; i++) {
+  //           const nameElement = layers[i].getElementsByTagName('Name')[0];
+  //           if (nameElement && nameElement.textContent === wmsParams) {
+  //             layerFound = true;
+  //             break;
+  //           }
+  //         }
+
+  //         setLayerExists(layerFound);
+  //       } else {
+  //         console.log('Failed to fetch capabilities');
+  //         setLayerExists(false);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error checking layer existence:', error);
+  //       setLayerExists(false);
+  //     }
+  //   };
+
+  //   checkLayerExists();
+  // }, [wmsParams]);
+
+  useEffect(() => {
+    // if (layerExists) {
+      console.log('Adding WMS layer:', wmsParams);
+    const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
+      // const wmsLayer = L.tileLayer.wms("http://localhost:8015/wms", {
+        layers: wmsParams,
+        format: "image/png",
+        transparent: true,
+        version: "1.3.0",
+        tiled: true,
+        zIndex: 2 // Setting zIndex to ensure WMS layer is on top
+      }).addTo(map);
+
+      return () => {
+        map.removeLayer(wmsLayer);
+      };
+    // } else if (layerExists === false) {
+    //   const overlay = L.DomUtil.create('div', 'map-overlay');
+    //   overlay.innerHTML = '<div class="overlay-content">No layer available. Please refer to the publication for more information.</div>';
+    //   map.getContainer().appendChild(overlay);
+
+    //   return () => {
+    //     map.getContainer().removeChild(overlay);
+    //   };
+    // }
+  }, [wmsParams, map,
+    // layerExists
+  ]);
 
   return null;
 };
@@ -27,7 +92,6 @@ const MapClickHandler = ({ wmsParams }) => {
   const map = useMap();
 
   useMapEvent('click', async (e) => {
-    const { lat, lng } = e.latlng;
     const bbox = map.getBounds().toBBoxString();
     const size = map.getSize();
     const width = size.x;
@@ -71,12 +135,12 @@ const MapView = ({ wmsParams }) => {
     >
       <UpdateLayer wmsParams={wmsParams} />
       <TileLayer
-          url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          subdomains='abcd'
-          maxZoom={20}
-          zIndex={0} // Ensuring the base layer is below the WMS layer
-        />
+        url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains='abcd'
+        maxZoom={20}
+        zIndex={0} // Ensuring the base layer is below the WMS layer
+      />
       <ZoomControl position="bottomright" />
       <MapClickHandler wmsParams={wmsParams} />
     </MapContainer>

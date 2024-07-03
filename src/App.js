@@ -14,7 +14,7 @@ const App = () => {
   };
 
   const handleTimeChange = (time) => {
-    setSelectedTime(time);
+    setSelectedTime(time.target.value);
   };
 
   // Update the map layer with any change on the selected layer or time

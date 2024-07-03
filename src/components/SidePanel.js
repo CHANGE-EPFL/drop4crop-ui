@@ -3,13 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faWheatAwn, faWater, faCloudSun, faCogs, faCog, faInfoCircle, faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import './SidePanel.css';
 
-const SidePanel = ({ onLayerSelect, selectedTime }) => {
+const SidePanel = ({ onLayerSelect }) => {
   const [crops, setCrops] = useState([]);
   const [globalWaterModels, setGlobalWaterModels] = useState([]);
   const [climateModels, setClimateModels] = useState([]);
   const [scenarios, setScenarios] = useState([]);
   const [variables, setVariables] = useState([]);
-  const [timePeriods, setTimePeriods] = useState([]);
   const [activePanel, setActivePanel] = useState(null);
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
@@ -36,7 +35,6 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
         { id: 'matsiro', name: 'MATSIRO', enabled: false },
         { id: 'pcr-globwb', name: 'PCR-GLOBWB', enabled: true },
         { id: 'watergap2', name: 'WaterGAP2', enabled: false },
-        { id: 'watergap2-2c', name: 'WaterGAP2-2c', enabled: false },
       ];
 
       const mockClimateModels = [
@@ -53,23 +51,6 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
         { id: 'rcp85', name: 'RCP 8.5', enabled: true },
       ];
 
-      const mockTimePeriods = [
-        { id: '2000', name: '2000', enabled: true },
-        { id: '2010', name: '2010', enabled: true },
-        { id: '2020', name: '2020', enabled: true },
-        { id: '2030', name: '2030', enabled: true },
-        { id: '2040', name: '2040', enabled: true },
-        { id: '2050', name: '2050', enabled: true },
-        { id: '2060', name: '2060', enabled: true },
-        { id: '2070', name: '2070', enabled: true },
-        { id: '2080', name: '2080', enabled: true },
-        { id: '2090', name: '2090', enabled: true },
-      ];
-
-      const mockSocioEconomicScenarios = [
-        { id: '2005soc', name: '2005soc', enabled: true },
-        { id: 'histsoc', name: 'histsoc', enabled: true },
-      ];
 
       const mockVariables = [
         { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
@@ -77,7 +58,6 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
         { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
         { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: true },
         { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: true },
-        { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton', enabled: false },
         { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: true },
         { id: 'wfb', name: 'Blue Water Footprint', abbreviation: 'WFb', unit: 'm³', enabled: true },
         { id: 'wfg', name: 'Green Water Footprint', abbreviation: 'WFg', unit: 'm³', enabled: true },
@@ -94,7 +74,7 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
       setClimateModels(mockClimateModels);
       setScenarios(mockScenarios);
       setVariables(mockVariables);
-      setTimePeriods(mockTimePeriods);
+
 
     // Select the first "enabled" item in each list
     setSelectedCrop(mockCrops.find(crop => crop.enabled));
@@ -112,7 +92,7 @@ const SidePanel = ({ onLayerSelect, selectedTime }) => {
         onLayerSelect(layerName);
 
     }
-  }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable]);
+  }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable, onLayerSelect]);
 
   const handlePanelClick = (panel) => {
     setActivePanel(activePanel === panel ? null : panel);

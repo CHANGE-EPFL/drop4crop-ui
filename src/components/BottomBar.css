@@ -2,26 +2,30 @@
     position: absolute;
     bottom: 30px;
     left: 100px;
-    /* Align to the right side of the sidebar */
     right: 50px;
-    /* Ensure it fills the remaining width */
     background-color: #333;
-    /* Dark background color */
-    color: #ffffff75;
-    /* Light text color for contrast */
-    padding: 20px;
-    border-top: 1px solid #ccc;
+    color: #ffffff;
+    padding-left: 40px;
+    padding-right: 40px;
+    padding-top: 10px;
+    border-top: 1px solid #cccccc35;
     display: flex;
     justify-content: center;
     z-index: 1000;
-    /* Ensure it is above other elements */
     box-sizing: border-box;
     overflow: hidden;
-    opacity: 0.6;
+    opacity: 0. 8;
     border-radius: 10px;
 }
 
-.rc-slider-mark-text {
-    color: #fff !important;
-    /* Ensure the slider mark text is white for better visibility */
+/* BottomBar.css */
+
+.MuiSlider-markLabel {
+    font-size: 16px;
+    color: #d1a766;
+}
+
+.MuiSlider-markLabel.active {
+    font-size: 20px;
+    font-weight: bold;
 }
