@@ -56,7 +56,6 @@ const BottomBar = ({ selectedTime, onTimeChange }) => {
         ]}
         defaultValue={parseInt(selectedTime, 10)}
         onChange={onTimeChange}
-        valueLabelDisplay="auto"
         valueLabelDisplay="off"
         sx={{
           '& .MuiSlider-track': {

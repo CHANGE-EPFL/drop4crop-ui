@@ -33,12 +33,12 @@ const SidePanel = ({ onLayerSelect }) => {
       ];
 
       const mockGlobalWaterModels = [
-        { id: 'cwatm', name: 'CWatM', enabled: false },
-        { id: 'h08', name: 'H08', enabled: false },
-        { id: 'lpjml', name: 'LPJmL', enabled: false },
-        { id: 'matsiro', name: 'MATSIRO', enabled: false },
+        { id: 'cwatm', name: 'CWatM', enabled: true },
+        { id: 'h08', name: 'H08', enabled: true },
+        { id: 'lpjml', name: 'LPJmL', enabled: true },
+        { id: 'matsiro', name: 'MATSIRO', enabled: true },
         { id: 'pcr-globwb', name: 'PCR-GLOBWB', enabled: true },
-        { id: 'watergap2', name: 'WaterGAP2', enabled: false },
+        { id: 'watergap2', name: 'WaterGAP2', enabled: true },
       ];
 
       const mockClimateModels = [
@@ -49,7 +49,6 @@ const SidePanel = ({ onLayerSelect }) => {
       ];
 
       const mockScenarios = [
-        { id: 'historical', name: 'Historical', enabled: true },
         { id: 'rcp26', name: 'RCP 2.6', enabled: true },
         { id: 'rcp60', name: 'RCP 6.0', enabled: true },
         { id: 'rcp85', name: 'RCP 8.5', enabled: true },
@@ -57,9 +56,9 @@ const SidePanel = ({ onLayerSelect }) => {
 
 
       const mockVariables = [
-        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: true },
+        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: true },
+        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: true },
         { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: true },
         { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: true },
         { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: true },
@@ -92,11 +91,16 @@ const SidePanel = ({ onLayerSelect }) => {
 
   useEffect(() => {
     if (selectedCrop && selectedGlobalWaterModel && selectedClimateModel && selectedScenario && selectedVariable) {
-      const layerName = `${selectedCrop.id}_${selectedGlobalWaterModel.id}_${selectedClimateModel.id}_${selectedScenario.id}_${selectedVariable.id}`;
-        onLayerSelect(layerName);
-
+      const layerProps = {
+        crop: selectedCrop.id,
+        water_model: selectedGlobalWaterModel.id,
+        climate_model: selectedClimateModel.id,
+        scenario: selectedScenario.id,
+        variable: selectedVariable.id,
+      }
+      onLayerSelect(layerProps);
     }
-  }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable, onLayerSelect]);
+  }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable]);
 
   const handlePanelClick = (panel) => {
     setActivePanel(activePanel === panel ? null : panel);

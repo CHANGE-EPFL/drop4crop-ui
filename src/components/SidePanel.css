@@ -80,7 +80,8 @@
 .current-selection {
     font-size: 10px;
     margin-top: 5px;
-    color: #b0b0b0;
+    color: #d1a766;
+    opacity: 0.75;
     /* Muted color for current selection text */
     height: 14px;
     /* Fixed height to prevent shifting */

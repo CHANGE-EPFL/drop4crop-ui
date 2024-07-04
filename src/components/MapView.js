@@ -9,58 +9,32 @@ import {
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import CircularProgress from '@mui/material/CircularProgress';
+
+const NoMapOverlay = () => {
+  return (
+    <div style={mapOverlayStyle}>
+      <div style={overlayContentStyle}>
+        <p>This layer is unavailable</p>
+        <p>Please refer to the publication for more information.</p>
+        <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+          <AutoStoriesIcon fontSize='medium' /> Our publications
+        </a>
+      </div>
+    </div>
+  );
+};
 
 const UpdateLayer = ({ wmsParams }) => {
   const map = useMap();
-  // const [layerExists, setLayerExists] = useState(null);
-
-  // useEffect(() => {
-  //   const checkLayerExists = async () => {
-  //     try {
-  //       const response = await axios.get("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
-  //         params: {
-  //           service: 'WMS',
-  //           version: '1.1.0',
-  //           request: 'GetCapabilities',
-  //           tiled: true,
-  //         },
-  //       });
-
-  //       console.log(response);
-  //       if (response.status === 200) {
-
-  //         const parser = new DOMParser();
-  //         const xmlDoc = parser.parseFromString(response.data, 'text/xml');
-  //         const layers = xmlDoc.getElementsByTagName('Layer');
-  //         let layerFound = false;
-
-  //         for (let i = 0; i < layers.length; i++) {
-  //           const nameElement = layers[i].getElementsByTagName('Name')[0];
-  //           if (nameElement && nameElement.textContent === wmsParams) {
-  //             layerFound = true;
-  //             break;
-  //           }
-  //         }
-
-  //         setLayerExists(layerFound);
-  //       } else {
-  //         console.log('Failed to fetch capabilities');
-  //         setLayerExists(false);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error checking layer existence:', error);
-  //       setLayerExists(false);
-  //     }
-  //   };
-
-  //   checkLayerExists();
-  // }, [wmsParams]);
 
   useEffect(() => {
     // if (layerExists) {
+    if (wmsParams !== undefined) {
       console.log('Adding WMS layer:', wmsParams);
+    }
     const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
-      // const wmsLayer = L.tileLayer.wms("http://localhost:8015/wms", {
         layers: wmsParams,
         format: "image/png",
         transparent: true,
@@ -72,18 +46,7 @@ const UpdateLayer = ({ wmsParams }) => {
       return () => {
         map.removeLayer(wmsLayer);
       };
-    // } else if (layerExists === false) {
-    //   const overlay = L.DomUtil.create('div', 'map-overlay');
-    //   overlay.innerHTML = '<div class="overlay-content">No layer available. Please refer to the publication for more information.</div>';
-    //   map.getContainer().appendChild(overlay);
-
-    //   return () => {
-    //     map.getContainer().removeChild(overlay);
-    //   };
-    // }
-  }, [wmsParams, map,
-    // layerExists
-  ]);
+  }, [wmsParams, map]);
 
   return null;
 };
@@ -118,6 +81,26 @@ const MapClickHandler = ({ wmsParams }) => {
   return null;
 };
 
+const MapOverlay = ({ wmsParams }) => {
+  // Returns an overlay if the layer is loading or unavailable
+  if (wmsParams) {
+    return null;
+  }
+
+  if (wmsParams === undefined) {
+    return (
+      <div style={mapOverlayStyle}>
+        <div style={overlayContentStyle}>
+        <CircularProgress sx={{ color: '#d1a766' }} />
+        </div>
+      </div>
+    );
+  }
+
+  return <NoMapOverlay />;
+};
+
+
 const MapView = ({ wmsParams }) => {
   const corner1 = L.latLng(-90, -200)
   const corner2 = L.latLng(90, 200)
@@ -141,10 +124,40 @@ const MapView = ({ wmsParams }) => {
         maxZoom={20}
         zIndex={0} // Ensuring the base layer is below the WMS layer
       />
+      <MapOverlay wmsParams={wmsParams} />
       <ZoomControl position="bottomright" />
       <MapClickHandler wmsParams={wmsParams} />
     </MapContainer>
+
   );
 };
 
 export default MapView;
+
+const mapOverlayStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 999, // Ensure it is above other map elements
+  pointerEvents: 'none', // Make the overlay background non-interactive
+};
+
+const overlayContentStyle = {
+  color: 'white',
+  fontSize: '1.5em',
+  textAlign: 'center',
+  padding: '10px',
+  borderRadius: '5px',
+  pointerEvents: 'auto', // Make the overlay content interactive
+};
+
+const linkStyle = {
+  color: '#d1a766',
+  textDecoration: 'none',
+};
