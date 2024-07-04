@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faWheatAwn, faWater, faCloudSun, faCogs,
+  faWater, faCloudSun, faCogs,
   faCog, faInfoCircle, faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 import GrassIcon from '@mui/icons-material/Grass';
@@ -92,8 +92,13 @@ const SidePanel = ({ onLayerSelect }) => {
 
   useEffect(() => {
     if (selectedCrop && selectedGlobalWaterModel && selectedClimateModel && selectedScenario && selectedVariable) {
-      const layerName = `${selectedCrop.id}_${selectedGlobalWaterModel.id}_${selectedClimateModel.id}_${selectedScenario.id}_${selectedVariable.id}`;
-        onLayerSelect(layerName);
+      onLayerSelect({
+        crop: selectedCrop.id,
+        globalWaterModel: selectedGlobalWaterModel.id,
+        climateModel: selectedClimateModel.id,
+        scenario: selectedScenario.id,
+        variable: selectedVariable.id,
+        });
 
     }
   }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable, onLayerSelect]);
