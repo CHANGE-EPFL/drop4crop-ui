@@ -2,6 +2,7 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import 'leaflet-draw';
 
 window.type = true;
 
