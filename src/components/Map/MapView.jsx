@@ -1,4 +1,4 @@
-import React, { useEffect, useState, forwardRef } from 'react';
+import React, { useEffect, forwardRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -8,7 +8,6 @@ import {
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { EditControl } from "react-leaflet-draw";
 import 'leaflet-draw/dist/leaflet.draw.css';
 import CircularProgress from '@mui/material/CircularProgress';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
@@ -58,6 +57,7 @@ const MapClickHandler = ({ wmsParams, geoserverUrl }) => {
 
   return null;
 };
+
 const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
 
@@ -81,6 +81,46 @@ const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
 
   return null;
 };
+
+const LegendControl = ({ wmsParams, geoserverUrl }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xFFFFFF;fontAntiAliasing:true;`;
+
+    const legendContainer = L.DomUtil.create('div', 'legend-container');
+    legendContainer.style.backgroundColor = '#4a4a4a';
+    legendContainer.style.padding = '10px';
+    legendContainer.style.borderRadius = '5px';
+    legendContainer.style.opacity = '0.95';
+
+    // Apply the text color to all child elements
+    legendContainer.style.setProperty('color', '#d3d3d3', 'important');
+
+    const legendTitle = L.DomUtil.create('div', 'legend-title', legendContainer);
+    legendTitle.innerHTML = '<strong>Legend</strong>';
+    legendTitle.style.color = '#d3d3d3'; // Apply color to title explicitly
+
+    const legendImage = L.DomUtil.create('img', 'legend-image', legendContainer);
+    legendImage.src = legendUrl;
+    legendImage.alt = 'Legend';
+
+    const legendControl = L.control({ position: 'topright' });
+
+    legendControl.onAdd = () => {
+      return legendContainer;
+    };
+
+    legendControl.addTo(map);
+
+    return () => {
+      legendControl.remove();
+    };
+  }, [wmsParams, geoserverUrl, map]);
+
+  return null;
+};
+
 
 
 const MapOverlay = ({ wmsParams }) => {
@@ -131,6 +171,7 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
       <ZoomControl position="bottomright" />
       <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
       <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
+      <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
     </MapContainer>
   );
 });
@@ -159,7 +200,6 @@ const overlayContentStyle = {
   borderRadius: '5px',
   pointerEvents: 'auto', // Make the overlay content interactive
 };
-
 
 const linkStyle = {
   color: '#d1a766',
