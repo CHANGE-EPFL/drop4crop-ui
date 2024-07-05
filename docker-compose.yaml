@@ -22,6 +22,7 @@ services:
       - DB_PASSWORD=psql
       - DB_NAME=postgres
       - DB_PREFIX=postgresql+asyncpg
+      - GEOSERVER_URL=https://drop4crop-dev.epfl.ch/geoserver
     ports:
       - 8015:8000
     depends_on:
@@ -53,7 +54,6 @@ services:
       - "traefik.http.services.drop4crop-ui.loadbalancer.server.port=5173"
     volumes:
       - ../drop4crop-ui:/app
-
 
 volumes:
   drop4crop-db-data:

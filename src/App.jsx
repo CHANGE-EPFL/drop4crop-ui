@@ -30,6 +30,8 @@ const getLayer = async (props) => {
   }
 }
 
+
+
 const App = () => {
   const [layerName, setLayerName] = useState(undefined);
   const [selectedLayer, setSelectedLayer] = useState({
@@ -89,11 +91,28 @@ const App = () => {
     selectedTime
   ]);
 
+
+  const [geoserverUrl, setGeoserverUrl] = useState(null);
+
+  useEffect(() => {
+    // Get geoserver URL from /api/config/geoserver
+    axios.get("/api/config/geoserver")
+      .then(response => {
+        console.log("Geoserver URL defined as:", response.data);
+        setGeoserverUrl(response.data);
+      })
+      .catch(error => {
+        console.error("Error getting geoserver URL", error);
+      });
+  }, []);
+
+
+
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
       <div style={{ display: 'flex', flex: 1 }}>
         <SidePanel onLayerSelect={handleLayerSelect} />
-        <MapView wmsParams={layerName} />
+        <MapView wmsParams={layerName} geoserverUrl={geoserverUrl} />
       </div>
       <BottomBar selectedTime={selectedTime} onTimeChange={handleTimeChange} />
     </div>

@@ -26,7 +26,7 @@ const NoMapOverlay = () => {
   );
 };
 
-const UpdateLayer = ({ wmsParams }) => {
+const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const UpdateLayer = ({ wmsParams }) => {
     if (wmsParams !== undefined) {
       console.log('Adding WMS layer:', wmsParams);
     }
-    const wmsLayer = L.tileLayer.wms("/geoserver/ows", {
+    const wmsLayer = L.tileLayer.wms(`${geoserverUrl}/ows`, {
       layers: wmsParams,
       format: "image/png",
       transparent: true,
@@ -51,7 +51,7 @@ const UpdateLayer = ({ wmsParams }) => {
   return null;
 };
 
-const MapClickHandler = ({ wmsParams }) => {
+const MapClickHandler = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
 
   useMapEvent('click', async (e) => {
@@ -60,7 +60,7 @@ const MapClickHandler = ({ wmsParams }) => {
     const width = size.x;
     const height = size.y;
 
-    const url = `/geoserver/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`;
+    const url = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`;
 
     try {
       const response = await axios.get(url);
@@ -101,7 +101,7 @@ const MapOverlay = ({ wmsParams }) => {
 };
 
 
-const MapView = ({ wmsParams }) => {
+const MapView = ({ wmsParams, geoserverUrl }) => {
   const corner1 = L.latLng(-90, -200)
   const corner2 = L.latLng(90, 200)
   const bounds = L.latLngBounds(corner1, corner2)
@@ -116,7 +116,7 @@ const MapView = ({ wmsParams }) => {
       maxBounds={bounds}
       minZoom={3}
     >
-      <UpdateLayer wmsParams={wmsParams} />
+      <UpdateLayer wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
       <TileLayer
         url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -126,7 +126,7 @@ const MapView = ({ wmsParams }) => {
       />
       <MapOverlay wmsParams={wmsParams} />
       <ZoomControl position="bottomright" />
-      <MapClickHandler wmsParams={wmsParams} />
+      <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
     </MapContainer>
 
   );
