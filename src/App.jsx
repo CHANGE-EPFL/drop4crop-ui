@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MapView from './components/Map/MapView';
 import SidePanel from './components/SidePanel';
 import BottomBar from './components/BottomBar';
@@ -41,6 +41,7 @@ const App = () => {
   const [selectedTime, setSelectedTime] = useState(2000);
   const [boundingBox, setBoundingBox] = useState(null);
   const [enableSelection, setEnableSelection] = useState(false);
+  const boundingBoxSelectionRef = useRef(null);
 
   const handleLayerSelect = (layerId) => {
     setSelectedLayer(layerId);
@@ -102,8 +103,23 @@ const App = () => {
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
       <div style={{ display: 'flex', flex: 1 }}>
-        <SidePanel onLayerSelect={handleLayerSelect} currentLayer={layerName} geoserverUrl={geoserverUrl} boundingBox={boundingBox} setEnableSelection={setEnableSelection} />
-        <MapView wmsParams={layerName} geoserverUrl={geoserverUrl} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
+        <SidePanel
+          onLayerSelect={handleLayerSelect}
+          currentLayer={layerName}
+          geoserverUrl={geoserverUrl}
+          boundingBox={boundingBox}
+          setBoundingBox={setBoundingBox}
+          setEnableSelection={setEnableSelection}
+          clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
+        />
+        <MapView
+          wmsParams={layerName}
+          geoserverUrl={geoserverUrl}
+          setBoundingBox={setBoundingBox}
+          enableSelection={enableSelection}
+          setEnableSelection={setEnableSelection}
+          ref={boundingBoxSelectionRef}
+        />
       </div>
       <BottomBar
         selectedTime={selectedTime}

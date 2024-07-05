@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -93,7 +93,9 @@ const MapOverlay = ({ wmsParams }) => {
     return (
       <div style={mapOverlayStyle}>
         <div style={overlayContentStyle}>
-          <CircularProgress />
+          <CircularProgress sx={{
+            color: '#d1a766',
+          }} />
         </div>
       </div>
     );
@@ -102,10 +104,10 @@ const MapOverlay = ({ wmsParams }) => {
   return <NoMapOverlay />;
 };
 
-const MapView = ({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, setEnableSelection }) => {
-  const corner1 = L.latLng(-90, -200)
-  const corner2 = L.latLng(90, 200)
-  const bounds = L.latLngBounds(corner1, corner2)
+const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, setEnableSelection }, ref) => {
+  const corner1 = L.latLng(-90, -200);
+  const corner2 = L.latLng(90, 200);
+  const bounds = L.latLngBounds(corner1, corner2);
 
   return (
     <MapContainer
@@ -126,12 +128,12 @@ const MapView = ({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, set
         zIndex={0} // Ensuring the base layer is below the WMS layer
       />
       <MapOverlay wmsParams={wmsParams} />
-      {/* <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} /> */}
       <ZoomControl position="bottomright" />
-      <BoundingBoxSelection setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
+      {/* <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} /> */}
+      <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
     </MapContainer>
   );
-};
+});
 
 export default MapView;
 

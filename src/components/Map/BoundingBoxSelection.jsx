@@ -1,15 +1,21 @@
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import 'leaflet-draw/dist/leaflet.draw.css';
 
 window.type = true;
 
-const BoundingBoxSelection = ({ setBoundingBox, enableSelection, setEnableSelection }) => {
+const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setEnableSelection }, ref) => {
     const map = useMap();
     const drawnItemsRef = useRef(new L.FeatureGroup());
     const drawControlRef = useRef(null);
     const drawHandlerRef = useRef(null);
+
+    useImperativeHandle(ref, () => ({
+        clearLayers: () => {
+            drawnItemsRef.current.clearLayers();
+        },
+    }));
 
     useEffect(() => {
         const drawnItems = drawnItemsRef.current;
@@ -32,33 +38,15 @@ const BoundingBoxSelection = ({ setBoundingBox, enableSelection, setEnableSelect
         map.on('draw:created', handleDrawCreated);
 
         if (enableSelection) {
-            drawControlRef.current = new L.Control.Draw({
-                draw: {
-                    rectangle: {
-                        shapeOptions: {
-                            color: '#d1a766', // Set the color to your specified brown color
-                            weight: 2,
-                            opacity: 1.0,
-                            fillOpacity: 0.2,
-                            clickable: false,
-                        },
-                    },
-                    polyline: false,
-                    circle: false,
-                    circlemarker: false,
-                    marker: false,
-                    polygon: false,
-                },
-                edit: {
-                    featureGroup: drawnItems,
-                    edit: false,
-                    remove: false,
+            drawHandlerRef.current = new L.Draw.Rectangle(map, {
+                shapeOptions: {
+                    color: '#d1a766', // Set the color to your specified brown color
+                    weight: 2,
+                    opacity: 1.0,
+                    fillOpacity: 0.2,
+                    clickable: false,
                 },
             });
-
-            map.addControl(drawControlRef.current);
-
-            drawHandlerRef.current = new L.Draw.Rectangle(map, drawControlRef.current.options.draw.rectangle);
             drawHandlerRef.current.enable();
 
             // Disable drawing on the next click to ensure it doesn't prematurely stop
@@ -70,14 +58,15 @@ const BoundingBoxSelection = ({ setBoundingBox, enableSelection, setEnableSelect
             };
 
             map.on('click', disableDrawingOnClick);
+        } else {
+            if (drawHandlerRef.current) {
+                drawHandlerRef.current.disable();
+            }
         }
 
         return () => {
             if (drawHandlerRef.current) {
                 drawHandlerRef.current.disable();
-            }
-            if (drawControlRef.current) {
-                map.removeControl(drawControlRef.current);
             }
             map.removeLayer(drawnItems);
             map.off('draw:created', handleDrawCreated);
@@ -85,6 +74,6 @@ const BoundingBoxSelection = ({ setBoundingBox, enableSelection, setEnableSelect
     }, [enableSelection, map, setBoundingBox, setEnableSelection]);
 
     return null;
-};
+});
 
 export default BoundingBoxSelection;

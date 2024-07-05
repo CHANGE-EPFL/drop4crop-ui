@@ -17,8 +17,7 @@ import CropsPanel from './Panels/Crops';
 import DownloadPanel from './Panels/Download';
 import InfoPanel from './Panels/Info';
 
-
-const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, setEnableSelection }) => {
+const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, setBoundingBox, setEnableSelection, clearLayers }) => {
   const [crops, setCrops] = useState([]);
   const [globalWaterModels, setGlobalWaterModels] = useState([]);
   const [climateModels, setClimateModels] = useState([]);
@@ -228,7 +227,9 @@ const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, set
           currentLayer={currentLayer}
           geoserverUrl={geoserverUrl}
           boundingBox={boundingBox}
+          setBoundingBox={setBoundingBox}
           setEnableSelection={setEnableSelection}
+          clearLayers={clearLayers}
         />
       )}
 
