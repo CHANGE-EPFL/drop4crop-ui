@@ -1,4 +1,4 @@
-import React, { useEffect, forwardRef } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -84,6 +84,7 @@ const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
 
 const LegendControl = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xFFFFFF;fontAntiAliasing:true;`;
@@ -94,14 +95,30 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
     legendContainer.style.borderRadius = '5px';
     legendContainer.style.opacity = '0.95';
 
-    // Apply the text color to all child elements
-    legendContainer.style.setProperty('color', '#d3d3d3', 'important');
+    const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
+    toggleButton.innerHTML = isVisible ? 'Hide' : 'Show';
+    toggleButton.style.backgroundColor = '#282c34';
+    toggleButton.style.color = '#d3d3d3';
+    toggleButton.style.border = 'none';
+    toggleButton.style.borderRadius = '3px';
+    toggleButton.style.padding = '5px';
+    toggleButton.onclick = (e) => {
+      e.stopPropagation();
+      setIsVisible(!isVisible);
+      toggleButton.innerHTML = isVisible ? 'Show' : 'Hide';
+      legendContent.style.display = isVisible ? 'none' : 'block';
+    };
+    toggleButton.style.marginBottom = '10px';
+    toggleButton.style.float = 'right'; // Move the button to the right
 
-    const legendTitle = L.DomUtil.create('div', 'legend-title', legendContainer);
+    const legendContent = L.DomUtil.create('div', 'legend-content', legendContainer);
+    legendContent.style.display = isVisible ? 'block' : 'none';
+
+    const legendTitle = L.DomUtil.create('div', 'legend-title', legendContent);
     legendTitle.innerHTML = '<strong>Legend</strong>';
     legendTitle.style.color = '#d3d3d3'; // Apply color to title explicitly
 
-    const legendImage = L.DomUtil.create('img', 'legend-image', legendContainer);
+    const legendImage = L.DomUtil.create('img', 'legend-image', legendContent);
     legendImage.src = legendUrl;
     legendImage.alt = 'Legend';
 
@@ -116,12 +133,10 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
     return () => {
       legendControl.remove();
     };
-  }, [wmsParams, geoserverUrl, map]);
+  }, [wmsParams, geoserverUrl, map, isVisible]);
 
   return null;
 };
-
-
 
 const MapOverlay = ({ wmsParams }) => {
   // Returns an overlay if the layer is loading or unavailable
