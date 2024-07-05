@@ -7,7 +7,6 @@ import axios from 'axios';
 
 const getLayer = async (props) => {
   try {
-    // Convert scenario to historical if it is 2000
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
     const response = await axios.get("/api/layers", {
@@ -15,12 +14,12 @@ const getLayer = async (props) => {
         crop: props.crop,
         water_model: props.water_model,
         climate_model: props.climate_model,
-        scenario: scenario, // Use local variable
+        scenario: scenario,
         variable: props.variable,
         year: props.year,
       },
     });
-    if (response && response.data.length == 1) {
+    if (response && response.data.length === 1) {
       return response.data[0];
     } else {
       return null;
@@ -28,9 +27,7 @@ const getLayer = async (props) => {
   } catch (error) {
     console.error("Get Layer", error);
   }
-}
-
-
+};
 
 const App = () => {
   const [layerName, setLayerName] = useState(undefined);
@@ -42,9 +39,10 @@ const App = () => {
     variable: undefined,
   });
   const [selectedTime, setSelectedTime] = useState(2000);
+  const [boundingBox, setBoundingBox] = useState(null);
+  const [enableSelection, setEnableSelection] = useState(false);
 
   const handleLayerSelect = (layerId) => {
-    // return
     setSelectedLayer(layerId);
   };
 
@@ -52,20 +50,17 @@ const App = () => {
     setSelectedTime(time.target.value);
   };
 
-  // Update the map layer with any change on the selected layer or time
   useEffect(() => {
     if (
-      // Don't do anything if any of the selected layer props are undefined
-      selectedLayer.crop === undefined
-      || selectedLayer.water_model === undefined
-      || selectedLayer.climate_model === undefined
-      || selectedLayer.scenario === undefined
-      || selectedLayer.variable === undefined
-      || selectedTime === undefined
+      selectedLayer.crop === undefined ||
+      selectedLayer.water_model === undefined ||
+      selectedLayer.climate_model === undefined ||
+      selectedLayer.scenario === undefined ||
+      selectedLayer.variable === undefined ||
+      selectedTime === undefined
     ) {
       return;
     }
-    // Get layer name from getLayer()
     getLayer({
       crop: selectedLayer.crop,
       water_model: selectedLayer.water_model,
@@ -91,11 +86,9 @@ const App = () => {
     selectedTime
   ]);
 
-
   const [geoserverUrl, setGeoserverUrl] = useState(null);
 
   useEffect(() => {
-    // Get geoserver URL from /api/config/geoserver
     axios.get("/api/config/geoserver")
       .then(response => {
         console.log("Geoserver URL defined as:", response.data);
@@ -106,15 +99,16 @@ const App = () => {
       });
   }, []);
 
-
-
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
       <div style={{ display: 'flex', flex: 1 }}>
-        <SidePanel onLayerSelect={handleLayerSelect} />
-        <MapView wmsParams={layerName} geoserverUrl={geoserverUrl} />
+        <SidePanel onLayerSelect={handleLayerSelect} currentLayer={layerName} geoserverUrl={geoserverUrl} boundingBox={boundingBox} setEnableSelection={setEnableSelection} />
+        <MapView wmsParams={layerName} geoserverUrl={geoserverUrl} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
       </div>
-      <BottomBar selectedTime={selectedTime} onTimeChange={handleTimeChange} />
+      <BottomBar
+        selectedTime={selectedTime}
+        onTimeChange={handleTimeChange}
+      />
     </div>
   );
 };

@@ -8,9 +8,11 @@ import {
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import axios from 'axios';
-import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import { EditControl } from "react-leaflet-draw";
+import 'leaflet-draw/dist/leaflet.draw.css';
 import CircularProgress from '@mui/material/CircularProgress';
+import axios from 'axios';
+
 
 const NoMapOverlay = () => {
   return (
@@ -18,37 +20,9 @@ const NoMapOverlay = () => {
       <div style={overlayContentStyle}>
         <p>This layer is unavailable</p>
         <p>Please refer to the publication for more information.</p>
-        <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" style={linkStyle}>
-          <AutoStoriesIcon fontSize='medium' /> Our publications
-        </a>
       </div>
     </div>
   );
-};
-
-const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    // if (layerExists) {
-    if (wmsParams !== undefined) {
-      console.log('Adding WMS layer:', wmsParams);
-    }
-    const wmsLayer = L.tileLayer.wms(`${geoserverUrl}/ows`, {
-      layers: wmsParams,
-      format: "image/png",
-      transparent: true,
-      version: "1.3.0",
-      tiled: true,
-      zIndex: 2 // Setting zIndex to ensure WMS layer is on top
-    }).addTo(map);
-
-    return () => {
-      map.removeLayer(wmsLayer);
-    };
-  }, [wmsParams, map]);
-
-  return null;
 };
 
 const MapClickHandler = ({ wmsParams, geoserverUrl }) => {
@@ -80,6 +54,77 @@ const MapClickHandler = ({ wmsParams, geoserverUrl }) => {
 
   return null;
 };
+const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (wmsParams !== undefined) {
+      console.log('Adding WMS layer:', wmsParams);
+    }
+    const wmsLayer = L.tileLayer.wms(`${geoserverUrl}/ows`, {
+      layers: wmsParams,
+      format: "image/png",
+      transparent: true,
+      version: "1.3.0",
+      tiled: true,
+      zIndex: 2 // Setting zIndex to ensure WMS layer is on top
+    }).addTo(map);
+
+    return () => {
+      map.removeLayer(wmsLayer);
+    };
+  }, [wmsParams, map]);
+
+  return null;
+};
+
+const BoundingBoxSelection = ({ setBoundingBox, enableSelection, setEnableSelection }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+      draw: {
+        polygon: true,
+        polyline: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+        rectangle: enableSelection ? {
+          shapeOptions: {
+            clickable: true
+          }
+        } : false
+      }
+    });
+
+    map.addControl(drawControl);
+
+    if (enableSelection) {
+      map.on(L.Draw.Event.CREATED, function (event) {
+        const layer = event.layer;
+        drawnItems.addLayer(layer);
+        const { _southWest, _northEast } = layer.getBounds();
+        setBoundingBox({
+          minx: _southWest.lng,
+          miny: _southWest.lat,
+          maxx: _northEast.lng,
+          maxy: _northEast.lat,
+        });
+        setEnableSelection(false);
+      });
+    }
+
+    return () => {
+      map.removeControl(drawControl);
+      map.removeLayer(drawnItems);
+    };
+  }, [map, setBoundingBox, enableSelection, setEnableSelection]);
+
+  return null;
+};
 
 const MapOverlay = ({ wmsParams }) => {
   // Returns an overlay if the layer is loading or unavailable
@@ -91,7 +136,7 @@ const MapOverlay = ({ wmsParams }) => {
     return (
       <div style={mapOverlayStyle}>
         <div style={overlayContentStyle}>
-          <CircularProgress sx={{ color: '#d1a766' }} />
+          <CircularProgress />
         </div>
       </div>
     );
@@ -100,8 +145,7 @@ const MapOverlay = ({ wmsParams }) => {
   return <NoMapOverlay />;
 };
 
-
-const MapView = ({ wmsParams, geoserverUrl }) => {
+const MapView = ({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, setEnableSelection }) => {
   const corner1 = L.latLng(-90, -200)
   const corner2 = L.latLng(90, 200)
   const bounds = L.latLngBounds(corner1, corner2)
@@ -125,10 +169,10 @@ const MapView = ({ wmsParams, geoserverUrl }) => {
         zIndex={0} // Ensuring the base layer is below the WMS layer
       />
       <MapOverlay wmsParams={wmsParams} />
+      {/* <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} /> */}
       <ZoomControl position="bottomright" />
-      <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+      <BoundingBoxSelection setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
     </MapContainer>
-
   );
 };
 
@@ -155,9 +199,4 @@ const overlayContentStyle = {
   padding: '10px',
   borderRadius: '5px',
   pointerEvents: 'auto', // Make the overlay content interactive
-};
-
-const linkStyle = {
-  color: '#d1a766',
-  textDecoration: 'none',
 };
