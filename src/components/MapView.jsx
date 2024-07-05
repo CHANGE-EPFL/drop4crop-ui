@@ -11,8 +11,8 @@ import L from 'leaflet';
 import { EditControl } from "react-leaflet-draw";
 import 'leaflet-draw/dist/leaflet.draw.css';
 import CircularProgress from '@mui/material/CircularProgress';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import axios from 'axios';
-
 
 const NoMapOverlay = () => {
   return (
@@ -20,6 +20,9 @@ const NoMapOverlay = () => {
       <div style={overlayContentStyle}>
         <p>This layer is unavailable</p>
         <p>Please refer to the publication for more information.</p>
+        <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+          <AutoStoriesIcon fontSize='medium' /> Our publications
+        </a>
       </div>
     </div>
   );
@@ -199,4 +202,10 @@ const overlayContentStyle = {
   padding: '10px',
   borderRadius: '5px',
   pointerEvents: 'auto', // Make the overlay content interactive
+};
+
+
+const linkStyle = {
+  color: '#d1a766',
+  textDecoration: 'none',
 };
