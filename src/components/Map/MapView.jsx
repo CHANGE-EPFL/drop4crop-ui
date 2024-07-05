@@ -129,7 +129,7 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
       />
       <MapOverlay wmsParams={wmsParams} />
       <ZoomControl position="bottomright" />
-      {/* <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} /> */}
+      <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
       <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
     </MapContainer>
   );
