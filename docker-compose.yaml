@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.9.6
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+    ports:
+      - "88:80"
+      - "8088:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  drop4crop-api:
+    build:
+      context: ../drop4crop-api
+    environment:
+      - DB_HOST=drop4crop-db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=psql
+      - DB_NAME=postgres
+      - DB_PREFIX=postgresql+asyncpg
+    ports:
+      - 8015:8000
+    depends_on:
+      - drop4crop-db
+    volumes:
+      - ../drop4crop-api/app:/app/app
+    labels:
+      - "traefik.http.routers.drop4crop-bff.rule=Host(`drop4crop`) && PathPrefix(`/api`)"
+      - "traefik.http.services.drop4crop-bff.loadbalancer.server.port=8000"
+
+  drop4crop-db:
+    image: postgis/postgis:16-master
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=psql
+      - POSTGRES_DB=postgres
+    ports:
+      - 5443:5432
+    volumes:
+      - drop4crop-db-data:/var/lib/postgresql/data
+      - ./rasters:/rasters
+
+  drop4crop-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev  # Uses the dockerfile containing yarn dev
+    labels:
+      - "traefik.http.routers.drop4crop-ui.rule=Host(`drop4crop`)"
+      - "traefik.http.services.drop4crop-ui.loadbalancer.server.port=5173"
+    volumes:
+      - ../drop4crop-ui:/app
+
+
+volumes:
+  drop4crop-db-data:

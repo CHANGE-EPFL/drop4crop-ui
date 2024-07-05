@@ -6,6 +6,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import GrassIcon from '@mui/icons-material/Grass';
 import './SidePanel.css';
+import axios from 'axios';
+
 
 const SidePanel = ({ onLayerSelect }) => {
   const [crops, setCrops] = useState([]);
@@ -22,69 +24,80 @@ const SidePanel = ({ onLayerSelect }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Mock data fetch
-      const mockCrops = [
-        { id: 'barley', name: 'Barley', enabled: true },
-        { id: 'potato', name: 'Potato', enabled: true },
-        { id: 'rice', name: 'Rice', enabled: true },
-        { id: 'soy', name: 'Soy', enabled: true },
-        { id: 'sugarcane', name: 'Sugar Cane', enabled: true },
-        { id: 'wheat', name: 'Wheat', enabled: true },
+      // Initialise the menus with their values, setting all to false
+      // we will ask the API if we can enable them depending if they are available
+      let cropItems = [
+        { id: 'barley', name: 'Barley', enabled: false },
+        { id: 'potato', name: 'Potato', enabled: false },
+        { id: 'rice', name: 'Rice', enabled: false },
+        { id: 'soy', name: 'Soy', enabled: false },
+        { id: 'sugarcane', name: 'Sugar Cane', enabled: false },
+        { id: 'wheat', name: 'Wheat', enabled: false },
       ];
 
-      const mockGlobalWaterModels = [
-        { id: 'cwatm', name: 'CWatM', enabled: true },
-        { id: 'h08', name: 'H08', enabled: true },
-        { id: 'lpjml', name: 'LPJmL', enabled: true },
-        { id: 'matsiro', name: 'MATSIRO', enabled: true },
-        { id: 'pcr-globwb', name: 'PCR-GLOBWB', enabled: true },
-        { id: 'watergap2', name: 'WaterGAP2', enabled: true },
+      let globalWaterModelsItems = [
+        { id: 'cwatm', name: 'CWatM', enabled: false },
+        { id: 'h08', name: 'H08', enabled: false },
+        { id: 'lpjml', name: 'LPJmL', enabled: false },
+        { id: 'matsiro', name: 'MATSIRO', enabled: false },
+        { id: 'pcr-globwb', name: 'PCR-GLOBWB', enabled: false },
+        { id: 'watergap2', name: 'WaterGAP2', enabled: false },
       ];
 
-      const mockClimateModels = [
-        { id: 'gfdl-esm2m', name: 'GFDL-ESM2M', enabled: true },
-        { id: 'hadgem2-es', name: 'HadGEM2-ES', enabled: true },
-        { id: 'ipsl-cm5a-lr', name: 'IPSL-CM5A-LR', enabled: true },
-        { id: 'miroc5', name: 'MIROC5', enabled: true },
+      let climateModelsItems = [
+        { id: 'gfdl-esm2m', name: 'GFDL-ESM2M', enabled: false },
+        { id: 'hadgem2-es', name: 'HadGEM2-ES', enabled: false },
+        { id: 'ipsl-cm5a-lr', name: 'IPSL-CM5A-LR', enabled: false },
+        { id: 'miroc5', name: 'MIROC5', enabled: false },
       ];
 
-      const mockScenarios = [
-        { id: 'rcp26', name: 'RCP 2.6', enabled: true },
-        { id: 'rcp60', name: 'RCP 6.0', enabled: true },
-        { id: 'rcp85', name: 'RCP 8.5', enabled: true },
+      let scenariosItems = [
+        { id: 'rcp26', name: 'RCP 2.6', enabled: false },
+        { id: 'rcp60', name: 'RCP 6.0', enabled: false },
+        { id: 'rcp85', name: 'RCP 8.5', enabled: false },
       ];
 
 
-      const mockVariables = [
-        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: true },
-        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: true },
-        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: true },
-        { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: true },
-        { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: true },
-        { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: true },
-        { id: 'wfb', name: 'Blue Water Footprint', abbreviation: 'WFb', unit: 'm³', enabled: true },
-        { id: 'wfg', name: 'Green Water Footprint', abbreviation: 'WFg', unit: 'm³', enabled: true },
-        { id: 'etb', name: 'Blue Evapotranspiration', abbreviation: 'ETb', unit: 'mm', enabled: true },
-        { id: 'etg', name: 'Green Evapotranspiration', abbreviation: 'ETg', unit: 'mm', enabled: true },
-        { id: 'rb', name: 'Blue Renewability Rate', abbreviation: 'Rb', unit: 'mm', enabled: true },
-        { id: 'rg', name: 'Green Renewability Rate', abbreviation: 'Rg', unit: 'mm', enabled: true },
-        { id: 'wdb', name: 'Blue Water Debt', abbreviation: 'WDb', unit: 'years', enabled: true },
-        { id: 'wdg', name: 'Green Water Debt', abbreviation: 'WDg', unit: 'years', enabled: true },
+      let variablesItems = [
+        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: false },
+        { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: false },
+        { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: false },
+        { id: 'wfb', name: 'Blue Water Footprint', abbreviation: 'WFb', unit: 'm³', enabled: false },
+        { id: 'wfg', name: 'Green Water Footprint', abbreviation: 'WFg', unit: 'm³', enabled: false },
+        { id: 'etb', name: 'Blue Evapotranspiration', abbreviation: 'ETb', unit: 'mm', enabled: false },
+        { id: 'etg', name: 'Green Evapotranspiration', abbreviation: 'ETg', unit: 'mm', enabled: false },
+        { id: 'rb', name: 'Blue Renewability Rate', abbreviation: 'Rb', unit: 'mm', enabled: false },
+        { id: 'rg', name: 'Green Renewability Rate', abbreviation: 'Rg', unit: 'mm', enabled: false },
+        { id: 'wdb', name: 'Blue Water Debt', abbreviation: 'WDb', unit: 'years', enabled: false },
+        { id: 'wdg', name: 'Green Water Debt', abbreviation: 'WDg', unit: 'years', enabled: false },
       ];
 
-      setCrops(mockCrops);
-      setGlobalWaterModels(mockGlobalWaterModels);
-      setClimateModels(mockClimateModels);
-      setScenarios(mockScenarios);
-      setVariables(mockVariables);
+      // Request from API at GET /layers/groups to get the list of available layers
+      // return is an object with keys of the key "id" in each layer group, these are to be set to enabled: true, and the rest to enabled: false
+      const response = await axios.get('/api/layers/groups');
+      const { crop, water_model, climate_model, scenario, variable } = response.data;
 
+      cropItems = cropItems.map(c => ({ ...c, enabled: crop.includes(c.id) }));
+      globalWaterModelsItems = globalWaterModelsItems.map(m => ({ ...m, enabled: water_model.includes(m.id) }));
+      climateModelsItems = climateModelsItems.map(m => ({ ...m, enabled: climate_model.includes(m.id) }));
+      scenariosItems = scenariosItems.map(s => ({ ...s, enabled: scenario.includes(s.id) }));
+      variablesItems = variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) }));
 
-    // Select the first "enabled" item in each list
-    setSelectedCrop(mockCrops.find(crop => crop.enabled));
-    setSelectedGlobalWaterModel(mockGlobalWaterModels.find(model => model.enabled));
-    setSelectedClimateModel(mockClimateModels.find(model => model.enabled));
-    setSelectedScenario(mockScenarios.find(scenario => scenario.enabled));
-    setSelectedVariable(mockVariables.find(variable => variable.enabled));
+      setCrops(cropItems);
+      setGlobalWaterModels(globalWaterModelsItems);
+      setClimateModels(climateModelsItems);
+      setScenarios(scenariosItems);
+      setVariables(variablesItems);
+
+      // Select the first "enabled" item in each list
+      setSelectedCrop(cropItems.find(crop => crop.enabled));
+      setSelectedGlobalWaterModel(globalWaterModelsItems.find(model => model.enabled));
+      setSelectedClimateModel(climateModelsItems.find(model => model.enabled));
+      setSelectedScenario(scenariosItems.find(scenario => scenario.enabled));
+      setSelectedVariable(variablesItems.find(variable => variable.enabled));
     };
     fetchData();
   }, []);

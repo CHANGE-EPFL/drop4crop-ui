@@ -10,7 +10,7 @@ const getLayer = async (props) => {
     // Convert scenario to historical if it is 2000
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
-    const response = await axios.get("http://localhost:8015/layers", {
+    const response = await axios.get("/api/layers", {
       params: {
         crop: props.crop,
         water_model: props.water_model,
@@ -82,10 +82,10 @@ const App = () => {
       console.error("Error getting layer", error);
     });
   }, [selectedLayer.crop,
-    selectedLayer.water_model,
-    selectedLayer.climate_model,
-    selectedLayer.scenario,
-    selectedLayer.variable,
+  selectedLayer.water_model,
+  selectedLayer.climate_model,
+  selectedLayer.scenario,
+  selectedLayer.variable,
     selectedTime
   ]);
 
