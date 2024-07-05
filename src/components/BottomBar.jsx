@@ -1,10 +1,83 @@
-import React from 'react';
-// import Slider from 'rc-slider';
+import React, { useState, useEffect } from 'react';
 import Slider from '@mui/material/Slider';
 import './BottomBar.css';
 
 const BottomBar = ({ selectedTime, onTimeChange }) => {
+  const initialTime = parseInt(selectedTime, 10);
 
+  const [sx, setSx] = useState({
+    '& .MuiSlider-markLabel': {
+      color: '#d3d3d3',
+    },
+    '& .MuiSlider-track': {
+      display: 'none',
+    },
+    color: '#d1a766',
+    '& .MuiSlider-markLabel': {
+      color: '#d3d3d3',
+    },
+  });
+
+  const handleSliderChange = (event, value) => {
+    const selectedYear = value.toString();
+    const colorStyles = {
+      '& .MuiSlider-markLabel': {
+        color: 'white',
+      },
+    };
+
+    const defaultColorStyles = {
+      '& .MuiSlider-markLabel': {
+        color: '#d3d3d3',
+      },
+      '& .MuiSlider-track': {
+        display: 'none',
+      },
+      color: '#d1a766',
+      '& .MuiSlider-markLabel': {
+        color: '#d1a766',
+      },
+    };
+
+    const yearToIndex = {
+      '2000': '0',
+      '2010': '1',
+      '2020': '2',
+      '2030': '3',
+      '2040': '4',
+      '2050': '5',
+      '2060': '6',
+      '2070': '7',
+      '2080': '8',
+      '2090': '9',
+    };
+
+    const index = yearToIndex[selectedYear];
+    if (index !== undefined) {
+      colorStyles[`& .MuiSlider-markLabel[data-index="${index}"]`] = {
+        color: '#d1a766',
+        fontWeight: 'bold',
+      };
+    }
+    const updatedStyles = {
+      ...defaultColorStyles,
+      ...colorStyles,
+    };
+
+    setSx(updatedStyles);
+
+    // Ensure event is defined and has a target before calling onTimeChange
+    if (event && event.target) {
+      onTimeChange(event, value);
+    } else {
+      // Create a synthetic event for initial useEffect call
+      onTimeChange({ target: { value } }, value);
+    }
+  };
+
+  useEffect(() => {
+    handleSliderChange({}, initialTime);
+  }, [initialTime]);
 
   return (
     <div className="bottom-bar">
@@ -54,18 +127,10 @@ const BottomBar = ({ selectedTime, onTimeChange }) => {
             label: '2090',
           },
         ]}
-        defaultValue={parseInt(selectedTime, 10)}
-        onChange={onTimeChange}
+        defaultValue={initialTime}
+        onChange={handleSliderChange}
         valueLabelDisplay="off"
-        sx={{
-          '& .MuiSlider-track': {
-            display: 'none',
-          },
-          color: '#d1a766',
-          '& .MuiSlider-markLabel': {
-            color: '#d1a766',
-          },
-        }}
+        sx={sx}
       />
     </div>
   );

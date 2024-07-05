@@ -7,7 +7,7 @@ import {
 import GrassIcon from '@mui/icons-material/Grass';
 import './SidePanel.css';
 import axios from 'axios';
-
+import { Chip } from '@material-ui/core';
 
 const SidePanel = ({ onLayerSelect }) => {
   const [crops, setCrops] = useState([]);
@@ -60,19 +60,19 @@ const SidePanel = ({ onLayerSelect }) => {
 
       let variablesItems = [
         { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcb_sub', name: 'Blue Virtual Water Content', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg_sub', name: 'Green Virtual Water Content', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg_perc', name: 'Green Virtual Water Content Percentage', abbreviation: 'VWCg_perc', unit: '%', enabled: false },
-        { id: 'vwcb_perc', name: 'Blue Virtual Water Content Percentage', abbreviation: 'VWCb_perc', unit: '%', enabled: false },
-        { id: 'wf', name: 'Water Footprint', abbreviation: 'WF', unit: 'm³', enabled: false },
-        { id: 'wfb', name: 'Blue Water Footprint', abbreviation: 'WFb', unit: 'm³', enabled: false },
-        { id: 'wfg', name: 'Green Water Footprint', abbreviation: 'WFg', unit: 'm³', enabled: false },
-        { id: 'etb', name: 'Blue Evapotranspiration', abbreviation: 'ETb', unit: 'mm', enabled: false },
-        { id: 'etg', name: 'Green Evapotranspiration', abbreviation: 'ETg', unit: 'mm', enabled: false },
-        { id: 'rb', name: 'Blue Renewability Rate', abbreviation: 'Rb', unit: 'mm', enabled: false },
-        { id: 'rg', name: 'Green Renewability Rate', abbreviation: 'Rg', unit: 'mm', enabled: false },
-        { id: 'wdb', name: 'Blue Water Debt', abbreviation: 'WDb', unit: 'years', enabled: false },
-        { id: 'wdg', name: 'Green Water Debt', abbreviation: 'WDg', unit: 'years', enabled: false },
+        { id: 'vwcb_sub', name: 'Blue', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcg_sub', name: 'Green', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcg_perc', name: 'Green', abbreviation: 'VWCg_perc', unit: '%', enabled: false },
+        { id: 'vwcb_perc', name: 'Blue', abbreviation: 'VWCb_perc', unit: '%', enabled: false },
+        { id: 'wf', name: 'Water', abbreviation: 'WF', unit: 'm³', enabled: false },
+        { id: 'wfb', name: 'Blue Water', abbreviation: 'WFb', unit: 'm³', enabled: false },
+        { id: 'wfg', name: 'Green Water', abbreviation: 'WFg', unit: 'm³', enabled: false },
+        { id: 'etb', name: 'Blue', abbreviation: 'ETb', unit: 'mm', enabled: false },
+        { id: 'etg', name: 'Green', abbreviation: 'ETg', unit: 'mm', enabled: false },
+        { id: 'rb', name: 'Blue', abbreviation: 'Rb', unit: 'mm', enabled: false },
+        { id: 'rg', name: 'Green', abbreviation: 'Rg', unit: 'mm', enabled: false },
+        { id: 'wdb', name: 'Blue', abbreviation: 'WDb', unit: 'years', enabled: false },
+        { id: 'wdg', name: 'Green', abbreviation: 'WDg', unit: 'years', enabled: false },
       ];
 
       // Request from API at GET /layers/groups to get the list of available layers
@@ -176,104 +176,170 @@ const SidePanel = ({ onLayerSelect }) => {
       {activePanel === 'crops' && (
         <div className="popup">
           <h3>Crop</h3>
-          {crops.map(crop => (
-            <div key={crop.id}>
-              <input
-                type="radio"
-                id={crop.id}
-                name="crop"
-                value={crop.id}
-                checked={selectedCrop && selectedCrop.id === crop.id}
+          <div className="chips-list">
+            {crops.map(crop => (
+              <Chip
+                key={crop.id}
+                label={crop.name}
+                clickable
+                className={selectedCrop && selectedCrop.id === crop.id ? 'active' : ''}
                 disabled={!crop.enabled}
-                onChange={() => setSelectedCrop(crop)}
+                onClick={() => setSelectedCrop(crop)}
               />
-              <label htmlFor={crop.id}>{crop.name}</label>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
+
       {activePanel === 'globalWaterModels' && (
         <div className="popup">
           <h3>Global Water Model</h3>
-          {globalWaterModels.map(model => (
-            <div key={model.id}>
-              <input
-                type="radio"
-                id={model.id}
-                name="globalWaterModel"
-                value={model.id}
+          <div className="chips-list">
+            {globalWaterModels.map(model => (
+              <Chip
+                key={model.id}
+                label={model.name}
+                clickable
+                className={selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id ? 'active' : ''}
                 disabled={!model.enabled}
-                checked={selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id}
-                onChange={() => setSelectedGlobalWaterModel(model)}
+                onClick={() => setSelectedGlobalWaterModel(model)}
               />
-              <label htmlFor={model.id}>{model.name}</label>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
+
       {activePanel === 'climateModels' && (
         <div className="popup">
           <h3>Climate Model</h3>
-          {climateModels.map(model => (
-            <div key={model.id}>
-              <input
-                type="radio"
-                id={model.id}
-                name="climateModel"
-                value={model.id}
+          <div className="chips-list">
+            {climateModels.map(model => (
+              <Chip
+                key={model.id}
+                label={model.name}
+                clickable
+                className={selectedClimateModel && selectedClimateModel.id === model.id ? 'active' : ''}
                 disabled={!model.enabled}
-                checked={selectedClimateModel && selectedClimateModel.id === model.id}
-                onChange={() => setSelectedClimateModel(model)}
+                onClick={() => setSelectedClimateModel(model)}
               />
-              <label htmlFor={model.id}>{model.name}</label>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
+
       {activePanel === 'scenarios' && (
         <div className="popup">
           <h3>Scenario</h3>
-          {scenarios.map(scenario => (
-            <div key={scenario.id}>
-              <input
-                type="radio"
-                id={scenario.id}
-                name="scenario"
-                value={scenario.id}
+          <div className="chips-list">
+            {scenarios.map(scenario => (
+              <Chip
+                key={scenario.id}
+                label={scenario.name}
+                clickable
+                className={selectedScenario && selectedScenario.id === scenario.id ? 'active' : ''}
                 disabled={!scenario.enabled}
-                checked={selectedScenario && selectedScenario.id === scenario.id}
-                onChange={() => setSelectedScenario(scenario)}
+                onClick={() => setSelectedScenario(scenario)}
               />
-              <label htmlFor={scenario.id}>{scenario.name}</label>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
+
       {activePanel === 'variables' && (
         <div className="popup">
           <h3>Variable</h3>
-          {variables.map(variable => (
-            <div key={variable.id}>
-              <input
-                type="radio"
-                id={variable.id}
-                name="variable"
-                value={variable.id}
-                disabled={!variable.enabled}
-                checked={selectedVariable && selectedVariable.id === variable.id}
-                onChange={() => setSelectedVariable(variable)}
-              />
-              <label htmlFor={variable.id}>{variable.name} [{variable.unit}]</label>
+
+          <div className="chips-group">
+            <h5>Virtual Water Content</h5>
+            <div className="chips-list">
+              {variables.filter(variable => ['vwc_sub', 'vwcb_sub', 'vwcg_sub', 'vwcg_perc', 'vwcb_perc'].includes(variable.id)).map(variable => (
+                <Chip
+                  key={variable.id}
+                  label={`${variable.name} [${variable.unit}]`}
+                  clickable
+                  className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                  disabled={!variable.enabled}
+                  onClick={() => setSelectedVariable(variable)}
+                />
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div className="chips-group">
+            <h5>Water Footprint</h5>
+            <div className="chips-list">
+              {variables.filter(variable => ['wf', 'wfb', 'wfg'].includes(variable.id)).map(variable => (
+                <Chip
+                  key={variable.id}
+                  label={`${variable.name} [${variable.unit}]`}
+                  clickable
+                  className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                  disabled={!variable.enabled}
+                  onClick={() => setSelectedVariable(variable)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="chips-group">
+            <h5>Evapotranspiration</h5>
+            <div className="chips-list">
+              {variables.filter(variable => ['etb', 'etg'].includes(variable.id)).map(variable => (
+                <Chip
+                  key={variable.id}
+                  label={`${variable.name} [${variable.unit}]`}
+                  clickable
+                  className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                  disabled={!variable.enabled}
+                  onClick={() => setSelectedVariable(variable)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="chips-group">
+            <h5>Renewability Rate</h5>
+            <div className="chips-list">
+              {variables.filter(variable => ['rb', 'rg'].includes(variable.id)).map(variable => (
+                <Chip
+                  key={variable.id}
+                  label={`${variable.name} [${variable.unit}]`}
+                  clickable
+                  className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                  disabled={!variable.enabled}
+                  onClick={() => setSelectedVariable(variable)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="chips-group">
+            <h5>Water Debt</h5>
+            <div className="chips-list">
+              {variables.filter(variable => ['wdb', 'wdg'].includes(variable.id)).map(variable => (
+                <Chip
+                  key={variable.id}
+                  label={`${variable.name} [${variable.unit}]`}
+                  clickable
+                  className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                  disabled={!variable.enabled}
+                  onClick={() => setSelectedVariable(variable)}
+                />
+              ))}
+            </div>
+          </div>
+
         </div>
       )}
+
+
       {activePanel === 'settings' && (
         <div className="popup">
           <h3>Settings</h3>
           <p>Settings options go here.</p>
         </div>
       )}
+
       {activePanel === 'info' && (
         <div className="popup">
           <h3>Info</h3>

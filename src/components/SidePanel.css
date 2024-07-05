@@ -118,3 +118,36 @@
     color: #d3d3d3;
     /* Muted text color for labels */
 }
+
+.side-panel .chips-list .MuiChip-root {
+    background-color: #4a4a4a;
+    /* Default chip background color */
+    color: #d3d3d3;
+    /* Default chip text color */
+    border: 1px solid #4a4a4a;
+    /* Default chip border color */
+    margin: 4px;
+    /* Spacing between chips */
+    transition: background-color 0.3s, color 0.3s;
+    /* Smooth transition for colors */
+}
+
+.side-panel .chips-list .MuiChip-root.active {
+    background-color: #616161;
+    /* Subtle change for selected chip background */
+    color: #d1a766;
+    /* Light brown text for selected chips */
+    border: 1px solid #616161;
+    /* Border matching the background color */
+}
+
+.side-panel .chips-list .MuiChip-root.disabled {
+    background-color: #808080;
+    /* Gray background for disabled chips */
+    color: #d3d3d3;
+    /* Muted text color for disabled chips */
+    border: 1px solid #808080;
+    /* Border matching the background color */
+    opacity: 0.5;
+    /* Make disabled chips slightly transparent */
+}

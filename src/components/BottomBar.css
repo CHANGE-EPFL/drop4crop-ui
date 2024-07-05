@@ -1,31 +1,76 @@
+/* BottomBar.css */
 .bottom-bar {
     position: absolute;
     bottom: 30px;
     left: 100px;
     right: 50px;
     background-color: #333;
-    color: #ffffff;
-    padding-left: 40px;
-    padding-right: 40px;
-    padding-top: 10px;
-    border-top: 1px solid #cccccc35;
+    /* Match popup background */
+    color: #d3d3d3;
+    /* Match sidebar text color */
+    padding: 10px 40px;
+    /* Adjust padding for a cleaner look */
+    border-top: 1px solid #444;
+    /* Match sidebar border */
     display: flex;
     justify-content: center;
     z-index: 1000;
     box-sizing: border-box;
     overflow: hidden;
-    opacity: 0. 8;
+    opacity: 0.8;
     border-radius: 10px;
+}
+
+/* Adjust the slider marks to match the sidebar style */
+.MuiSlider-markLabel {
+    font-size: 12px;
+    /* Match sidebar font size */
+    color: #d3d3d3;
+    /* Default white color when not selected */
+}
+
+.MuiSlider-markLabel-active {
+    font-size: 12px;
+    /* Match sidebar font size */
+    font-weight: bold;
+    color: #d1a766 !important;
+    /* Orange color when selected */
+}
+
+/* Customize the slider thumb and track to match the sidebar style */
+.MuiSlider-thumb {
+    background-color: #d1a766;
+    /* Match the muted color in the sidebar */
+    border: 2px solid #616161;
+    /* Match active button background in sidebar */
+}
+
+.MuiSlider-track {
+    background-color: #d1a766;
+    /* Match the muted color in the sidebar */
+}
+
+.MuiSlider-rail {
+    background-color: #4a4a4a;
+    /* Match the button background color in the sidebar */
+}
+
+.MuiSlider-mark {
+    background-color: #4a4a4a;
+    /* Match the button background color in the sidebar */
+}
+
+.MuiSlider-root {
+    color: #d1a766;
+    /* Match the muted color in the sidebar */
 }
 
 /* BottomBar.css */
 
-.MuiSlider-markLabel {
-    font-size: 16px;
+.slider-mark-label {
     color: #d1a766;
 }
 
-.MuiSlider-markLabel.active {
-    font-size: 20px;
-    font-weight: bold;
+.slider-mark-label.active {
+    color: brown;
 }
