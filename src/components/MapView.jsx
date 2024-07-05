@@ -34,18 +34,18 @@ const UpdateLayer = ({ wmsParams }) => {
     if (wmsParams !== undefined) {
       console.log('Adding WMS layer:', wmsParams);
     }
-    const wmsLayer = L.tileLayer.wms("https://drop4crop-api-dev.epfl.ch/geoserver/ows", {
-        layers: wmsParams,
-        format: "image/png",
-        transparent: true,
-        version: "1.3.0",
-        tiled: true,
-        zIndex: 2 // Setting zIndex to ensure WMS layer is on top
-      }).addTo(map);
+    const wmsLayer = L.tileLayer.wms("/geoserver/ows", {
+      layers: wmsParams,
+      format: "image/png",
+      transparent: true,
+      version: "1.3.0",
+      tiled: true,
+      zIndex: 2 // Setting zIndex to ensure WMS layer is on top
+    }).addTo(map);
 
-      return () => {
-        map.removeLayer(wmsLayer);
-      };
+    return () => {
+      map.removeLayer(wmsLayer);
+    };
   }, [wmsParams, map]);
 
   return null;
@@ -60,7 +60,7 @@ const MapClickHandler = ({ wmsParams }) => {
     const width = size.x;
     const height = size.y;
 
-    const url = `https://drop4crop-api-dev.epfl.ch/geoserver/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`;
+    const url = `/geoserver/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`;
 
     try {
       const response = await axios.get(url);
@@ -91,7 +91,7 @@ const MapOverlay = ({ wmsParams }) => {
     return (
       <div style={mapOverlayStyle}>
         <div style={overlayContentStyle}>
-        <CircularProgress sx={{ color: '#d1a766' }} />
+          <CircularProgress sx={{ color: '#d1a766' }} />
         </div>
       </div>
     );
@@ -110,7 +110,7 @@ const MapView = ({ wmsParams }) => {
     <MapContainer
       center={[35, 20]}
       zoom={4}
-      style={{ height: "100vh", width: "100%"}}
+      style={{ height: "100vh", width: "100%" }}
       zoomControl={false}
       maxBoundsViscosity={1.0}
       maxBounds={bounds}
