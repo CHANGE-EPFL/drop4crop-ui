@@ -13,6 +13,7 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import CircularProgress from '@mui/material/CircularProgress';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import axios from 'axios';
+import BoundingBoxSelection from './BoundingBoxSelection';
 
 const NoMapOverlay = () => {
   return (
@@ -81,53 +82,6 @@ const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   return null;
 };
 
-const BoundingBoxSelection = ({ setBoundingBox, enableSelection, setEnableSelection }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    const drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
-
-    const drawControl = new L.Control.Draw({
-      draw: {
-        polygon: true,
-        polyline: false,
-        circle: false,
-        marker: false,
-        circlemarker: false,
-        rectangle: enableSelection ? {
-          shapeOptions: {
-            clickable: true
-          }
-        } : false
-      }
-    });
-
-    map.addControl(drawControl);
-
-    if (enableSelection) {
-      map.on(L.Draw.Event.CREATED, function (event) {
-        const layer = event.layer;
-        drawnItems.addLayer(layer);
-        const { _southWest, _northEast } = layer.getBounds();
-        setBoundingBox({
-          minx: _southWest.lng,
-          miny: _southWest.lat,
-          maxx: _northEast.lng,
-          maxy: _northEast.lat,
-        });
-        setEnableSelection(false);
-      });
-    }
-
-    return () => {
-      map.removeControl(drawControl);
-      map.removeLayer(drawnItems);
-    };
-  }, [map, setBoundingBox, enableSelection, setEnableSelection]);
-
-  return null;
-};
 
 const MapOverlay = ({ wmsParams }) => {
   // Returns an overlay if the layer is loading or unavailable

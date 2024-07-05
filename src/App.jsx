@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import MapView from './components/MapView';
+import MapView from './components/Map/MapView';
 import SidePanel from './components/SidePanel';
 import BottomBar from './components/BottomBar';
 import './App.css';
