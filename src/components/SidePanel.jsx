@@ -36,8 +36,10 @@ const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, set
       // we will ask the API if we can enable them depending if they are available
       let cropItems = [
         { id: 'barley', name: 'Barley', enabled: false },
+        { id: 'maize', name: 'Maize', enabled: false },
         { id: 'potato', name: 'Potato', enabled: false },
         { id: 'rice', name: 'Rice', enabled: false },
+        { id: 'sorghum', name: 'Sorghum', enabled: false },
         { id: 'soy', name: 'Soy', enabled: false },
         { id: 'sugarcane', name: 'Sugar Cane', enabled: false },
         { id: 'wheat', name: 'Wheat', enabled: false },
@@ -70,8 +72,8 @@ const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, set
         { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
         { id: 'vwcb_sub', name: 'Blue', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
         { id: 'vwcg_sub', name: 'Green', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg_perc', name: 'Green', abbreviation: 'VWCg_perc', unit: '%', enabled: false },
-        { id: 'vwcb_perc', name: 'Blue', abbreviation: 'VWCb_perc', unit: '%', enabled: false },
+        { id: 'vwcg_perc', name: 'Green', abbreviation: '% VWCg', unit: '%', enabled: false },
+        { id: 'vwcb_perc', name: 'Blue', abbreviation: '% VWCb', unit: '%', enabled: false },
         { id: 'wf', name: 'Water', abbreviation: 'WF', unit: 'm³', enabled: false },
         { id: 'wfb', name: 'Blue Water', abbreviation: 'WFb', unit: 'm³', enabled: false },
         { id: 'wfg', name: 'Green Water', abbreviation: 'WFg', unit: 'm³', enabled: false },
@@ -81,6 +83,11 @@ const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, set
         { id: 'rg', name: 'Green', abbreviation: 'Rg', unit: 'mm', enabled: false },
         { id: 'wdb', name: 'Blue', abbreviation: 'WDb', unit: 'years', enabled: false },
         { id: 'wdg', name: 'Green', abbreviation: 'WDg', unit: 'years', enabled: false },
+        { id: 'mirca_area_irrigated', name: 'Irrigated Area', abbreviation: 'Mirca_Area_Irrigated', unit: 'ha', enabled: false },
+        { id: 'mirca_area_total', name: 'Total Area', abbreviation: 'Mirca_Area_Total', unit: 'ha', enabled: false },
+        { id: 'mirca_rainfed', name: 'Rainfed Area', abbreviation: 'Mirca_Rainfed', unit: 'ha', enabled: false },
+        { id: 'yield', name: 'Yield', abbreviation: 'Yield', unit: 'ton ha⁻¹' },
+        { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton' },
       ];
 
       // Request from API at GET /layers/groups to get the list of available layers

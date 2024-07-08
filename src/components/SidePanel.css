@@ -108,6 +108,12 @@
     /* Muted color for headings */
 }
 
+.popup h5 {
+    margin-top: 0.6rem;
+    margin-bottom: 0.4rem;
+    /* Buffer under all h5 elements */
+}
+
 .popup p {
     margin: 0;
     color: #b0b0b0;
