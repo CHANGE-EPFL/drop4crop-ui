@@ -4,19 +4,7 @@ import './BottomBar.css';
 
 const BottomBar = ({ selectedTime, onTimeChange }) => {
   const initialTime = parseInt(selectedTime, 10);
-
-  const [sx, setSx] = useState({
-    '& .MuiSlider-markLabel': {
-      color: '#d3d3d3',
-    },
-    '& .MuiSlider-track': {
-      display: 'none',
-    },
-    color: '#d1a766',
-    '& .MuiSlider-markLabel': {
-      color: '#d3d3d3',
-    },
-  });
+  const [sx, setSx] = useState({});
 
   const handleSliderChange = (event, value) => {
     const selectedYear = value.toString();
@@ -27,16 +15,10 @@ const BottomBar = ({ selectedTime, onTimeChange }) => {
     };
 
     const defaultColorStyles = {
-      '& .MuiSlider-markLabel': {
-        color: '#d3d3d3',
-      },
       '& .MuiSlider-track': {
         display: 'none',
       },
       color: '#d1a766',
-      '& .MuiSlider-markLabel': {
-        color: '#d1a766',
-      },
     };
 
     const yearToIndex = {

@@ -89,10 +89,10 @@
 
 .popup {
     position: absolute;
-    left: 100px;
+    left: 110px;
     /* Adjust according to sidebar width */
     top: 10px;
-    width: 350px;
+    width: 400px;
     background: #333;
     color: #d3d3d3;
     /* Muted text color */
