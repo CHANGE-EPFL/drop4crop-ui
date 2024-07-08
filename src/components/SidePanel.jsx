@@ -69,9 +69,9 @@ const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, set
 
 
       let variablesItems = [
-        { id: 'vwc_sub', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcb_sub', name: 'Blue', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg_sub', name: 'Green', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwc', name: 'Virtual Water Content', abbreviation: 'VWC_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcb', name: 'Blue', abbreviation: 'VWCb_sub', unit: 'm³ ton⁻¹', enabled: false },
+        { id: 'vwcg', name: 'Green', abbreviation: 'VWCg_sub', unit: 'm³ ton⁻¹', enabled: false },
         { id: 'vwcg_perc', name: 'Green', abbreviation: '% VWCg', unit: '%', enabled: false },
         { id: 'vwcb_perc', name: 'Blue', abbreviation: '% VWCb', unit: '%', enabled: false },
         { id: 'wf', name: 'Water', abbreviation: 'WF', unit: 'm³', enabled: false },

@@ -10,13 +10,16 @@ const getLayer = async (props) => {
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
     const response = await axios.get("/api/layers", {
+      // use filter prop to query the API
       params: {
-        crop: props.crop,
-        water_model: props.water_model,
-        climate_model: props.climate_model,
-        scenario: scenario,
-        variable: props.variable,
-        year: props.year,
+        filter: JSON.stringify({
+          crop: props.crop,
+          water_model: props.water_model,
+          climate_model: props.climate_model,
+          scenario: scenario,
+          variable: props.variable,
+          year: props.year,
+        })
       },
     });
     if (response && response.data.length === 1) {
