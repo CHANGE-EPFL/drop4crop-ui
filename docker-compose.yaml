@@ -22,6 +22,11 @@ services:
       - DB_PASSWORD=psql
       - DB_NAME=postgres
       - DB_PREFIX=postgresql+asyncpg
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_API_ID=${KEYCLOAK_API_ID}
+      - KEYCLOAK_API_SECRET=${KEYCLOAK_API_SECRET}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
       - GEOSERVER_URL=https://drop4crop-dev.epfl.ch/geoserver
       - GEOSERVER_USER=${GEOSERVER_USER}
       - GEOSERVER_PASSWORD=${GEOSERVER_PASSWORD}
