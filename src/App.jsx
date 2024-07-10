@@ -10,7 +10,6 @@ const getLayer = async (props) => {
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
     const response = await axios.get("/api/layers/map", {
-      // use filter prop to query the API
       params: {
         crop: props.crop,
         water_model: props.water_model,
@@ -42,6 +41,7 @@ const App = () => {
   const [selectedTime, setSelectedTime] = useState(2000);
   const [boundingBox, setBoundingBox] = useState(null);
   const [enableSelection, setEnableSelection] = useState(false);
+  const [countryAverages, setCountryAverages] = useState(false);
   const boundingBoxSelectionRef = useRef(null);
 
   const handleLayerSelect = (layerId) => {
@@ -70,8 +70,7 @@ const App = () => {
       scenario: selectedLayer.scenario,
       variable: selectedLayer.variable,
       year: selectedTime
-    }
-    ).then(response => {
+    }).then(response => {
       if (response === null) {
         console.error("Layer not found");
         setLayerName(null);
@@ -80,11 +79,12 @@ const App = () => {
     }).catch(error => {
       console.error("Error getting layer", error);
     });
-  }, [selectedLayer.crop,
-  selectedLayer.water_model,
-  selectedLayer.climate_model,
-  selectedLayer.scenario,
-  selectedLayer.variable,
+  }, [
+    selectedLayer.crop,
+    selectedLayer.water_model,
+    selectedLayer.climate_model,
+    selectedLayer.scenario,
+    selectedLayer.variable,
     selectedTime
   ]);
 
@@ -120,6 +120,8 @@ const App = () => {
           enableSelection={enableSelection}
           setEnableSelection={setEnableSelection}
           ref={boundingBoxSelectionRef}
+          countryAverages={countryAverages}
+          setCountryAverages={setCountryAverages}
         />
       </div>
       <BottomBar

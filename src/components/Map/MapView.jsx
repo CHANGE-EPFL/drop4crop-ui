@@ -14,15 +14,16 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import axios from 'axios';
 import BoundingBoxSelection from './BoundingBoxSelection';
 import { ScaleControl } from 'react-leaflet';
+import Switch from '@mui/material/Switch';
 import './MapView.css';
 
 const NoMapOverlay = () => {
   return (
-    <div style={mapOverlayStyle}>
-      <div style={overlayContentStyle}>
+    <div className="map-overlay">
+      <div className="overlay-content">
         <p>This layer is unavailable</p>
         <p>Please refer to the publication for more information.</p>
-        <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+        <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" className="overlay-link">
           <AutoStoriesIcon fontSize='medium' /> Our publications
         </a>
       </div>
@@ -135,15 +136,14 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
 };
 
 const MapOverlay = ({ wmsParams }) => {
-  // Returns an overlay if the layer is loading or unavailable
   if (wmsParams) {
     return null;
   }
 
   if (wmsParams === undefined) {
     return (
-      <div style={mapOverlayStyle}>
-        <div style={overlayContentStyle}>
+      <div className="map-overlay">
+        <div className="overlay-content">
           <CircularProgress sx={{
             color: '#d1a766',
           }} />
@@ -155,65 +155,61 @@ const MapOverlay = ({ wmsParams }) => {
   return <NoMapOverlay />;
 };
 
-const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, setEnableSelection }, ref) => {
+const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, setEnableSelection, countryAverages, setCountryAverages }, ref) => {
   const corner1 = L.latLng(-90, -200);
   const corner2 = L.latLng(90, 200);
   const bounds = L.latLngBounds(corner1, corner2);
 
   return (
-    <MapContainer
-      center={[35, 20]}
-      zoom={4}
-      style={{ height: "100vh", width: "100%" }}
-      zoomControl={false}
-      maxBoundsViscosity={1.0}
-      maxBounds={bounds}
-      minZoom={3}
-    >
-      <UpdateLayer wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
-      <TileLayer
-        url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        subdomains='abcd'
-        maxZoom={20}
-        zIndex={0} // Ensuring the base layer is below the WMS layer
-      />
-      <MapOverlay wmsParams={wmsParams} />
-      <ZoomControl position="bottomright" />
-      <ScaleControl imperial={false} maxWidth={250} />
-      <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
-      <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
-      <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
-    </MapContainer>
+    <>
+      <div className="toggle-container-map">
+        <Switch
+          checked={countryAverages}
+          size="small"
+          sx={{
+            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+              backgroundColor: '#d1a766', // Active track color
+            },
+            '& .MuiSwitch-track': {
+              backgroundColor: countryAverages ? '#d1a766' : '#888', // Active: '#d1a766', Inactive: '#888'
+            },
+            '& .MuiSwitch-thumb': {
+              backgroundColor: countryAverages ? '#d1a766' : '#ccc', // Active: '#d1a766', Inactive: '#ccc'
+            },
+          }}
+          onChange={(e) => {
+            e.stopPropagation();
+            setCountryAverages(e.target.checked);
+          }}
+        />
+        <span>Country Averages</span>
+      </div >
+      <MapContainer
+        center={[35, 20]}
+        zoom={4}
+        style={{ height: "100vh", width: "100%" }}
+        zoomControl={false}
+        maxBoundsViscosity={1.0}
+        maxBounds={bounds}
+        minZoom={3}
+      >
+        <UpdateLayer wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+        <TileLayer
+          url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains='abcd'
+          maxZoom={20}
+          zIndex={0} // Ensuring the base layer is below the WMS layer
+        />
+        <MapOverlay wmsParams={wmsParams} />
+        <ZoomControl position="bottomright" />
+        <ScaleControl imperial={false} maxWidth={250} />
+        <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+        <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
+
+        <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+      </MapContainer></>
   );
 });
 
 export default MapView;
-
-const mapOverlayStyle = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  background: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 999, // Ensure it is above other map elements
-  pointerEvents: 'none', // Make the overlay background non-interactive
-};
-
-const overlayContentStyle = {
-  color: 'white',
-  fontSize: '1.5em',
-  textAlign: 'center',
-  padding: '10px',
-  borderRadius: '5px',
-  pointerEvents: 'auto', // Make the overlay content interactive
-};
-
-const linkStyle = {
-  color: '#d1a766',
-  textDecoration: 'none',
-};
