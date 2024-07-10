@@ -89,7 +89,7 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xd1a766;fontAntiAliasing:true;`;
+    const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xd3d3d3;fontAntiAliasing:true;`;
 
     const legendContainer = L.DomUtil.create('div', 'legend-container');
     legendContainer.style.backgroundColor = '#333';
