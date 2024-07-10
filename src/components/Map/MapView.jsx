@@ -16,6 +16,8 @@ import BoundingBoxSelection from './BoundingBoxSelection';
 import { ScaleControl } from 'react-leaflet';
 import Switch from '@mui/material/Switch';
 import './MapView.css';
+import { Typography } from '@mui/material';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 const NoMapOverlay = () => {
   return (
@@ -163,26 +165,35 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
   return (
     <>
       <div className="toggle-container-map">
-        <Switch
-          checked={countryAverages}
-          size="small"
-          sx={{
-            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-              backgroundColor: '#d1a766', // Active track color
-            },
-            '& .MuiSwitch-track': {
-              backgroundColor: countryAverages ? '#d1a766' : '#888', // Active: '#d1a766', Inactive: '#888'
-            },
-            '& .MuiSwitch-thumb': {
-              backgroundColor: countryAverages ? '#d1a766' : '#ccc', // Active: '#d1a766', Inactive: '#ccc'
-            },
-          }}
-          onChange={(e) => {
-            e.stopPropagation();
-            setCountryAverages(e.target.checked);
-          }}
+        <FormControlLabel
+          control={
+            <Switch
+              checked={countryAverages}
+              size="small"
+              onChange={(e) => {
+                e.stopPropagation();
+                setCountryAverages(e.target.checked);
+              }}
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                  backgroundColor: '#d1a766', // Active track color
+                },
+                '& .MuiSwitch-track': {
+                  backgroundColor: countryAverages ? '#d1a766' : '#888', // Active: '#d1a766', Inactive: '#888'
+                },
+                '& .MuiSwitch-thumb': {
+                  backgroundColor: countryAverages ? '#d1a766' : '#ccc', // Active: '#d1a766', Inactive: '#ccc'
+                },
+              }}
+            />
+          }
+          label={<Typography variant="body2">Country Averages</Typography>}
+          labelPlacement="end"
         />
-        <span>Country Averages</span>
+
+
+
+
       </div >
       <MapContainer
         center={[35, 20]}

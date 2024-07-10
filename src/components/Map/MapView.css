@@ -81,7 +81,8 @@
     color: #d3d3d3;
     /* Match sidebar text color */
     /* padding: 10px 40px; */
-    padding-right: 10px;
+    /* padding-right: 100px; */
+    padding-left: 20px;
     border-top: 1px solid #444;
     justify-content: center;
     opacity: 0.8;
