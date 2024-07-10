@@ -99,19 +99,13 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
 
     const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
     toggleButton.innerHTML = isVisible ? 'Hide' : 'Show';
-    toggleButton.style.backgroundColor = '#282c34';
-    toggleButton.style.color = '#d3d3d3';
-    toggleButton.style.border = 'none';
-    toggleButton.style.borderRadius = '3px';
-    toggleButton.style.padding = '5px';
+    toggleButton.className = 'toggle-button';
     toggleButton.onclick = (e) => {
       e.stopPropagation();
       setIsVisible(!isVisible);
       toggleButton.innerHTML = isVisible ? 'Show' : 'Hide';
       legendContent.style.display = isVisible ? 'none' : 'block';
     };
-    toggleButton.style.marginBottom = '10px';
-    toggleButton.style.float = 'right'; // Move the button to the right
 
     const legendContent = L.DomUtil.create('div', 'legend-content', legendContainer);
     legendContent.style.display = isVisible ? 'block' : 'none';
