@@ -13,6 +13,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import axios from 'axios';
 import BoundingBoxSelection from './BoundingBoxSelection';
+import { ScaleControl } from 'react-leaflet';
+import './MapView.css';
 
 const NoMapOverlay = () => {
   return (
@@ -87,10 +89,10 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xFFFFFF;fontAntiAliasing:true;`;
+    const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xd1a766;fontAntiAliasing:true;`;
 
     const legendContainer = L.DomUtil.create('div', 'legend-container');
-    legendContainer.style.backgroundColor = '#4a4a4a';
+    legendContainer.style.backgroundColor = '#333';
     legendContainer.style.padding = '10px';
     legendContainer.style.borderRadius = '5px';
     legendContainer.style.opacity = '0.95';
@@ -184,6 +186,7 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
       />
       <MapOverlay wmsParams={wmsParams} />
       <ZoomControl position="bottomright" />
+      <ScaleControl imperial={false} maxWidth={250} />
       <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
       <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
       <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
