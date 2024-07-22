@@ -3,7 +3,8 @@ import {
   MapContainer,
   TileLayer,
   ZoomControl,
-  useMap
+  useMap,
+  useMapEvent,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -32,27 +33,29 @@ const NoMapOverlay = () => {
 const MapClickHandler = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
 
-  useEffect(() => {
-    if (!wmsParams) return;
+  useMapEvent('click', async (e) => {
+    const bbox = map.getBounds().toBBoxString();
+    const size = map.getSize();
+    const width = size.x;
+    const height = size.y;
 
-    const clickHandler = (e) => {
-      const { lat, lng } = e.latlng;
-      const url = `${geoserverUrl}/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&BBOX=${map.getBounds().toBBoxString()}&WIDTH=${map.getSize().x}&HEIGHT=${map.getSize().y}&X=${e.containerPoint.x}&Y=${e.containerPoint.y}&INFO_FORMAT=application/json`;
+    const url = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`;
 
-      axios.get(url).then(response => {
-        // handle the response
-        console.log(response.data);
-      }).catch(error => {
-        console.error(error);
-      });
-    };
+    try {
+      const response = await axios.get(url);
+      const responseText = response.data;
 
-    map.on('click', clickHandler);
+      const match = responseText.match(/-{40,}\n(.*?)\n-{40,}/s);
+      const value = match ? match[1].trim() : 'No data';
 
-    return () => {
-      map.off('click', clickHandler);
-    };
-  }, [wmsParams, geoserverUrl, map]);
+      L.popup()
+        .setLatLng(e.latlng)
+        .setContent(`${value}`)
+        .openOn(map);
+    } catch (error) {
+      console.error('Error fetching WMS data:', error);
+    }
+  });
 
   return null;
 };
