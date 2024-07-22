@@ -88,12 +88,22 @@ const LegendControl = ({ wmsParams, geoserverUrl }) => {
     const legendUrl = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${wmsParams}&FORMAT=image/png&TRANSPARENT=true&LEGEND_OPTIONS=fontColor:0xd3d3d3;fontAntiAliasing:true;`;
 
     const legendContainer = L.DomUtil.create('div', 'legend-container');
+
+
     legendContainer.style.backgroundColor = '#333';
     legendContainer.style.padding = '10px';
     legendContainer.style.borderRadius = '5px';
     legendContainer.style.opacity = '0.95';
 
     const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
+    toggleButton.style.backgroundColor = '#282c34';
+    toggleButton.style.color = '#d3d3d3';
+    toggleButton.style.border = 'none';
+    toggleButton.style.borderRadius = '3px';
+    toggleButton.style.padding = '5px';
+    toggleButton.style.marginBottom = '10px';
+    toggleButton.style.float = 'right'; // Move the button to the right
+
     toggleButton.innerHTML = isVisible ? 'Hide' : 'Show';
     toggleButton.className = 'toggle-button';
     toggleButton.onclick = (e) => {
