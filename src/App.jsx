@@ -75,6 +75,7 @@ const App = () => {
         console.error("Layer not found");
         setLayerName(null);
       }
+      console.log("Layer: ", response);
       setLayerName(response.layer_name);
     }).catch(error => {
       console.error("Error getting layer", error);

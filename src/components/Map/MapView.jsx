@@ -2,9 +2,8 @@ import React, { useEffect, useState, forwardRef } from 'react';
 import {
   MapContainer,
   TileLayer,
-  useMap,
   ZoomControl,
-  useMapEvent,
+  useMap
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -15,20 +14,17 @@ import axios from 'axios';
 import BoundingBoxSelection from './BoundingBoxSelection';
 import { ScaleControl } from 'react-leaflet';
 import Switch from '@mui/material/Switch';
-import './MapView.css';
 import { Typography } from '@mui/material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 const NoMapOverlay = () => {
   return (
-    <div className="map-overlay">
-      <div className="overlay-content">
-        <p>This layer is unavailable</p>
-        <p>Please refer to the publication for more information.</p>
-        <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" className="overlay-link">
-          <AutoStoriesIcon fontSize='medium' /> Our publications
-        </a>
-      </div>
+    <div style={mapOverlayStyle}>
+      <p>This layer is unavailable</p>
+      <p>Please refer to the publication for more information.</p>
+      <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+        <AutoStoriesIcon fontSize='medium' /> Our publications
+      </a>
     </div>
   );
 };
@@ -36,29 +32,27 @@ const NoMapOverlay = () => {
 const MapClickHandler = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
 
-  useMapEvent('click', async (e) => {
-    const bbox = map.getBounds().toBBoxString();
-    const size = map.getSize();
-    const width = size.x;
-    const height = size.y;
+  useEffect(() => {
+    if (!wmsParams) return;
 
-    const url = `${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`;
+    const clickHandler = (e) => {
+      const { lat, lng } = e.latlng;
+      const url = `${geoserverUrl}/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&BBOX=${map.getBounds().toBBoxString()}&WIDTH=${map.getSize().x}&HEIGHT=${map.getSize().y}&X=${e.containerPoint.x}&Y=${e.containerPoint.y}&INFO_FORMAT=application/json`;
 
-    try {
-      const response = await axios.get(url);
-      const responseText = response.data;
+      axios.get(url).then(response => {
+        // handle the response
+        console.log(response.data);
+      }).catch(error => {
+        console.error(error);
+      });
+    };
 
-      const match = responseText.match(/-{40,}\n(.*?)\n-{40,}/s);
-      const value = match ? match[1].trim() : 'No data';
+    map.on('click', clickHandler);
 
-      L.popup()
-        .setLatLng(e.latlng)
-        .setContent(`${value}`)
-        .openOn(map);
-    } catch (error) {
-      console.error('Error fetching WMS data:', error);
-    }
-  });
+    return () => {
+      map.off('click', clickHandler);
+    };
+  }, [wmsParams, geoserverUrl, map]);
 
   return null;
 };
@@ -67,22 +61,21 @@ const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (wmsParams !== undefined) {
-      console.log('Adding WMS layer:', wmsParams);
-    }
-    const wmsLayer = L.tileLayer.wms(`${geoserverUrl}/ows`, {
+    if (!wmsParams) return;
+
+    const layer = L.tileLayer.wms(geoserverUrl, {
       layers: wmsParams,
-      format: "image/png",
+      format: 'image/png',
       transparent: true,
-      version: "1.3.0",
-      tiled: true,
-      zIndex: 2 // Setting zIndex to ensure WMS layer is on top
-    }).addTo(map);
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
+    map.addLayer(layer);
 
     return () => {
-      map.removeLayer(wmsLayer);
+      map.removeLayer(layer);
     };
-  }, [wmsParams, map]);
+  }, [wmsParams, geoserverUrl, map]);
 
   return null;
 };
@@ -144,8 +137,8 @@ const MapOverlay = ({ wmsParams }) => {
 
   if (wmsParams === undefined) {
     return (
-      <div className="map-overlay">
-        <div className="overlay-content">
+      <div style={mapOverlayStyle}>
+        <div style={overlayContentStyle}>
           <CircularProgress sx={{
             color: '#d1a766',
           }} />
@@ -164,7 +157,7 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
 
   return (
     <>
-      <div className="toggle-container-map">
+      <div style={toggleContainerMapStyle}>
         <FormControlLabel
           control={
             <Switch
@@ -190,11 +183,7 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
           label={<Typography variant="body2">Country Averages</Typography>}
           labelPlacement="end"
         />
-
-
-
-
-      </div >
+      </div>
       <MapContainer
         center={[35, 20]}
         zoom={4}
@@ -217,10 +206,68 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
         <ScaleControl imperial={false} maxWidth={250} />
         <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
         <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
-
         <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
-      </MapContainer></>
+      </MapContainer>
+    </>
   );
 });
 
 export default MapView;
+
+
+const mapOverlayStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  color: 'white',
+  fontSize: '1.5em',
+  textAlign: 'center',
+  zIndex: 999, // Ensure it is above other map elements
+  pointerEvents: 'none', // Make the overlay background non-interactive
+};
+
+const linkStyle = {
+  color: '#d1a766',
+  textDecoration: 'none',
+  marginTop: '10px', // Optional: Add some margin for better spacing
+  pointerEvents: 'auto', // Make the link interactive
+};
+
+
+const overlayContentStyle = {
+  color: 'white',
+  fontSize: '1.5em',
+  textAlign: 'center',
+  padding: '10px',
+  borderRadius: '5px',
+  background: 'rgba(0, 0, 0, 0.7)',
+  pointerEvents: 'auto', // Make the overlay content interactive
+};
+
+
+const toggleContainerMapStyle = {
+  position: 'absolute',
+  bottom: '110px',
+  left: '100px',
+  display: 'flex',
+  alignItems: 'center',
+  backgroundColor: '#333',
+  color: '#d3d3d3',
+  paddingLeft: '5px',
+  borderRadius: '5px',
+  borderColor: 'rgba(0, 0, 0, 0.7)',
+  boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)',
+  zIndex: 1000, // Ensure the toggle switch is above the map
+  opacity: '0.8',
+  borderTop: '1px solid #444',
+  justifyContent: 'center',
+  paddingLeft: '20px',
+  borderRadius: '10px',
+};
