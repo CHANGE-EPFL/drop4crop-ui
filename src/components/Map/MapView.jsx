@@ -17,6 +17,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import { MapOverlay } from './Overlays';
 import { LegendControl } from './Legend';
 import { MapClickHandler } from './Queries';
+import './MapView.css';
 
 const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();

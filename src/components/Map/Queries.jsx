@@ -3,7 +3,6 @@ import axios from 'axios';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
 
-
 export const MapClickHandler = ({
     wmsParams,
     geoserverUrl,
@@ -15,14 +14,28 @@ export const MapClickHandler = ({
     const map = useMap();
     const [clickPosition, setClickPosition] = useState(null);
     const [url, setUrl] = useState(null);
+
+    const createBboxAroundPoint = (point, buffer) => {
+        const latLngBounds = L.latLng(point.lat + buffer, point.lng + buffer)
+            .toBounds(buffer * 2); // Creates a bounding box with a specific buffer size
+        return [
+            latLngBounds.getSouthWest().lng,
+            latLngBounds.getSouthWest().lat,
+            latLngBounds.getNorthEast().lng,
+            latLngBounds.getNorthEast().lat,
+        ].join(',');
+    };
+
     useMapEvent('click', (e) => {
         setClickPosition(e.latlng);
-        const bbox = map.getBounds().toBBoxString();
+        const bbox = createBboxAroundPoint(e.latlng, 0.01); // Adjust the buffer size as needed
         const size = map.getSize();
         const width = size.x;
         const height = size.y;
+
         setUrl(`${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`);
     });
+
     console.log("Click position:", clickPosition);
 
     useEffect(() => {
@@ -87,7 +100,7 @@ export const MapClickHandler = ({
         };
 
         fetchData();
-    }, [clickPosition, highlightedFeature]);
+    }, [clickPosition, highlightedFeature, url]);
 
     return null;
 };

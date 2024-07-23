@@ -1,8 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
-
 
 export const LegendControl = ({ wmsParams, geoserverUrl, globalAverage }) => {
     const map = useMap();
@@ -13,11 +11,15 @@ export const LegendControl = ({ wmsParams, geoserverUrl, globalAverage }) => {
 
         const legendContainer = L.DomUtil.create('div', 'legend-container');
 
-
         legendContainer.style.backgroundColor = '#333';
         legendContainer.style.padding = '10px';
         legendContainer.style.borderRadius = '5px';
         legendContainer.style.opacity = '0.95';
+
+        const averageDisplay = L.DomUtil.create('div', 'average-display', legendContainer);
+        averageDisplay.style.color = '#d3d3d3';
+        averageDisplay.style.marginBottom = '10px';
+        averageDisplay.innerHTML = `<strong>Global Average: ${globalAverage ? globalAverage.toFixed(2) : 'N/A'}</strong>`;
 
         const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
         toggleButton.style.backgroundColor = '#282c34';
@@ -25,7 +27,6 @@ export const LegendControl = ({ wmsParams, geoserverUrl, globalAverage }) => {
         toggleButton.style.border = 'none';
         toggleButton.style.borderRadius = '3px';
         toggleButton.style.padding = '5px';
-        toggleButton.style.marginBottom = '10px';
         toggleButton.style.float = 'right'; // Move the button to the right
 
         toggleButton.innerHTML = isVisible ? 'Hide' : 'Show';

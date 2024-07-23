@@ -1,6 +1,7 @@
 import CircularProgress from '@mui/material/CircularProgress';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import React from 'react';
+import './MapView.css';
 
 export const NoMapOverlay = () => {
     return (
