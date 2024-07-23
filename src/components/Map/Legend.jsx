@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 
 
-export const LegendControl = ({ wmsParams, geoserverUrl }) => {
+export const LegendControl = ({ wmsParams, geoserverUrl, globalAverage }) => {
     const map = useMap();
     const [isVisible, setIsVisible] = useState(true);
 

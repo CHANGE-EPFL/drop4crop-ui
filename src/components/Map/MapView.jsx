@@ -1,10 +1,10 @@
-import React, { useEffect, forwardRef } from 'react';
+import React, { useEffect, useState, forwardRef, useCallback } from 'react';
 import {
   MapContainer,
   TileLayer,
   ZoomControl,
   useMap,
-  GeoJSON,
+  GeoJSON
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -17,7 +17,6 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import { MapOverlay } from './Overlays';
 import { LegendControl } from './Legend';
 import { MapClickHandler } from './Queries';
-import ne_50m_admin_0_countries from "./ne_50m_admin_0_countries.json";
 
 const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   const map = useMap();
@@ -42,9 +41,46 @@ const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
   return null;
 };
 
+const MapView = forwardRef(({
+  wmsParams,
+  geoserverUrl,
+  setBoundingBox,
+  enableSelection,
+  setEnableSelection,
+  countryAverages,
+  setCountryAverages,
+  countryPolygons,
+  globalAverage,
+  countryAverageValues,
+}, ref) => {
+  const [highlightedFeature, setHighlightedFeature] = useState(null);
+
+  const highlightFeature = useCallback((e) => {
+    const layer = e.target;
+    setHighlightedFeature(layer.feature);
+    layer.bringToFront();
+  }, []);
+
+  const resetHighlight = useCallback(() => {
+    setHighlightedFeature(null);
+  }, []);
 
 
-const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSelection, setEnableSelection, countryAverages, setCountryAverages }, ref) => {
+  const geoJsonStyle = useCallback((feature) => ({
+    weight: 2,
+    color: highlightedFeature && highlightedFeature === feature ? '#ff7800' : '#3388ff',
+    opacity: 1,
+    fillOpacity: 0.2,
+    fillColor: '#3388ff'
+  }), [highlightedFeature]);
+
+
+  const onEachFeature = useCallback((feature, layer) => {
+    layer.on({
+      click: highlightFeature,
+    });
+  }, [highlightFeature]);
+
   const corner1 = L.latLng(-90, -200);
   const corner2 = L.latLng(90, 200);
   const bounds = L.latLngBounds(corner1, corner2);
@@ -95,20 +131,31 @@ const MapView = forwardRef(({ wmsParams, geoserverUrl, setBoundingBox, enableSel
           maxZoom={20}
           zIndex={0} // Ensuring the base layer is below the WMS layer
         />
-        <GeoJSON data={ne_50m_admin_0_countries} />
+        {countryAverages && (
+          <>
+            <GeoJSON
+              data={countryPolygons}
+              style={geoJsonStyle}
+              onEachFeature={onEachFeature}
+            />
+          </>
+        )}
         <MapOverlay wmsParams={wmsParams} />
         <ZoomControl position="bottomright" />
         <ScaleControl imperial={false} maxWidth={250} />
-        <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+        <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} countryAverages={countryAverages} highlightedFeature={highlightedFeature} countryPolygons={countryPolygons} countryAverageValues={countryAverageValues} />
         <BoundingBoxSelection ref={ref} setBoundingBox={setBoundingBox} enableSelection={enableSelection} setEnableSelection={setEnableSelection} />
-        <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+        <LegendControl wmsParams={wmsParams} geoserverUrl={geoserverUrl} globalAverage={globalAverage} />
+
       </MapContainer>
     </>
   );
 });
 
-export default MapView;
 
+
+
+export default MapView;
 
 const toggleContainerMapStyle = {
   position: 'absolute',

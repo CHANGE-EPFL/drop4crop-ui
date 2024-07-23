@@ -31,6 +31,9 @@ const getLayer = async (props) => {
 
 const App = () => {
   const [layerName, setLayerName] = useState(undefined);
+  const [globalAverage, setGlobalAverage] = useState(undefined);
+  const [countryAverageValues, setCountryAverageValues] = useState(undefined);
+
   const [selectedLayer, setSelectedLayer] = useState({
     crop: undefined,
     water_model: undefined,
@@ -74,9 +77,13 @@ const App = () => {
       if (response === null) {
         console.error("Layer not found");
         setLayerName(null);
+        setCountryAverageValues(null);
+        setGlobalAverage(null);
       }
       console.log("Layer: ", response);
       setLayerName(response.layer_name);
+      setCountryAverageValues(response.country_values);
+      setGlobalAverage(response.global_average);
     }).catch(error => {
       console.error("Error getting layer", error);
     });
@@ -90,7 +97,7 @@ const App = () => {
   ]);
 
   const [geoserverUrl, setGeoserverUrl] = useState(null);
-
+  const [countryPolygons, setCountryPolygons] = useState(null);
   useEffect(() => {
     axios.get("/api/config/geoserver")
       .then(response => {
@@ -101,6 +108,17 @@ const App = () => {
         console.error("Error getting geoserver URL", error);
       });
   }, []);
+
+  useEffect(() => {
+    axios.get("/api/countries")
+      .then(response => {
+        setCountryPolygons(response.data);
+      })
+      .catch(error => {
+        console.error("Error getting countries", error);
+      });
+  }, []);
+
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
@@ -123,6 +141,9 @@ const App = () => {
           ref={boundingBoxSelectionRef}
           countryAverages={countryAverages}
           setCountryAverages={setCountryAverages}
+          countryPolygons={countryPolygons}
+          globalAverage={globalAverage}
+          countryAverageValues={countryAverageValues}
         />
       </div>
       <BottomBar
