@@ -48,12 +48,12 @@ export const MapClickHandler = ({
                 }
                 // Get matching country from the highlighted feature
                 const country = countryPolygons.features.find(
-                    (feature) => feature.properties.iso_n3 === highlightedFeature.properties.iso_n3
+                    (feature) => feature.properties.name === highlightedFeature.properties.name
                 );
 
                 if (country) {
                     const countryAverage = countryAverageValues.find(
-                        (average) => average.country.iso_n3 === country.properties.iso_n3
+                        (average) => average.country.name === country.properties.name
                     );
                     console.log('Country average:', countryAverage);
                     if (countryAverage) {
