@@ -117,7 +117,7 @@ const MapView = forwardRef(({
       </div>
       <MapContainer
         center={[35, 20]}
-        zoom={4}
+        zoom={1}
         style={{ height: "100vh", width: "100%" }}
         zoomControl={false}
         maxBoundsViscosity={1.0}
@@ -129,7 +129,7 @@ const MapView = forwardRef(({
           url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           subdomains='abcd'
-          maxZoom={20}
+          // maxZoom={60}
           zIndex={0} // Ensuring the base layer is below the WMS layer
         />
         {countryAverages && (
