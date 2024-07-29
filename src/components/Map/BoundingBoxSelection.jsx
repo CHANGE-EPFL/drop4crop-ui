@@ -3,18 +3,23 @@ import L from 'leaflet';
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
+import './MapView.css';
 
 window.type = true;
 
 const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setEnableSelection }, ref) => {
     const map = useMap();
     const drawnItemsRef = useRef(new L.FeatureGroup());
-    const drawControlRef = useRef(null);
     const drawHandlerRef = useRef(null);
+    const deleteMarkerRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
         clearLayers: () => {
             drawnItemsRef.current.clearLayers();
+            if (deleteMarkerRef.current) {
+                map.removeLayer(deleteMarkerRef.current);
+                deleteMarkerRef.current = null;
+            }
         },
     }));
 
@@ -34,6 +39,35 @@ const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setE
             };
             setBoundingBox(boundingBox);
             setEnableSelection(false);
+
+            // Add delete button
+            const deleteButton = L.divIcon({
+                html: '<button style="background: black; color: white; border: none; border-radius: 50%; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">X</button>',
+                iconSize: [20, 20],
+                className: 'delete-button-icon',
+            });
+
+            const deleteMarker = L.marker(layer.getBounds().getNorthEast(), { icon: deleteButton }).addTo(map);
+            deleteMarkerRef.current = deleteMarker;
+            deleteMarker.on('click', () => {
+                drawnItems.removeLayer(layer);
+                map.removeLayer(deleteMarker);
+                setBoundingBox(null);
+                setEnableSelection(false);
+            });
+
+            // Update marker position when rectangle is edited
+            layer.on('edit', () => {
+                const newBounds = layer.getBounds();
+                deleteMarker.setLatLng(newBounds.getNorthEast());
+                const newBoundingBox = {
+                    minx: newBounds.getSouthWest().lng,
+                    miny: newBounds.getSouthWest().lat,
+                    maxx: newBounds.getNorthEast().lng,
+                    maxy: newBounds.getNorthEast().lat,
+                };
+                setBoundingBox(newBoundingBox);
+            });
         };
 
         map.on('draw:created', handleDrawCreated);
@@ -51,7 +85,7 @@ const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setE
             drawHandlerRef.current.enable();
 
             // Disable drawing on the next click to ensure it doesn't prematurely stop
-            const disableDrawingOnClick = (e) => {
+            const disableDrawingOnClick = () => {
                 if (drawHandlerRef.current) {
                     drawHandlerRef.current.disable();
                     map.off('click', disableDrawingOnClick);

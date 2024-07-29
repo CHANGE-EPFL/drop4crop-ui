@@ -18,29 +18,59 @@ import { MapOverlay } from './Overlays';
 import { LegendControl } from './Legend';
 import { MapClickHandler } from './Queries';
 import './MapView.css';
+// import { GeoRasterLayer } from 'georaster';
+import GeoRaster from './GeoRasterLayer'
+// import georaster from 'georaster';
+// import GeoRasterLayer from 'georaster-layer-for-leaflet';
 
-const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
-  const map = useMap();
 
-  useEffect(() => {
-    if (!wmsParams) return;
 
-    const layer = L.tileLayer.wms(geoserverUrl, {
-      layers: wmsParams,
-      format: 'image/png',
-      transparent: true,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
+// const UpdateLayer = ({ wmsParams, geoserverUrl }) => {
+//   const map = useMap();
+//   {/* <GeoRasterLayer */ }
+//   // paths={["http://drop4crop:88/api/layers/sdfrs/cog"]}
+//   // resolution={RESOLUTION}
+//   pixelValuesToColorFn = { setPixelColours }
+//   {/* /> */ }
+//   var url_to_geotiff_file = "http://drop4crop:88/api/layers/sdfrs/cog";
+//   fetch(url_to_geotiff_file).then(response =>
+//     response.arrayBuffer()).then(arrayBuffer => {
+//       parseGeoraster(arrayBuffer).then(georaster => {
+//         console.log("georaster", georaster);
+//         const layer = new GeoRasterLayer({
+//           georaster: georaster,
+//           opacity: 0.7,
+//           pixelValuesToColorFn: setPixelColours
+//           resolution: 64
 
-    map.addLayer(layer);
+//         });
+//         layer.addTo(map);
+//       }
+//       )
+//     }
+//     )
 
-    return () => {
-      map.removeLayer(layer);
-    };
-  }, [wmsParams, geoserverUrl, map]);
 
-  return null;
-};
+// useEffect(() => {
+//     if (!wmsParams) return;
+
+//     const layer = L.tileLayer.wms(geoserverUrl, {
+//       layers: wmsParams,
+//       format: 'image/png',
+//       transparent: true,
+//       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+//     });
+
+//     map.addLayer(layer);
+
+//     return () => {
+//       map.removeLayer(layer);
+//     };
+//   }, [wmsParams, geoserverUrl, map]);
+
+// return null;
+// };
+
 
 const MapView = forwardRef(({
   wmsParams,
@@ -124,13 +154,20 @@ const MapView = forwardRef(({
         maxBounds={bounds}
         minZoom={3}
       >
-        <UpdateLayer wmsParams={wmsParams} geoserverUrl={geoserverUrl} />
+        {/* <UpdateLayer wmsParams={wmsParams} geoserverUrl={geoserverUrl} /> */}
         <TileLayer
           url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           subdomains='abcd'
-          // maxZoom={60}
+          maxZoom={20}
           zIndex={0} // Ensuring the base layer is below the WMS layer
+        />
+        <GeoRaster
+          url={"http://drop4crop:88/api/layers/sdfrs/cog"}
+          opacity={0.7}
+          resolution={256}
+        // resolution={ RESOLUTION }
+        // pixelValuesToColorFn={setPixelColours}
         />
         {countryAverages && (
           <>
@@ -141,7 +178,7 @@ const MapView = forwardRef(({
             />
           </>
         )}
-        <MapOverlay wmsParams={wmsParams} />
+        {/* <MapOverlay wmsParams={wmsParams} /> */}
         <ZoomControl position="bottomright" />
         <ScaleControl imperial={false} maxWidth={250} />
         <MapClickHandler wmsParams={wmsParams} geoserverUrl={geoserverUrl} countryAverages={countryAverages} highlightedFeature={highlightedFeature} countryPolygons={countryPolygons} countryAverageValues={countryAverageValues} />
@@ -166,8 +203,6 @@ const toggleContainerMapStyle = {
   alignItems: 'center',
   backgroundColor: '#333',
   color: '#d3d3d3',
-  paddingLeft: '5px',
-  borderRadius: '5px',
   borderColor: 'rgba(0, 0, 0, 0.7)',
   boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)',
   zIndex: 1000, // Ensure the toggle switch is above the map
