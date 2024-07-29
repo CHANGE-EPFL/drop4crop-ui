@@ -1,41 +1,55 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import parseGeoraster from "georaster";
 import GeoRasterLayer from "georaster-layer-for-leaflet";
-import { isNaN } from "lodash";
 import chroma from "chroma-js";
 
-export default function GeoRaster({ url }) {
-    // const { map, layerContainer } = useMap();
-    const map = useMap();
-    const layerRef = React.useRef(null);
+const parseQGISColorMap = (colorMapString) => {
+    const lines = colorMapString.trim().split('\n');
+    const colors = [];
+    for (let line of lines) {
+        const [value, r, g, b, a] = line.split(',').map(Number);
+        colors.push({ value, color: `rgba(${r},${g},${b},${a / 255})` });
+    }
+    return colors;
+};
 
-    console.log("Rendering GeoRaster");
+export default function GeoRaster({ url, setLegendData, colorMapString, opacity, resolution }) {
+    const map = useMap();
+    const layerRef = useRef(null);
+
+    const colorMap = parseQGISColorMap(colorMapString);
 
     useEffect(() => {
         if (!url) return;
+
         fetch(url)
             .then(response => response.arrayBuffer())
             .then(arrayBuffer => {
                 parseGeoraster(arrayBuffer).then(georaster => {
-                    var layer = new GeoRasterLayer({
-                        georaster: georaster,
-                        opacity: 0.25,
-                        pixelValuesToColorFn: values => {
-                            // Set colour palette from min to max values
-                            const min = Math.min(...values);
-                            const max = Math.max(...values);
-                            const scale = chroma.scale(["#fafa6e", "#2A4858"]).domain([min, max]);
-                            return values.map(value => {
-                                if (isNaN(value)) {
-                                    return "rgba(0,0,0,0)";
+                    const values = georaster.values[0].flat().filter(value => !isNaN(value));
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+
+                    setLegendData({ min, max, colorMap });
+
+                    const layer = new GeoRasterLayer({
+                        georaster,
+                        opacity,
+                        resolution,
+                        pixelValuesToColorFn: value => {
+                            if (isNaN(value)) return null;
+                            for (let i = 0; i < colorMap.length; i++) {
+                                if (value <= colorMap[i].value) {
+                                    return colorMap[i].color;
                                 }
-                                return scale(value).hex();
-                            });
+                            }
+                            return colorMap[colorMap.length - 1].color;
                         }
-                        // resolution: 64 // optional parameter for adjusting display resolution
                     });
-                    layer.addTo(map);
+
+                    layerRef.current = layer;
+                    map.addLayer(layer);
                     map.fitBounds(layer.getBounds());
                 });
             });
@@ -45,7 +59,7 @@ export default function GeoRaster({ url }) {
                 map.removeLayer(layerRef.current);
             }
         };
-    }, [map, url]);
+    }, [map, url, setLegendData, colorMap, opacity, resolution]);
 
     return null;
 }
