@@ -135,7 +135,7 @@ const MapView = forwardRef(({
           url={"http://drop4crop:88/api/layers/sdfrs/cog"}
           setLegendData={setLegendData}
           opacity={0.7}
-          resolution={256}
+          resolution={128}
           colorMapString={colorMapString}
         />
         {countryAverages && (

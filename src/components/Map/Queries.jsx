@@ -13,30 +13,22 @@ export const MapClickHandler = ({
 }) => {
     const map = useMap();
     const [clickPosition, setClickPosition] = useState(null);
-    const [url, setUrl] = useState(null);
 
-    const createBboxAroundPoint = (point, buffer) => {
-        const latLngBounds = L.latLng(point.lat + buffer, point.lng + buffer)
-            .toBounds(buffer * 2); // Creates a bounding box with a specific buffer size
-        return [
-            latLngBounds.getSouthWest().lng,
-            latLngBounds.getSouthWest().lat,
-            latLngBounds.getNorthEast().lng,
-            latLngBounds.getNorthEast().lat,
-        ].join(',');
+    const fetchPixelValue = async (lat, lon) => {
+        try {
+            const response = await axios.get(`/api/layers/${wmsParams}/value`, {
+                params: { lat, lon }
+            });
+            return response.data.value;
+        } catch (error) {
+            console.error('Error fetching pixel value:', error);
+            return null;
+        }
     };
 
     useMapEvent('click', (e) => {
         setClickPosition(e.latlng);
-        const bbox = createBboxAroundPoint(e.latlng, 0.01); // Adjust the buffer size as needed
-        const size = map.getSize();
-        const width = size.x;
-        const height = size.y;
-
-        setUrl(`${geoserverUrl}/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${wmsParams}&QUERY_LAYERS=${wmsParams}&STYLES=&BBOX=${bbox}&CRS=CRS:84&WIDTH=${width}&HEIGHT=${height}&FORMAT=image/png&INFO_FORMAT=text/plain&I=${Math.floor(e.containerPoint.x)}&J=${Math.floor(e.containerPoint.y)}`);
     });
-
-    console.log("Click position:", clickPosition);
 
     useEffect(() => {
         if (!clickPosition) return;
@@ -67,40 +59,21 @@ export const MapClickHandler = ({
             }
 
             try {
-                const response = await axios.get(url);
-                const responseText = response.data;
-
-                const match = responseText.match(/-{40,}\n(.*?)\n-{40,}/s);
-                let value = match ? match[1].trim() : 'No data';
-
-                if (value !== 'No data') {
-                    // Extracting the value
-                    const grayValueMatch = value.match(/GRAY_INDEX = (.+)/);
-                    if (grayValueMatch) {
-                        const grayValue = grayValueMatch[1].trim();
-                        value = grayValue === 'NaN' ? null : parseFloat(grayValue);
-                    } else {
-                        value = null;
-                    }
-                } else {
-                    value = null;
-                }
-
+                const pixelValue = await fetchPixelValue(clickPosition.lat, clickPosition.lng);
                 L.popup()
                     .setLatLng(clickPosition)
                     .setContent(`
                     <b>Lat</b>: ${clickPosition.lat.toFixed(6)}°
                     <br><b>Lon</b>: ${clickPosition.lng.toFixed(6)}°
-                    <br><b>Value</b>: ${value ? value.toFixed(2) : 'No data'}`)
+                    <br><b>Value</b>: ${pixelValue !== null ? pixelValue.toFixed(2) : 'No data'}`)
                     .openOn(map);
             } catch (error) {
-                console.error('Error fetching WMS data:', error);
+                console.error('Error fetching pixel value:', error);
             }
-
         };
 
         fetchData();
-    }, [clickPosition, highlightedFeature, url]);
+    }, [clickPosition, highlightedFeature, countryAverages, countryPolygons, countryAverageValues]);
 
     return null;
 };

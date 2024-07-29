@@ -50,7 +50,7 @@ export default function GeoRaster({ url, setLegendData, colorMapString, opacity,
 
                     layerRef.current = layer;
                     map.addLayer(layer);
-                    map.fitBounds(layer.getBounds());
+
                 });
             });
 
@@ -59,7 +59,7 @@ export default function GeoRaster({ url, setLegendData, colorMapString, opacity,
                 map.removeLayer(layerRef.current);
             }
         };
-    }, [map, url, setLegendData, colorMap, opacity, resolution]);
+    }, [url, opacity, resolution]);
 
     return null;
 }
