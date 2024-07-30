@@ -1,8 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import parseGeoraster from "georaster";
 import GeoRasterLayer from "georaster-layer-for-leaflet";
-import chroma from "chroma-js";
 
 const parseQGISColorMap = (colorMapString) => {
     const lines = colorMapString.trim().split('\n');
@@ -37,6 +36,7 @@ export default function GeoRaster({ url, setLegendData, colorMapString, opacity,
                         georaster,
                         opacity,
                         resolution,
+                        proj4: null,
                         pixelValuesToColorFn: value => {
                             if (isNaN(value)) return null;
                             for (let i = 0; i < colorMap.length; i++) {
@@ -47,10 +47,8 @@ export default function GeoRaster({ url, setLegendData, colorMapString, opacity,
                             return colorMap[colorMap.length - 1].color;
                         }
                     });
-
                     layerRef.current = layer;
                     map.addLayer(layer);
-
                 });
             });
 
