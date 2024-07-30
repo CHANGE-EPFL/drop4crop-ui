@@ -132,7 +132,7 @@ const MapView = forwardRef(({
           zIndex={0}
         />
         <GeoRaster
-          url={"http://drop4crop:88/api/layers/sdfrs/cog"}
+          url={"/api/layers/sdfrs/cog"}
           setLegendData={setLegendData}
           opacity={0.7}
           resolution={128}
