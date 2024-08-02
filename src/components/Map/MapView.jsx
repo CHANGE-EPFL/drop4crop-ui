@@ -131,12 +131,18 @@ const MapView = forwardRef(({
           maxZoom={20}
           zIndex={0}
         />
-        <GeoRaster
-          url={"/api/layers/sdfrs/cog"}
+        {/* <GeoRaster
+          // paths={["http://drop4crop:88/api/layers/sdfrs/cog"]}
+          url={"http://drop4crop:88/api/layers/cogs/barley-yield-google-blocksize-low.tif"}
           setLegendData={setLegendData}
-          opacity={0.7}
+          // opacity={0.7}
           resolution={128}
           colorMapString={colorMapString}
+        /> */}
+        <TileLayer
+          // url={`http://drop4crop:88/api/cogs/tile/{z}/{x}/{y}.png?url=${wmsParams}`}
+          url={`http://drop4crop:88/api/cog/tiles/{z}/{x}/{y}.png?url=BARLEY_Yield_cogeo&colormap=[[[-1.0,0],[0,0,0,0]],[[0,0.52352285385132002],[215,25,28,255]],[[0.52352285385132002,2.24634027481079013],[253,174,97,255]],[[2.24634027481079013,3.96915769577026012],[255,255,191,255]],[[3.96915769577026012,5.69197511672973011],[171,221,164,255]],[[5.69197511672973011,7.4147925376892001],[43,131,186,255]]]`}
+          zIndex={1}
         />
         {countryAverages && (
           <GeoJSON
