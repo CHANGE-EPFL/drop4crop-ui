@@ -78,14 +78,6 @@ const MapView = forwardRef(({
   const corner2 = L.latLng(90, 200);
   const bounds = L.latLngBounds(corner1, corner2);
 
-  const colorMapString = `
-    0.52352285385132002,215,25,28,255,0.5235
-    2.24634027481079013,253,174,97,255,2.2463
-    3.96915769577026012,255,255,191,255,3.9692
-    5.69197511672973011,171,221,164,255,5.6920
-    7.4147925376892001,43,131,186,255,7.4148
-  `; // Example color map string
-
   return (
     <>
       <div style={toggleContainerMapStyle}>
@@ -124,6 +116,7 @@ const MapView = forwardRef(({
         maxBounds={bounds}
         minZoom={2}
       >
+        <MapOverlay wmsParams={wmsParams} />
         <TileLayer
           url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -131,16 +124,7 @@ const MapView = forwardRef(({
           maxZoom={20}
           zIndex={0}
         />
-        {/* <GeoRaster
-          // paths={["http://drop4crop:88/api/layers/sdfrs/cog"]}
-          url={"http://drop4crop:88/api/layers/cogs/barley-yield-google-blocksize-low.tif"}
-          setLegendData={setLegendData}
-          // opacity={0.7}
-          resolution={128}
-          colorMapString={colorMapString}
-        /> */}
         <TileLayer
-          // url={`http://drop4crop:88/api/cogs/tile/{z}/{x}/{y}.png?url=${wmsParams}`}
           url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${wmsParams}`}
           zIndex={1}
         />
