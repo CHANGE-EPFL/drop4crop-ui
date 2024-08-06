@@ -124,10 +124,10 @@ const MapView = forwardRef(({
           maxZoom={20}
           zIndex={0}
         />
-        <TileLayer
+        {wmsParams ? <TileLayer
           url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${wmsParams}`}
           zIndex={1}
-        />
+        /> : null}
         {countryAverages && (
           <GeoJSON
             data={countryPolygons}
