@@ -1,4 +1,4 @@
-import React, { useState, useCallback, forwardRef } from 'react';
+import React, { useState, useCallback, forwardRef, useEffect } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -17,23 +17,7 @@ import { MapOverlay } from './Overlays';
 import { MapClickHandler } from './Queries';
 import './MapView.css';
 import GeoRaster from './GeoRasterLayer';
-
-const Legend = ({ min, max, colorMap }) => {
-  const gradient = `linear-gradient(to bottom, ${colorMap.map(c => c.color).join(", ")})`;
-
-  return (
-    <div style={legendStyle}>
-      <div style={{ ...legendColorBarStyle, background: gradient }} />
-      <div style={legendLabelsStyle}>
-        {colorMap.map((entry, index) => (
-          <div key={index} className="legend-label">
-            <span>{entry.value.toFixed(2)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+import { LegendControl } from './Legend';
 
 const MapView = forwardRef(({
   wmsParams,
@@ -46,9 +30,9 @@ const MapView = forwardRef(({
   countryPolygons,
   globalAverage,
   countryAverageValues,
+  layerStyle,
 }, ref) => {
   const [highlightedFeature, setHighlightedFeature] = useState(null);
-  const [legendData, setLegendData] = useState({ min: 0, max: 100, colorMap: [] });
 
   const highlightFeature = useCallback((e) => {
     const layer = e.target;
@@ -151,9 +135,7 @@ const MapView = forwardRef(({
           enableSelection={enableSelection}
           setEnableSelection={setEnableSelection}
         />
-        {legendData.colorMap.length > 0 && (
-          <Legend min={legendData.min} max={legendData.max} colorMap={legendData.colorMap} />
-        )}
+        <LegendControl globalAverage={globalAverage} colorMap={layerStyle} />
       </MapContainer>
     </>
   );
@@ -177,33 +159,4 @@ const toggleContainerMapStyle = {
   justifyContent: 'center',
   paddingLeft: '20px',
   borderRadius: '10px',
-};
-
-// Legend CSS
-const legendStyle = {
-  position: 'absolute',
-  top: '20px',
-  right: '20px',
-  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  padding: '10px',
-  borderRadius: '5px',
-  boxShadow: '0 0 15px rgba(0, 0, 0, 0.2)',
-  zIndex: 1000,
-  opacity: '0.8',
-  display: 'flex',
-  alignItems: 'center',
-};
-
-const legendColorBarStyle = {
-  width: '20px',
-  height: '200px',
-  borderRadius: '5px',
-  marginRight: '10px',
-};
-
-const legendLabelsStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  height: '200px',
 };

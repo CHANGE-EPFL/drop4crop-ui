@@ -33,6 +33,7 @@ const App = () => {
   const [layerName, setLayerName] = useState(undefined);
   const [globalAverage, setGlobalAverage] = useState(undefined);
   const [countryAverageValues, setCountryAverageValues] = useState(undefined);
+  const [layerStyle, setLayerStyle] = useState([]);
 
   const [selectedLayer, setSelectedLayer] = useState({
     crop: undefined,
@@ -79,11 +80,14 @@ const App = () => {
         setLayerName(null);
         setCountryAverageValues(null);
         setGlobalAverage(null);
+        setLayerStyle([]);
+      } else {
+        console.log("Layer: ", response);
+        setLayerName(response.layer_name);
+        setCountryAverageValues(response.country_values);
+        setGlobalAverage(response.global_average);
+        setLayerStyle(response.style || []);
       }
-      console.log("Layer: ", response);
-      setLayerName(response.layer_name);
-      setCountryAverageValues(response.country_values);
-      setGlobalAverage(response.global_average);
     }).catch(error => {
       console.error("Error getting layer", error);
     });
@@ -144,6 +148,7 @@ const App = () => {
           countryPolygons={countryPolygons}
           globalAverage={globalAverage}
           countryAverageValues={countryAverageValues}
+          layerStyle={layerStyle}
         />
       </div>
       <BottomBar
