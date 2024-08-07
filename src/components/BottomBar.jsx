@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Slider from '@mui/material/Slider';
 import './BottomBar.css';
 
-const BottomBar = ({ selectedTime, onTimeChange }) => {
-  const availableYears = [2010, 2040];
-
+const BottomBar = ({ selectedTime, onTimeChange, availableYears }) => {
   const initialTime = parseInt(selectedTime, 10);
   const [sliderValue, setSliderValue] = useState(initialTime);
 
