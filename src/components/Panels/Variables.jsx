@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
-import Icon from '@mui/material/Icon';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -13,7 +12,18 @@ const VariablePanel = ({ variables, selectedVariable, setSelectedVariable }) => 
     return (
         <div className="popup">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h6" style={{ fontSize: '1rem' }}>Variable</Typography>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="h6" style={{ fontSize: '1rem' }}>Variable</Typography>
+                    <Tooltip
+                        title="Select a variable to display on the map"
+                        placement="right"
+                        disableFocusListener disableTouchListener enterDelay={10}
+                        arrow
+                        style={{ marginLeft: '5px', marginBottom: '4px' }}
+                    >
+                        <HelpOutlineIcon sx={{ fontSize: '1rem' }} />
+                    </Tooltip>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <Typography variant="body2" style={{ fontSize: '0.8rem', marginRight: '14px' }}>Timeseries</Typography>
                     <FormControlLabel
