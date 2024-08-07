@@ -15,12 +15,12 @@ export const NoMapOverlay = () => {
     );
 };
 
-export const MapOverlay = ({ wmsParams }) => {
-    if (wmsParams) {
+export const MapOverlay = ({ layerName }) => {
+    if (layerName) {
         return null;
     }
 
-    if (wmsParams === undefined) {
+    if (layerName === undefined) {
         return (
             <div style={mapOverlayStyle}>
                 <div style={overlayContentStyle}>

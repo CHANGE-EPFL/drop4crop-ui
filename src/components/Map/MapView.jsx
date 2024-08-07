@@ -20,7 +20,7 @@ import GeoRaster from './GeoRasterLayer';
 import { LegendControl } from './Legend';
 
 const MapView = forwardRef(({
-  wmsParams,
+  layerName,
   APIServerURL,
   setBoundingBox,
   enableSelection,
@@ -66,7 +66,7 @@ const MapView = forwardRef(({
     <>
       <div style={toggleContainerMapStyle}>
         <FormControlLabel
-          disabled={!wmsParams}
+          disabled={!layerName}
           control={
             <Switch
               checked={countryAverages}
@@ -90,7 +90,7 @@ const MapView = forwardRef(({
           }
           label={<Typography variant="body2">Country Scale Values</Typography>}
           labelPlacement="end"
-          className={!wmsParams ? 'disabled' : ''}
+          className={!layerName ? 'disabled' : ''}
         />
       </div>
       <MapContainer
@@ -102,7 +102,7 @@ const MapView = forwardRef(({
         maxBounds={bounds}
         minZoom={2}
       >
-        <MapOverlay wmsParams={wmsParams} />
+        <MapOverlay layerName={layerName} />
         <TileLayer
           url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -110,8 +110,8 @@ const MapView = forwardRef(({
           maxZoom={20}
           zIndex={0}
         />
-        {wmsParams ? <TileLayer
-          url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${wmsParams}`}
+        {layerName ? <TileLayer
+          url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${layerName}`}
           zIndex={1}
         /> : null}
         {countryAverages && (
@@ -124,7 +124,7 @@ const MapView = forwardRef(({
         <ZoomControl position="bottomright" />
         <ScaleControl imperial={false} maxWidth={250} />
         <MapClickHandler
-          wmsParams={wmsParams}
+          layerName={layerName}
           APIServerURL={APIServerURL}
           countryAverages={countryAverages}
           highlightedFeature={highlightedFeature}

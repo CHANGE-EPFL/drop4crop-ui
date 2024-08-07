@@ -43,7 +43,7 @@ const PopupContentContainer = () => {
 };
 
 export const MapClickHandler = ({
-    wmsParams,
+    layerName,
     APIServerURL,
     countryAverages,
     highlightedFeature,
@@ -57,7 +57,7 @@ export const MapClickHandler = ({
 
     const fetchPixelValue = async (lat, lon) => {
         try {
-            const response = await axios.get(`/api/layers/${wmsParams}/value`, {
+            const response = await axios.get(`/api/layers/${layerName}/value`, {
                 params: { lat, lon }
             });
             return response.data.value;

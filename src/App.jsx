@@ -127,7 +127,7 @@ const App = () => {
           clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
         />
         <MapView
-          wmsParams={layerName}
+          layerName={layerName}
           APIServerURL={APIServerURL}
           setBoundingBox={setBoundingBox}
           enableSelection={enableSelection}
