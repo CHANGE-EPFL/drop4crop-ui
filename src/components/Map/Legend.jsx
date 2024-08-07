@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
+import MinimizeIcon from '@mui/icons-material/Minimize';
 
 const createLegendContainer = (
     isVisible,
+    setIsVisible,
     globalAverage,
     colorMap,
     legendTitleText,
 ) => {
     const legendContainer = L.DomUtil.create('div', 'legend-container');
+    legendContainer.style.position = 'relative';
     legendContainer.style.backgroundColor = '#333';
     legendContainer.style.padding = '10px';
     legendContainer.style.borderRadius = '5px';
@@ -17,30 +21,39 @@ const createLegendContainer = (
     legendContainer.style.flexDirection = 'column';
     legendContainer.style.alignItems = 'center';
     legendContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4)'; // Add drop shadow
+    legendContainer.style.width = '120px'; // Add fixed width
+
+    const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
+    toggleButton.style.position = 'absolute';
+    toggleButton.style.top = '5px';
+    toggleButton.style.right = '5px';
+    toggleButton.style.border = '#d3d3d3';
+    toggleButton.style.borderRadius = '3px';
+    toggleButton.style.cursor = 'pointer';
+    toggleButton.style.backgroundColor = '#5d513d';
+    toggleButton.style.padding = '0px 5px';
+    toggleButton.style.paddingBottom = '20px';
+    toggleButton.style.width = '30px';
+    toggleButton.style.height = '20px';
 
     const averageDisplay = L.DomUtil.create('div', 'average-display', legendContainer);
     averageDisplay.style.color = '#d3d3d3';
     averageDisplay.style.marginBottom = '10px';
-    averageDisplay.innerHTML = `<strong>Global Average: ${globalAverage ? globalAverage.toFixed(2) : 'N/A'}</strong>`;
+    averageDisplay.style.textAlign = 'left';
+    averageDisplay.style.width = '100%';
+    averageDisplay.innerHTML = `<strong>Global: ${globalAverage ? globalAverage.toFixed(2) : 'N/A'}</strong>`;
 
-    const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
-    toggleButton.style.backgroundColor = '#282c34';
-    toggleButton.style.color = '#d3d3d3';
-    toggleButton.style.border = 'none';
-    toggleButton.style.borderRadius = '3px';
-    toggleButton.style.padding = '5px';
-    toggleButton.style.marginBottom = '10px';
-
-    toggleButton.innerHTML = isVisible ? 'Hide' : 'Show';
-    toggleButton.className = 'toggle-button';
 
     const legendContent = L.DomUtil.create('div', 'legend-content', legendContainer);
     legendContent.style.display = isVisible ? 'block' : 'none';
+    legendContent.style.width = '100%';
 
     const legendTitle = L.DomUtil.create('div', 'legend-title', legendContent);
     legendTitle.innerHTML = `<strong>${legendTitleText}</strong>`;
     legendTitle.style.color = '#d3d3d3';
     legendTitle.style.marginBottom = '10px';
+    legendTitle.style.textAlign = 'center';
+    legendTitle.style.width = '100%';
 
     if (colorMap.length) {
         const legendColorBarContainer = L.DomUtil.create('div', 'legend-color-bar-container', legendContent);
@@ -63,16 +76,16 @@ const createLegendContainer = (
         colorMap.forEach(entry => {
             const label = L.DomUtil.create('div', 'legend-label', legendLabels);
             label.innerHTML = `<span>${entry.value.toFixed(2)}</span>`;
-            label.style.color = '#fff'; // Set label color to white
+            label.style.color = '#fff';
         });
     }
 
     toggleButton.onclick = (e) => {
         e.stopPropagation();
-        isVisible = !isVisible;
-        toggleButton.innerHTML = isVisible ? 'Hide' : 'Show';
-        legendContent.style.display = isVisible ? 'block' : 'none';
+        setIsVisible(!isVisible);
     };
+
+    ReactDOM.render(<MinimizeIcon fontSize="small" />, toggleButton);
 
     return legendContainer;
 };
@@ -84,13 +97,15 @@ export const LegendControl = ({
 }) => {
 
     const legendTitleText = (
-        selectedVariable ? selectedVariable.abbreviation : 'Legend'
+        selectedVariable ? `${selectedVariable.abbreviation} [${selectedVariable.unit}]` : 'Legend'
     );
     const map = useMap();
     const [isVisible, setIsVisible] = useState(true);
+
     useEffect(() => {
         const legendContainer = createLegendContainer(
             isVisible,
+            setIsVisible,
             globalAverage,
             colorMap,
             legendTitleText,
