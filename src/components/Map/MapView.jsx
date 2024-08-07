@@ -21,7 +21,7 @@ import { LegendControl } from './Legend';
 
 const MapView = forwardRef(({
   wmsParams,
-  geoserverUrl,
+  APIServerURL,
   setBoundingBox,
   enableSelection,
   setEnableSelection,
@@ -125,7 +125,7 @@ const MapView = forwardRef(({
         <ScaleControl imperial={false} maxWidth={250} />
         <MapClickHandler
           wmsParams={wmsParams}
-          geoserverUrl={geoserverUrl}
+          APIServerURL={APIServerURL}
           countryAverages={countryAverages}
           highlightedFeature={highlightedFeature}
           countryPolygons={countryPolygons}

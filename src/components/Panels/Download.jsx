@@ -8,16 +8,17 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 
-const DownloadPanel = ({ currentLayer, geoserverUrl, boundingBox, setBoundingBox, setEnableSelection, clearLayers }) => {
+const DownloadPanel = ({ currentLayer, APIServerURL, boundingBox, setBoundingBox, setEnableSelection, clearLayers }) => {
     const [open, setOpen] = useState(false);
     const [isSelecting, setIsSelecting] = useState(false);
     const inputRef = useRef(null);
 
-    const getCapabilitiesLink = `${geoserverUrl}/ows?service=WMS&request=GetCapabilities&version=1.3.0`;
+    const XYZTileLink = `${APIServerURL}/cog/tiles/{z}/{x}/{y}.png?url=${currentLayer}`;
     const downloadTifLink = boundingBox
-        ? `${geoserverUrl}/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${currentLayer}&format=image/tiff&subset=Long(${boundingBox.minx},${boundingBox.maxx})&subset=Lat(${boundingBox.miny},${boundingBox.maxy})`
+        ? `${APIServerURL}/layers/${currentLayer}/download?minx=${boundingBox.minx}&miny=${boundingBox.miny}&maxx=${boundingBox.maxx}&maxy=${boundingBox.maxy}`
         : null;
-    const downloadEntireTifLink = `${geoserverUrl}/wcs?service=WCS&version=2.0.1&request=GetCoverage&coverageId=${currentLayer}&format=image/tiff`;
+
+    const downloadEntireTifLink = `${APIServerURL}/layers/${currentLayer}/download`;
 
     useEffect(() => {
         if (!boundingBox) {
@@ -27,14 +28,14 @@ const DownloadPanel = ({ currentLayer, geoserverUrl, boundingBox, setBoundingBox
 
     const handleCopyLink = () => {
         if (navigator.clipboard) {
-            navigator.clipboard.writeText(getCapabilitiesLink).then(() => {
+            navigator.clipboard.writeText(XYZTileLink).then(() => {
                 setOpen(true);
             }).catch(err => {
                 console.error('Failed to copy: ', err);
             });
         } else {
             const input = inputRef.current;
-            input.value = getCapabilitiesLink;
+            input.value = XYZTileLink;
             input.select();
             input.setSelectionRange(0, 99999); // For mobile devices
             document.execCommand('copy');
@@ -71,25 +72,12 @@ const DownloadPanel = ({ currentLayer, geoserverUrl, boundingBox, setBoundingBox
             <input
                 ref={inputRef}
                 type="text"
-                value={getCapabilitiesLink}
+                value={XYZTileLink}
                 readOnly
                 style={{ position: 'absolute', left: '-9999px' }}
             />
             <Box>
-                <h4>Access to all layers (QGIS/ESRI) </h4>
-                <IconButton
-                    display="flex"
-                    onClick={handleCopyLink}
-                    style={{ cursor: 'pointer', color: '#d1a766' }}
-                >
-                    <Typography style={{ cursor: 'pointer', color: '#d1a766' }}>WMS Link</Typography>
-                    <ContentCopyIcon style={{ marginLeft: '4px' }} />
-                </IconButton>
-            </Box>
-            <hr />
-            <Box>
                 <h4>Current layer</h4>
-
                 <Button
                     variant='outlined'
                     style={{
@@ -119,13 +107,21 @@ const DownloadPanel = ({ currentLayer, geoserverUrl, boundingBox, setBoundingBox
                         <DeleteIcon />
                     </IconButton>
                 )}
-            </Box>
+            </Box><br />
+            <IconButton
+                display="flex"
+                onClick={handleCopyLink}
+                style={{ cursor: 'pointer', color: '#d1a766' }}
+            >
+                <Typography style={{ cursor: 'pointer', color: '#d1a766' }}>XYZ Tile</Typography>
+                <ContentCopyIcon style={{ marginLeft: '4px' }} />
+            </IconButton>
             <Snackbar
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
                 open={open}
                 autoHideDuration={3000}
                 onClose={handleCloseSnackbar}
-                message="WMS link copied to clipboard. To use in QGIS: Layer > Add Layer > Add WMS Layer > New > URL: Paste > OK"
+                message="XYZ link copied to clipboard. To use in QGIS: Layer > Add Layer > Add XYZ Layer > New > URL: Paste > OK"
                 action={
                     <React.Fragment>
                         <IconButton size="small" aria-label="close" color="inherit" onClick={handleCloseSnackbar}>

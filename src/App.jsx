@@ -100,18 +100,8 @@ const App = () => {
     selectedTime
   ]);
 
-  const [geoserverUrl, setGeoserverUrl] = useState(null);
+  const APIServerURL = window.location.origin + '/api';
   const [countryPolygons, setCountryPolygons] = useState(null);
-  useEffect(() => {
-    axios.get("/api/config/geoserver")
-      .then(response => {
-        console.log("Geoserver URL defined as:", response.data);
-        setGeoserverUrl(response.data);
-      })
-      .catch(error => {
-        console.error("Error getting geoserver URL", error);
-      });
-  }, []);
 
   useEffect(() => {
     axios.get("/api/countries")
@@ -130,7 +120,7 @@ const App = () => {
         <SidePanel
           onLayerSelect={handleLayerSelect}
           currentLayer={layerName}
-          geoserverUrl={geoserverUrl}
+          APIServerURL={APIServerURL}
           boundingBox={boundingBox}
           setBoundingBox={setBoundingBox}
           setEnableSelection={setEnableSelection}
@@ -138,7 +128,7 @@ const App = () => {
         />
         <MapView
           wmsParams={layerName}
-          geoserverUrl={geoserverUrl}
+          APIServerURL={APIServerURL}
           setBoundingBox={setBoundingBox}
           enableSelection={enableSelection}
           setEnableSelection={setEnableSelection}

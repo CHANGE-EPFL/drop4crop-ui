@@ -44,7 +44,7 @@ const PopupContentContainer = () => {
 
 export const MapClickHandler = ({
     wmsParams,
-    geoserverUrl,
+    APIServerURL,
     countryAverages,
     highlightedFeature,
     countryPolygons,
