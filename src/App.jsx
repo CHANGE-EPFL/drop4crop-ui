@@ -42,7 +42,7 @@ const App = () => {
     scenario: undefined,
     variable: undefined,
   });
-  const [selectedTime, setSelectedTime] = useState(2000);
+  const [selectedTime, setSelectedTime] = useState(null);
   const [boundingBox, setBoundingBox] = useState(null);
   const [enableSelection, setEnableSelection] = useState(false);
   const [countryAverages, setCountryAverages] = useState(false);
