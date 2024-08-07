@@ -66,6 +66,7 @@ const MapView = forwardRef(({
     <>
       <div style={toggleContainerMapStyle}>
         <FormControlLabel
+          disabled={!wmsParams}
           control={
             <Switch
               checked={countryAverages}
@@ -87,8 +88,9 @@ const MapView = forwardRef(({
               }}
             />
           }
-          label={<Typography variant="body2">Country Averages</Typography>}
+          label={<Typography variant="body2">Country Scale Values</Typography>}
           labelPlacement="end"
+          className={!wmsParams ? 'disabled' : ''}
         />
       </div>
       <MapContainer

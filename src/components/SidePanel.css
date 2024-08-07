@@ -157,3 +157,8 @@
     opacity: 0.5;
     /* Make disabled chips slightly transparent */
 }
+
+.button-group .disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}

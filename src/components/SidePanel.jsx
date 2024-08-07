@@ -174,7 +174,8 @@ const SidePanel = ({ onLayerSelect, currentLayer, geoserverUrl, boundingBox, set
         </button>
       </div>
       <div className="button-group bottom">
-        <button onClick={() => handlePanelClick('download')} className={activePanel === 'download' ? 'active' : ''}>
+        <button disabled={!currentLayer}
+          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''}`}>
           <div className="button-content">
             <CloudDownloadOutlinedIcon />
             <span>Download</span>

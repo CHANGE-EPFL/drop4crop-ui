@@ -106,3 +106,9 @@
     justify-content: center;
     align-items: center;
 }
+
+.button-group .disabled,
+.toggleContainerMapStyle .disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
