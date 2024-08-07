@@ -2,9 +2,13 @@ import React, { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 
-const createLegendContainer = (isVisible, globalAverage, colorMap) => {
+const createLegendContainer = (
+    isVisible,
+    globalAverage,
+    colorMap,
+    legendTitleText,
+) => {
     const legendContainer = L.DomUtil.create('div', 'legend-container');
-
     legendContainer.style.backgroundColor = '#333';
     legendContainer.style.padding = '10px';
     legendContainer.style.borderRadius = '5px';
@@ -34,7 +38,7 @@ const createLegendContainer = (isVisible, globalAverage, colorMap) => {
     legendContent.style.display = isVisible ? 'block' : 'none';
 
     const legendTitle = L.DomUtil.create('div', 'legend-title', legendContent);
-    legendTitle.innerHTML = '<strong>Legend</strong>';
+    legendTitle.innerHTML = `<strong>${legendTitleText}</strong>`;
     legendTitle.style.color = '#d3d3d3';
     legendTitle.style.marginBottom = '10px';
 
@@ -73,12 +77,24 @@ const createLegendContainer = (isVisible, globalAverage, colorMap) => {
     return legendContainer;
 };
 
-export const LegendControl = ({ globalAverage, colorMap }) => {
+export const LegendControl = ({
+    globalAverage,
+    colorMap,
+    selectedVariable,
+}) => {
+
+    const legendTitleText = (
+        selectedVariable ? selectedVariable.abbreviation : 'Legend'
+    );
     const map = useMap();
     const [isVisible, setIsVisible] = useState(true);
-
     useEffect(() => {
-        const legendContainer = createLegendContainer(isVisible, globalAverage, colorMap);
+        const legendContainer = createLegendContainer(
+            isVisible,
+            globalAverage,
+            colorMap,
+            legendTitleText,
+        );
         const legendControl = L.control({ position: 'topright' });
 
         legendControl.onAdd = () => {
@@ -90,7 +106,7 @@ export const LegendControl = ({ globalAverage, colorMap }) => {
         return () => {
             legendControl.remove();
         };
-    }, [map, isVisible, globalAverage, colorMap]);
+    }, [isVisible, globalAverage, colorMap, legendTitleText]);
 
     return null;
 };

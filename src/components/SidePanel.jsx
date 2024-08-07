@@ -17,7 +17,17 @@ import CropsPanel from './Panels/Crops';
 import DownloadPanel from './Panels/Download';
 import InfoPanel from './Panels/Info';
 
-const SidePanel = ({ onLayerSelect, currentLayer, APIServerURL, boundingBox, setBoundingBox, setEnableSelection, clearLayers }) => {
+const SidePanel = ({
+  onLayerSelect,
+  currentLayer,
+  APIServerURL,
+  boundingBox,
+  setBoundingBox,
+  setEnableSelection,
+  clearLayers,
+  selectedVariable,
+  setSelectedVariable,
+}) => {
   const [crops, setCrops] = useState([]);
   const [globalWaterModels, setGlobalWaterModels] = useState([]);
   const [climateModels, setClimateModels] = useState([]);
@@ -28,7 +38,6 @@ const SidePanel = ({ onLayerSelect, currentLayer, APIServerURL, boundingBox, set
   const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
   const [selectedClimateModel, setSelectedClimateModel] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
-  const [selectedVariable, setSelectedVariable] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {

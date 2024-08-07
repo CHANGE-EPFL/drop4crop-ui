@@ -5,7 +5,6 @@ import { useEffect, useState, useRef } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { createRoot } from 'react-dom/client';
-import ReactDOM from 'react-dom';
 import React from 'react';
 
 const CountryPopupContent = ({ country, countryAverage }) => {

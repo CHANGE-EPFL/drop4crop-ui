@@ -31,6 +31,7 @@ const MapView = forwardRef(({
   globalAverage,
   countryAverageValues,
   layerStyle,
+  selectedVariable,
 }, ref) => {
   const [highlightedFeature, setHighlightedFeature] = useState(null);
 
@@ -137,7 +138,11 @@ const MapView = forwardRef(({
           enableSelection={enableSelection}
           setEnableSelection={setEnableSelection}
         />
-        <LegendControl globalAverage={globalAverage} colorMap={layerStyle} />
+        <LegendControl
+          globalAverage={globalAverage}
+          colorMap={layerStyle}
+          selectedVariable={selectedVariable}
+        />
       </MapContainer>
     </>
   );

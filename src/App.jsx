@@ -34,7 +34,7 @@ const App = () => {
   const [globalAverage, setGlobalAverage] = useState(undefined);
   const [countryAverageValues, setCountryAverageValues] = useState(undefined);
   const [layerStyle, setLayerStyle] = useState([]);
-
+  const [selectedVariable, setSelectedVariable] = useState(null);
   const [selectedLayer, setSelectedLayer] = useState({
     crop: undefined,
     water_model: undefined,
@@ -76,13 +76,11 @@ const App = () => {
       year: selectedTime
     }).then(response => {
       if (response === null) {
-        console.error("Layer not found");
         setLayerName(null);
         setCountryAverageValues(null);
         setGlobalAverage(null);
         setLayerStyle([]);
       } else {
-        console.log("Layer: ", response);
         setLayerName(response.layer_name);
         setCountryAverageValues(response.country_values);
         setGlobalAverage(response.global_average);
@@ -125,6 +123,8 @@ const App = () => {
           setBoundingBox={setBoundingBox}
           setEnableSelection={setEnableSelection}
           clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
+          selectedVariable={selectedVariable}
+          setSelectedVariable={setSelectedVariable}
         />
         <MapView
           layerName={layerName}
@@ -139,6 +139,7 @@ const App = () => {
           globalAverage={globalAverage}
           countryAverageValues={countryAverageValues}
           layerStyle={layerStyle}
+          selectedVariable={selectedVariable}
         />
       </div>
       <BottomBar
