@@ -15,6 +15,7 @@ services:
   drop4crop-api:
     build:
       context: ../drop4crop-api
+    entrypoint: uvicorn --host=0.0.0.0 app.main:app --reload --port 8000
     environment:
       - DB_HOST=drop4crop-db
       - DB_PORT=5432
@@ -35,6 +36,8 @@ services:
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
       - S3_PREFIX=${S3_PREFIX}
+      - TILE_CACHE_URL=tile-cache
+      - TILE_CACHE_PORT=6379
     ports:
       - 8015:8000
     depends_on:
@@ -78,6 +81,11 @@ services:
       - ../drop4crop-admin:/app
     ports:
       - 5173:5173
+
+  tile-cache:
+    image: redis:7.4.0
+    ports:
+      - 6379:6379
 
 volumes:
   drop4crop-db-data:
