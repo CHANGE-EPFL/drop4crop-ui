@@ -1,5 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
+import PanelTitleWithTooltip from './Title';
 
 const ScenarioPanel = ({
     scenarios,
@@ -16,7 +17,12 @@ const ScenarioPanel = ({
 
     return (
         <div className="popup">
-            <h3>Scenario</h3>
+            <PanelTitleWithTooltip title="Scenario" tooltip={(
+                <>
+                    Representative Concentration Pathways (RCP) as formally
+                    adopted by the Intergovernmental Panel Climate Change (IPCC).
+                </>
+            )} />
             <div className="chips-list">
                 {scenarios.map(scenario => (
                     <Chip
