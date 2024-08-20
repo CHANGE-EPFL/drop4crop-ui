@@ -141,7 +141,7 @@ const App = () => {
       year: selectedTime
     }).then(response => {
       if (response === null) {
-        setLayerName(undefined);
+        setLayerName(null);
         setCountryAverageValues(null);
         setGlobalAverage(null);
         setLayerStyle([]);
