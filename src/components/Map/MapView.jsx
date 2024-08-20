@@ -103,11 +103,12 @@ const MapView = forwardRef(({
           enableSelection={enableSelection}
           setEnableSelection={setEnableSelection}
         />
-        <LegendControl
-          globalAverage={globalAverage}
-          colorMap={layerStyle}
-          selectedVariable={selectedVariable}
-        />
+        {layerName ?
+          <LegendControl
+            globalAverage={globalAverage}
+            colorMap={layerStyle}
+            selectedVariable={selectedVariable}
+          /> : null}
       </MapContainer>
     </>
   );

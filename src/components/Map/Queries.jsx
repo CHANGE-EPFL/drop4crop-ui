@@ -88,8 +88,6 @@ export const MapClickHandler = ({
                 if (!rootRef.current) {
                     rootRef.current = createRoot(container);
                 }
-                console.log('Country:', country);
-                console.log('Country average:', countryAverage);
                 rootRef.current.render(
                     <CountryPopupContent
                         country={country}

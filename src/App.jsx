@@ -118,7 +118,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    console.log("Selected Layer", selectedLayer);
     setloadingLayer(true);
     if (
       !selectedLayer.crop ||

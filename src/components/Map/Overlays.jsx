@@ -30,7 +30,6 @@ export const NoMapMakeSelectionOverlay = () => {
 export const MapOverlay = ({ layerName, loading }) => {
     // Show an overlay with loading spinner if the layer name is not yet available
     // by making an assumption that the layer name is undefined when a layername is not provided
-    console.log("layerName: ", layerName);
     if (loading) {
         return (
             <div style={mapOverlayStyle}>
