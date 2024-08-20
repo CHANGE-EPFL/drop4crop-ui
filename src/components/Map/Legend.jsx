@@ -75,7 +75,7 @@ const createLegendContainer = (
 
         colorMap.forEach(entry => {
             const label = L.DomUtil.create('div', 'legend-label', legendLabels);
-            label.innerHTML = `<span>${entry.value.toFixed(2)}</span>`;
+            label.innerHTML = `<span>${entry.label}</span>`;
             label.style.color = '#fff';
         });
     }
