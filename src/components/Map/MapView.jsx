@@ -32,6 +32,7 @@ const MapView = forwardRef(({
   countryAverageValues,
   layerStyle,
   selectedVariable,
+  loading,
 }, ref) => {
   const [highlightedFeature, setHighlightedFeature] = useState(null);
 
@@ -103,7 +104,7 @@ const MapView = forwardRef(({
         maxBounds={bounds}
         minZoom={2}
       >
-        <MapOverlay layerName={layerName} />
+        <MapOverlay layerName={layerName} loading={loading} />
         <TileLayer
           url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -111,7 +112,7 @@ const MapView = forwardRef(({
           maxZoom={20}
           zIndex={0}
         />
-        {layerName ? <TileLayer
+        {layerName && !loading ? <TileLayer
           url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${layerName}`}
           zIndex={1}
         /> : null}

@@ -15,12 +15,11 @@ export const NoMapOverlay = () => {
     );
 };
 
-export const MapOverlay = ({ layerName }) => {
-    if (layerName) {
-        return null;
-    }
-
-    if (layerName === undefined) {
+export const MapOverlay = ({ layerName, loading }) => {
+    // Show an overlay with loading spinner if the layer name is not yet available
+    // by making an assumption that the layer name is undefined when a layername is not provided
+    console.log("layerName: ", layerName);
+    if (loading) {
         return (
             <div style={mapOverlayStyle}>
                 <div style={overlayContentStyle}>
@@ -31,8 +30,14 @@ export const MapOverlay = ({ layerName }) => {
             </div>
         );
     }
+    if (layerName === undefined) {
+        return null;
+    }
+    if (layerName === null) {
+        return <NoMapOverlay />;
+    }
 
-    return <NoMapOverlay />;
+    return null;
 };
 
 
@@ -68,6 +73,5 @@ const overlayContentStyle = {
     textAlign: 'center',
     padding: '10px',
     borderRadius: '5px',
-    background: 'rgba(0, 0, 0, 0.7)',
     pointerEvents: 'auto', // Make the overlay content interactive
 };

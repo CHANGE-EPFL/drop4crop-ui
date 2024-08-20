@@ -4,8 +4,17 @@ import SidePanel from './components/SidePanel';
 import BottomBar from './components/BottomBar';
 import './App.css';
 import axios from 'axios';
+import {
+  cropItems,
+  globalWaterModelsItems,
+  climateModelsItems,
+  scenariosItems,
+  variablesItems,
+} from './variables';
+
 
 const getLayer = async (props) => {
+  // This function is used to get the map's layer name from the API
   try {
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
@@ -30,124 +39,74 @@ const getLayer = async (props) => {
 };
 
 const App = () => {
-  const [layerName, setLayerName] = useState(undefined);
-  const [globalAverage, setGlobalAverage] = useState(undefined);
-  const [countryAverageValues, setCountryAverageValues] = useState(undefined);
-  const [layerStyle, setLayerStyle] = useState([]);
-  const [selectedVariable, setSelectedVariable] = useState(null);
-  const [selectedLayer, setSelectedLayer] = useState({
+  // Set a variable to store whether we are loading or not, helps to show a loading spinner
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  const [loadingCountries, setLoadingCountries] = useState(true);
+  const [loadingLayer, setloadingLayer] = useState(false); // False because we don't load a layer on start
+  const [loadingAll, setLoadingAll] = useState(true);
+  const APIServerURL = window.location.origin + '/api';
+
+  const [layerName, setLayerName] = useState(undefined);  // The name of the current layer
+  const [globalAverage, setGlobalAverage] = useState(undefined);  // The global average value of the current layer
+  const [countryAverageValues, setCountryAverageValues] = useState(undefined);  // The country average values of the current layer
+  const [layerStyle, setLayerStyle] = useState([]);  // The style of the current layer, for the legend
+  const [selectedLayer, setSelectedLayer] = useState({ // Layer properties to discover the layer from the API
     crop: undefined,
     water_model: undefined,
     climate_model: undefined,
     scenario: undefined,
     variable: undefined,
   });
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [boundingBox, setBoundingBox] = useState(null);
-  const [enableSelection, setEnableSelection] = useState(false);
-  const [countryAverages, setCountryAverages] = useState(false);
+  const [boundingBox, setBoundingBox] = useState(null);  // The bounding box selected by the user for downloading
+  const [enableSelection, setEnableSelection] = useState(false);  // Whether the user is currently selecting a bounding box
+  const [countryAverages, setCountryAverages] = useState(false);  // Information about country averages in country view
   const boundingBoxSelectionRef = useRef(null);
-  const [crops, setCrops] = useState([]);
-  const [globalWaterModels, setGlobalWaterModels] = useState([]);
-  const [climateModels, setClimateModels] = useState([]);
-  const [scenarios, setScenarios] = useState([]);
-  const [variables, setVariables] = useState([]);
-  const [availableYears, setAvailableYears] = useState([]);
 
+  // These determine what is available in the menus
+  const [crops, setCrops] = useState([]);  // The list of available crops
+  const [globalWaterModels, setGlobalWaterModels] = useState([]);  // The list of available global water models
+  const [climateModels, setClimateModels] = useState([]);  // The list of available climate models
+  const [scenarios, setScenarios] = useState([]);  // The list of available scenarios
+  const [variables, setVariables] = useState([]);  // The list of available variables
+  const [availableYears, setAvailableYears] = useState([]);  // The list of available years
+
+  // Manages which panel to show in the SidePanel
   const [activePanel, setActivePanel] = useState(null);
+
+  // These determine the selected items in the menus
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
   const [selectedClimateModel, setSelectedClimateModel] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
+  const [selectedVariable, setSelectedVariable] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  const [countryPolygons, setCountryPolygons] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       // Initialise the menus with their values, setting all to false
       // we will ask the API if we can enable them depending if they are available
-      let cropItems = [
-        { id: 'barley', name: 'Barley', enabled: false },
-        { id: 'maize', name: 'Maize', enabled: false },
-        { id: 'potato', name: 'Potato', enabled: false },
-        { id: 'rice', name: 'Rice', enabled: false },
-        { id: 'sorghum', name: 'Sorghum', enabled: false },
-        { id: 'soy', name: 'Soy', enabled: false },
-        { id: 'sugarcane', name: 'Sugar Cane', enabled: false },
-        { id: 'wheat', name: 'Wheat', enabled: false },
-      ];
-
-      let globalWaterModelsItems = [
-        { id: 'cwatm', name: 'CWatM', enabled: false },
-        { id: 'h08', name: 'H08', enabled: false },
-        { id: 'lpjml', name: 'LPJmL', enabled: false },
-        { id: 'matsiro', name: 'MATSIRO', enabled: false },
-        { id: 'pcr-globwb', name: 'PCR-GLOBWB', enabled: false },
-        { id: 'watergap2', name: 'WaterGAP2', enabled: false },
-      ];
-
-      let climateModelsItems = [
-        { id: 'gfdl-esm2m', name: 'GFDL-ESM2M', enabled: false },
-        { id: 'hadgem2-es', name: 'HadGEM2-ES', enabled: false },
-        { id: 'ipsl-cm5a-lr', name: 'IPSL-CM5A-LR', enabled: false },
-        { id: 'miroc5', name: 'MIROC5', enabled: false },
-      ];
-
-      let scenariosItems = [
-        { id: 'rcp26', name: 'RCP 2.6', enabled: false },
-        { id: 'rcp60', name: 'RCP 6.0', enabled: false },
-        { id: 'rcp85', name: 'RCP 8.5', enabled: false },
-      ];
-
-
-      let variablesItems = [
-        { id: 'vwc', name: 'Total', abbreviation: 'VWC', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcb', name: 'Blue', abbreviation: 'VWCb', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg', name: 'Green', abbreviation: 'VWCg', unit: 'm³ ton⁻¹', enabled: false },
-        { id: 'vwcg_perc', name: 'Green', abbreviation: 'VWCg', unit: '%', enabled: false },
-        { id: 'vwcb_perc', name: 'Blue', abbreviation: 'VWCb', unit: '%', enabled: false },
-        { id: 'wf', name: 'Total', abbreviation: 'WF', unit: 'm³', enabled: false },
-        { id: 'wfb', name: 'Blue', abbreviation: 'WFb', unit: 'm³', enabled: false },
-        { id: 'wfg', name: 'Green', abbreviation: 'WFg', unit: 'm³', enabled: false },
-        { id: 'etb', name: 'Blue', abbreviation: 'ETb', unit: 'mm', enabled: false },
-        { id: 'etg', name: 'Green', abbreviation: 'ETg', unit: 'mm', enabled: false },
-        { id: 'rb', name: 'Blue', abbreviation: 'Rb', unit: 'mm', enabled: false },
-        { id: 'rg', name: 'Green', abbreviation: 'Rg', unit: 'mm', enabled: false },
-        { id: 'wdb', name: 'Blue', abbreviation: 'WDb', unit: 'years', enabled: false },
-        { id: 'wdg', name: 'Green', abbreviation: 'WDg', unit: 'years', enabled: false },
-        { id: 'mirca_area_irrigated', name: 'Irrigated Area', abbreviation: 'MircaAreaIrrigated', unit: 'ha', enabled: false },
-        { id: 'mirca_area_total', name: 'Total Area', abbreviation: 'MircaAreaTotal', unit: 'ha', enabled: false },
-        { id: 'mirca_rainfed', name: 'Rainfed Area', abbreviation: 'MircaRainfed', unit: 'ha', enabled: false },
-        { id: 'yield', name: 'Yield', abbreviation: 'Yield', unit: 'ton ha⁻¹' },
-        { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton' },
-      ];
-
       // Request from API at GET /layers/groups to get the list of available layers
       // return is an object with keys of the key "id" in each layer group, these are to be set to enabled: true, and the rest to enabled: false
       const response = await axios.get('/api/layers/groups');
       const { crop, water_model, climate_model, scenario, variable, year } = response.data;
 
-      cropItems = cropItems.map(c => ({ ...c, enabled: crop.includes(c.id) }));
-      globalWaterModelsItems = globalWaterModelsItems.map(m => ({ ...m, enabled: water_model.includes(m.id) }));
-      climateModelsItems = climateModelsItems.map(m => ({ ...m, enabled: climate_model.includes(m.id) }));
-      scenariosItems = scenariosItems.map(s => ({ ...s, enabled: scenario.includes(s.id) }));
-      variablesItems = variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) }));
-      console.log("YEARS", year);
-      setCrops(cropItems);
-      setGlobalWaterModels(globalWaterModelsItems);
-      setClimateModels(climateModelsItems);
-      setScenarios(scenariosItems);
-      setVariables(variablesItems);
+      setCrops(cropItems.map(c => ({ ...c, enabled: crop.includes(c.id) })));
+      setGlobalWaterModels(globalWaterModelsItems.map(m => ({ ...m, enabled: water_model.includes(m.id) })));
+      setClimateModels(climateModelsItems.map(m => ({ ...m, enabled: climate_model.includes(m.id) })));
+      setScenarios(scenariosItems.map(s => ({ ...s, enabled: scenario.includes(s.id) })));
+      setVariables(variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
       setAvailableYears(year);
       setSelectedTime(year[0]);
 
-      // Select the first "enabled" item in each list
-      setSelectedCrop(cropItems.find(crop => crop.enabled));
-      setSelectedGlobalWaterModel(globalWaterModelsItems.find(model => model.enabled));
-      setSelectedClimateModel(climateModelsItems.find(model => model.enabled));
-      setSelectedScenario(scenariosItems.find(scenario => scenario.enabled));
-      setSelectedVariable(variablesItems.find(variable => variable.enabled));
+      setLoadingGroups(false);  // We are done loading the groups
     };
     fetchData();
+
+
   }, []);
+
   const handleLayerSelect = (layerId) => {
     setSelectedLayer(layerId);
   };
@@ -157,16 +116,21 @@ const App = () => {
   };
 
   useEffect(() => {
+    setloadingLayer(true);
     if (
-      selectedLayer.crop === undefined ||
-      selectedLayer.water_model === undefined ||
-      selectedLayer.climate_model === undefined ||
-      selectedLayer.scenario === undefined ||
-      selectedLayer.variable === undefined ||
-      selectedTime === undefined
+      !selectedLayer.crop ||
+      !selectedLayer.water_model ||
+      !selectedLayer.climate_model ||
+      !selectedLayer.scenario ||
+      !selectedLayer.variable ||
+      !selectedTime
     ) {
+      setLayerName(undefined);
+      setloadingLayer(false);
       return;
     }
+
+    setloadingLayer(true);
     getLayer({
       crop: selectedLayer.crop,
       water_model: selectedLayer.water_model,
@@ -186,6 +150,7 @@ const App = () => {
         setGlobalAverage(response.global_average);
         setLayerStyle(response.style || []);
       }
+      setloadingLayer(false);
     }).catch(error => {
       console.error("Error getting layer", error);
     });
@@ -198,19 +163,26 @@ const App = () => {
     selectedTime
   ]);
 
-  const APIServerURL = window.location.origin + '/api';
-  const [countryPolygons, setCountryPolygons] = useState(null);
 
   useEffect(() => {
     axios.get("/api/countries")
       .then(response => {
         setCountryPolygons(response.data);
+        setLoadingCountries(false);
       })
       .catch(error => {
         console.error("Error getting countries", error);
       });
   }, []);
 
+  useEffect(() => {
+    // If we are done loading the groups and countries, we are done loading everything
+    if (loadingGroups === false && loadingCountries === false && loadingLayer === false) {
+      setLoadingAll(false);
+    } else {
+      setLoadingAll(true);
+    }
+  }, [loadingGroups, loadingCountries, loadingLayer]);
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
@@ -250,7 +222,7 @@ const App = () => {
           countryAverageValues={countryAverageValues}
           layerStyle={layerStyle}
           selectedVariable={selectedVariable}
-
+          loading={loadingAll}
         />
       </div>
       <BottomBar
