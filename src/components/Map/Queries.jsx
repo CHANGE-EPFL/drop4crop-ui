@@ -44,11 +44,15 @@ const CountryPopupContent = ({ country, countryAverage, onClose }) => {
 
 const PopupContentContainer = () => {
     const containerRef = useRef(document.createElement('div'));
+
     useEffect(() => {
         const container = containerRef.current;
         document.body.appendChild(container);
+
         return () => {
-            document.body.removeChild(container);
+            if (container && container.parentNode) {
+                container.parentNode.removeChild(container);
+            }
         };
     }, []);
 
@@ -79,11 +83,10 @@ export const MapClickHandler = ({
             return null;
         }
     };
+
     const handleClosePopup = () => {
         map.closePopup();
     };
-
-
 
     useMapEvent('click', (e) => {
         setClickPosition(e.latlng);
@@ -122,7 +125,6 @@ export const MapClickHandler = ({
                     .setLatLng(clickPosition)
                     .setContent(container)
                     .openOn(map);
-
 
                 return;
             }
@@ -167,8 +169,9 @@ export const MapClickHandler = ({
                 rootRef.current.unmount();
                 rootRef.current = null;
             }
+            map.closePopup(); // Ensure the popup is closed when the component unmounts
         };
-    }, []);
+    }, [map]);
 
     return null;
 };
