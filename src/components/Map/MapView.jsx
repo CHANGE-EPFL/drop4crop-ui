@@ -5,18 +5,14 @@ import {
   ZoomControl,
   GeoJSON
 } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import './MapView.css';
 import BoundingBoxSelection from './BoundingBoxSelection';
-import { ScaleControl } from 'react-leaflet';
-import Switch from '@mui/material/Switch';
-import { Typography } from '@mui/material';
-import FormControlLabel from '@mui/material/FormControlLabel';
+import { ScaleControl } from 'react-leaflet'
 import { MapOverlay } from './Overlays';
 import { MapClickHandler } from './Queries';
-import './MapView.css';
-import GeoRaster from './GeoRasterLayer';
 import { LegendControl } from './Legend';
 
 const MapView = forwardRef(({
@@ -42,9 +38,6 @@ const MapView = forwardRef(({
     layer.bringToFront();
   }, []);
 
-  const resetHighlight = useCallback(() => {
-    setHighlightedFeature(null);
-  }, []);
 
   const geoJsonStyle = useCallback((feature) => ({
     weight: 2,
@@ -66,35 +59,6 @@ const MapView = forwardRef(({
 
   return (
     <>
-      <div style={toggleContainerMapStyle}>
-        <FormControlLabel
-          disabled={!layerName}
-          control={
-            <Switch
-              checked={countryAverages}
-              size="small"
-              onChange={(e) => {
-                e.stopPropagation();
-                setCountryAverages(e.target.checked);
-              }}
-              sx={{
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                  backgroundColor: '#d1a766',
-                },
-                '& .MuiSwitch-track': {
-                  backgroundColor: countryAverages ? '#d1a766' : '#888',
-                },
-                '& .MuiSwitch-thumb': {
-                  backgroundColor: countryAverages ? '#d1a766' : '#ccc',
-                },
-              }}
-            />
-          }
-          label={<Typography variant="body2">Country Scale Values</Typography>}
-          labelPlacement="end"
-          className={!layerName ? 'disabled' : ''}
-        />
-      </div>
       <MapContainer
         center={[35, 20]}
         zoom={1}
@@ -150,21 +114,3 @@ const MapView = forwardRef(({
 });
 
 export default MapView;
-
-const toggleContainerMapStyle = {
-  position: 'absolute',
-  bottom: '110px',
-  left: '100px',
-  display: 'flex',
-  alignItems: 'center',
-  backgroundColor: '#333',
-  color: '#d3d3d3',
-  borderColor: 'rgba(0, 0, 0, 0.7)',
-  boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)',
-  zIndex: 1000,
-  opacity: '0.8',
-  borderTop: '1px solid #444',
-  justifyContent: 'center',
-  paddingLeft: '20px',
-  borderRadius: '10px',
-};
