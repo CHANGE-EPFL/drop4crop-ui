@@ -1,12 +1,19 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
 
-
 const ScenarioPanel = ({
     scenarios,
     selectedScenario,
     setSelectedScenario
 }) => {
+    const handleChipClick = (scenario) => {
+        if (selectedScenario && selectedScenario.id === scenario.id) {
+            setSelectedScenario(undefined);  // Deselect if the same scenario is clicked
+        } else {
+            setSelectedScenario(scenario);  // Select the scenario
+        }
+    };
+
     return (
         <div className="popup">
             <h3>Scenario</h3>
@@ -18,12 +25,12 @@ const ScenarioPanel = ({
                         clickable
                         className={selectedScenario && selectedScenario.id === scenario.id ? 'active' : ''}
                         disabled={!scenario.enabled}
-                        onClick={() => setSelectedScenario(scenario)}
+                        onClick={() => handleChipClick(scenario)}
                     />
                 ))}
             </div>
         </div>
-    )
+    );
 };
 
 export default ScenarioPanel;

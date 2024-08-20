@@ -48,16 +48,15 @@ const SidePanel = ({
   };
 
   useEffect(() => {
-    if (!getNextUnselected()) {
-      const layerProps = {
-        crop: selectedCrop.id,
-        water_model: selectedGlobalWaterModel.id,
-        climate_model: selectedClimateModel.id,
-        scenario: selectedScenario.id,
-        variable: selectedVariable.id,
-      };
-      onLayerSelect(layerProps);
-    }
+    console.log("Selected crop", selectedCrop, "Selected global water model", selectedGlobalWaterModel, "Selected climate model", selectedClimateModel, "Selected scenario", selectedScenario, "Selected variable", selectedVariable);
+    const layerProps = {
+      crop: selectedCrop?.id,
+      water_model: selectedGlobalWaterModel?.id,
+      climate_model: selectedClimateModel?.id,
+      scenario: selectedScenario?.id,
+      variable: selectedVariable?.id,
+    };
+    onLayerSelect(layerProps);
   }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable]);
 
   const handlePanelClick = (panel) => {

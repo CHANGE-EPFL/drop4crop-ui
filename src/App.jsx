@@ -116,6 +116,7 @@ const App = () => {
   };
 
   useEffect(() => {
+    console.log("Selected Layer", selectedLayer);
     setloadingLayer(true);
     if (
       !selectedLayer.crop ||
@@ -140,7 +141,7 @@ const App = () => {
       year: selectedTime
     }).then(response => {
       if (response === null) {
-        setLayerName(null);
+        setLayerName(undefined);
         setCountryAverageValues(null);
         setGlobalAverage(null);
         setLayerStyle([]);

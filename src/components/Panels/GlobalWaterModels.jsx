@@ -1,12 +1,19 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
 
-
 const GlobalWaterModelsPanel = ({
     globalWaterModels,
     selectedGlobalWaterModel,
     setSelectedGlobalWaterModel
 }) => {
+    const handleChipClick = (model) => {
+        if (selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id) {
+            setSelectedGlobalWaterModel(undefined);  // Deselect if the same model is clicked
+        } else {
+            setSelectedGlobalWaterModel(model);  // Select the model
+        }
+    };
+
     return (
         <div className="popup">
             <h3>Global Water Model</h3>
@@ -18,12 +25,12 @@ const GlobalWaterModelsPanel = ({
                         clickable
                         className={selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id ? 'active' : ''}
                         disabled={!model.enabled}
-                        onClick={() => setSelectedGlobalWaterModel(model)}
+                        onClick={() => handleChipClick(model)}
                     />
                 ))}
             </div>
         </div>
-    )
+    );
 };
 
 export default GlobalWaterModelsPanel;
