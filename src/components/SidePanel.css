@@ -1,6 +1,5 @@
 .side-panel {
     width: 100px;
-    /* Increase sidebar width */
     padding: 0;
     background: #282c34;
     display: flex;
@@ -10,8 +9,11 @@
     height: 100vh;
     border-right: 1px solid #444;
     justify-content: space-between;
-    /* To push the bottom buttons to the bottom */
+    z-index: 1000;
+    /* Ensure the side panel is above other elements */
+    overflow: visible;
 }
+
 
 .button-group {
     width: 100%;
@@ -19,21 +21,17 @@
 
 .button-group.top {
     flex-grow: 1;
-    /* Allow the top group to grow and push the bottom group down */
 }
 
 .button-group.bottom {
     margin-top: auto;
-    /* Push this group to the bottom */
 }
 
 .button-group button {
     width: 100%;
     height: 100px;
-    /* Increase button height */
     background-color: #4a4a4a;
     color: #d3d3d3;
-    /* Muted text color */
     border: none;
     border-bottom: 1px solid #444;
     cursor: pointer;
@@ -42,11 +40,8 @@
     justify-content: center;
     align-items: center;
     font-size: 12px;
-    /* Adjust text size */
     padding: 4px;
-    /* Add padding */
     box-sizing: border-box;
-    /* Ensure padding is included in the width and height */
 }
 
 .button-group button:last-child {
@@ -56,7 +51,6 @@
 .button-group button:hover,
 .button-group button.active {
     background-color: #616161;
-    /* Slightly different color for active state */
 }
 
 .button-content {
@@ -64,13 +58,9 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    /* Center text */
     width: 100%;
-    /* Ensure content takes full width */
     height: 100%;
-    /* Ensure content takes full height */
     justify-content: center;
-    /* Center content vertically */
 }
 
 .button-content span {
@@ -82,83 +72,91 @@
     margin-top: 5px;
     color: #d1a766;
     opacity: 0.75;
-    /* Muted color for current selection text */
     height: 14px;
-    /* Fixed height to prevent shifting */
 }
 
+
+.side-panel .chips-list .MuiChip-root {
+    background-color: #4a4a4a;
+    color: #d3d3d3;
+    border: 1px solid #4a4a4a;
+    margin: 4px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.side-panel .chips-list .MuiChip-root.active {
+    background-color: #616161;
+    color: #d1a766;
+    border: 1px solid #616161;
+}
+
+.side-panel .chips-list .MuiChip-root.disabled {
+    background-color: #808080;
+    color: #d3d3d3;
+    border: 1px solid #808080;
+    opacity: 0.5;
+}
+
+.button-group .disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Arrow Note Styles */
+.arrow-note {
+    position: absolute;
+    right: -120px;
+    width: 120px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #d3d3d3;
+    text-align: left;
+    white-space: nowrap;
+    z-index: 1001;
+    /* Ensure the arrow is above the side panel */
+}
+
+.arrow-note::before {
+    content: '';
+    border: solid transparent;
+    border-width: 10px;
+    border-right-color: #d3d3d3;
+    margin-right: 10px;
+}
+
+/* Ensure pop-up panels appear above the tooltip */
 .popup {
     position: absolute;
     left: 110px;
-    /* Adjust according to sidebar width */
     top: 10px;
     width: 400px;
     background: #333;
     color: #d3d3d3;
-    /* Muted text color */
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
     padding: 15px;
-    z-index: 1000;
+    z-index: 1100;
+    /* Higher than tooltip's z-index */
     border-radius: 5px;
 }
 
 .popup h3 {
     margin-top: 0;
     color: #b0b0b0;
-    /* Muted color for headings */
 }
 
 .popup h5 {
     margin-top: 0.6rem;
     margin-bottom: 0.4rem;
-    /* Buffer under all h5 elements */
 }
 
 .popup p {
     margin: 0;
     color: #b0b0b0;
-    /* Muted color for paragraphs */
 }
 
 .popup label {
     color: #d3d3d3;
-    /* Muted text color for labels */
-}
-
-.side-panel .chips-list .MuiChip-root {
-    background-color: #4a4a4a;
-    /* Default chip background color */
-    color: #d3d3d3;
-    /* Default chip text color */
-    border: 1px solid #4a4a4a;
-    /* Default chip border color */
-    margin: 4px;
-    /* Spacing between chips */
-    transition: background-color 0.3s, color 0.3s;
-    /* Smooth transition for colors */
-}
-
-.side-panel .chips-list .MuiChip-root.active {
-    background-color: #616161;
-    /* Subtle change for selected chip background */
-    color: #d1a766;
-    /* Light brown text for selected chips */
-    border: 1px solid #616161;
-    /* Border matching the background color */
-}
-
-.side-panel .chips-list .MuiChip-root.disabled {
-    background-color: #808080;
-    /* Gray background for disabled chips */
-    color: #d3d3d3;
-    /* Muted text color for disabled chips */
-    border: 1px solid #808080;
-    /* Border matching the background color */
-    opacity: 0.5;
-    /* Make disabled chips slightly transparent */
-}
-
-.button-group .disabled {
-    opacity: 0.5;
-    pointer-events: none;
 }

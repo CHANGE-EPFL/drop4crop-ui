@@ -38,16 +38,24 @@ const SidePanel = ({
   selectedScenario, setSelectedScenario,
 }) => {
 
+  const getNextUnselected = () => {
+    if (!selectedCrop) return 'crops';
+    if (!selectedGlobalWaterModel) return 'globalWaterModels';
+    if (!selectedClimateModel) return 'climateModels';
+    if (!selectedScenario) return 'scenarios';
+    if (!selectedVariable) return 'variables';
+    return null;
+  };
 
   useEffect(() => {
-    if (selectedCrop && selectedGlobalWaterModel && selectedClimateModel && selectedScenario && selectedVariable) {
+    if (!getNextUnselected()) {
       const layerProps = {
         crop: selectedCrop.id,
         water_model: selectedGlobalWaterModel.id,
         climate_model: selectedClimateModel.id,
         scenario: selectedScenario.id,
         variable: selectedVariable.id,
-      }
+      };
       onLayerSelect(layerProps);
     }
   }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable]);
@@ -56,8 +64,26 @@ const SidePanel = ({
     setActivePanel(activePanel === panel ? null : panel);
   };
 
+  const nextUnselected = getNextUnselected();
+  const arrowPositions = {
+    crops: 0,
+    globalWaterModels: 1,
+    climateModels: 2,
+    scenarios: 3,
+    variables: 4,
+  };
+
+  const arrowPositionStyle = nextUnselected !== null ? {
+    top: `calc(${arrowPositions[nextUnselected]} * 100px + 50px)`,
+  } : { display: 'none' };
+
   return (
     <div className="side-panel">
+      {nextUnselected && (
+        <div className="arrow-note" style={arrowPositionStyle}>
+          <span>Select here</span>
+        </div>
+      )}
       <div className="button-group top">
         <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
           <div className="button-content">
@@ -66,6 +92,7 @@ const SidePanel = ({
             <span className="current-selection">{selectedCrop ? selectedCrop.name : ''}</span>
           </div>
         </button>
+
         <button onClick={() => handlePanelClick('globalWaterModels')} className={activePanel === 'globalWaterModels' ? 'active' : ''}>
           <div className="button-content">
             <FontAwesomeIcon icon={faWater} size="2xl" />
@@ -73,6 +100,7 @@ const SidePanel = ({
             <span className="current-selection">{selectedGlobalWaterModel ? selectedGlobalWaterModel.name : ''}</span>
           </div>
         </button>
+
         <button onClick={() => handlePanelClick('climateModels')} className={activePanel === 'climateModels' ? 'active' : ''}>
           <div className="button-content">
             <FontAwesomeIcon icon={faCloudSun} size="2xl" />
@@ -80,6 +108,7 @@ const SidePanel = ({
             <span className="current-selection">{selectedClimateModel ? selectedClimateModel.name : ''}</span>
           </div>
         </button>
+
         <button onClick={() => handlePanelClick('scenarios')} className={activePanel === 'scenarios' ? 'active' : ''}>
           <div className="button-content">
             <FontAwesomeIcon icon={faCogs} size="2xl" />
@@ -87,6 +116,7 @@ const SidePanel = ({
             <span className="current-selection">{selectedScenario ? selectedScenario.name : ''}</span>
           </div>
         </button>
+
         <button onClick={() => handlePanelClick('variables')} className={activePanel === 'variables' ? 'active' : ''}>
           <div className="button-content">
             <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
@@ -95,6 +125,7 @@ const SidePanel = ({
           </div>
         </button>
       </div>
+
       <div className="button-group bottom">
         <button disabled={!currentLayer}
           onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''}`}>
@@ -149,7 +180,6 @@ const SidePanel = ({
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
         />
-
       )}
 
       {activePanel === 'download' && (
