@@ -15,6 +15,15 @@ export const NoMapOverlay = () => {
     );
 };
 
+export const NoMapMakeSelectionOverlay = () => {
+    // Informs the user to select a layer
+    return (
+        <div style={mapOverlayStyle}>
+            <p>Use the buttons on the left to select a layer to display</p>
+        </div>
+    );
+};
+
 export const MapOverlay = ({ layerName, loading }) => {
     // Show an overlay with loading spinner if the layer name is not yet available
     // by making an assumption that the layer name is undefined when a layername is not provided
@@ -31,7 +40,8 @@ export const MapOverlay = ({ layerName, loading }) => {
         );
     }
     if (layerName === undefined) {
-        return null;
+        // return <NoMapOverlay />;
+        return <NoMapMakeSelectionOverlay />;
     }
     if (layerName === null) {
         return <NoMapOverlay />;
