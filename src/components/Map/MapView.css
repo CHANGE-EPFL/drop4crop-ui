@@ -112,3 +112,36 @@
     opacity: 0.5;
     pointer-events: none;
 }
+
+
+
+.custom-leaflet-popup .leaflet-popup-content {
+    margin: 0;
+    width: auto !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-tip-container {
+    display: block;
+    /* Ensure the popup tip is visible */
+}
+
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+}
+
+.custom-leaflet-popup .leaflet-popup-close-button {
+    display: block;
+    /* Ensure the default close button is visible */
+    color: #d1a766;
+    /* Optional: match the color to your theme */
+}
+
+.custom-leaflet-popup .leaflet-popup-tip {
+    background: #333;
+    /* Match this to the background color of your popup */
+    border: none;
+    /* Remove the border if it's visible */
+}

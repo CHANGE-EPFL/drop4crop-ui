@@ -89,14 +89,6 @@ const MapView = forwardRef(({
         )}
         <ZoomControl position="bottomright" />
         <ScaleControl imperial={false} maxWidth={250} />
-        <MapClickHandler
-          layerName={layerName}
-          APIServerURL={APIServerURL}
-          countryAverages={countryAverages}
-          highlightedFeature={highlightedFeature}
-          countryPolygons={countryPolygons}
-          countryAverageValues={countryAverageValues}
-        />
         <BoundingBoxSelection
           ref={ref}
           setBoundingBox={setBoundingBox}
@@ -104,11 +96,21 @@ const MapView = forwardRef(({
           setEnableSelection={setEnableSelection}
         />
         {layerName ?
-          <LegendControl
-            globalAverage={globalAverage}
-            colorMap={layerStyle}
-            selectedVariable={selectedVariable}
-          /> : null}
+          <><MapClickHandler
+            layerName={layerName}
+            APIServerURL={APIServerURL}
+            countryAverages={countryAverages}
+            highlightedFeature={highlightedFeature}
+            setHighlightedFeature={setHighlightedFeature}
+            countryPolygons={countryPolygons}
+            countryAverageValues={countryAverageValues}
+          />
+            <LegendControl
+              globalAverage={globalAverage}
+              colorMap={layerStyle}
+              selectedVariable={selectedVariable}
+            />
+          </> : null}
       </MapContainer>
     </>
   );
