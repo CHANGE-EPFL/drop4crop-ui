@@ -74,7 +74,7 @@ const SidePanel = ({
   };
 
   const arrowPositionStyle = nextUnselected !== null ? {
-    top: `calc(${arrowPositions[nextUnselected]} * 100px + 50px)`,
+    top: `calc(${arrowPositions[nextUnselected]} * 70px + 35px)`,
   } : { display: 'none' };
 
   return (
