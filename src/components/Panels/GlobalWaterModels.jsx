@@ -6,13 +6,15 @@ import Link from '@mui/material/Link';
 const GlobalWaterModelsPanel = ({
     globalWaterModels,
     selectedGlobalWaterModel,
-    setSelectedGlobalWaterModel
+    setSelectedGlobalWaterModel,
+    setActivePanel,
 }) => {
     const handleChipClick = (model) => {
         if (selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id) {
             setSelectedGlobalWaterModel(undefined);  // Deselect if the same model is clicked
         } else {
             setSelectedGlobalWaterModel(model);  // Select the model
+            setActivePanel(null);
         }
     };
 

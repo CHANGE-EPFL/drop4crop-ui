@@ -5,13 +5,15 @@ import PanelTitleWithTooltip from './Title';
 const ScenarioPanel = ({
     scenarios,
     selectedScenario,
-    setSelectedScenario
+    setSelectedScenario,
+    setActivePanel,
 }) => {
     const handleChipClick = (scenario) => {
         if (selectedScenario && selectedScenario.id === scenario.id) {
             setSelectedScenario(undefined);  // Deselect if the same scenario is clicked
         } else {
             setSelectedScenario(scenario);  // Select the scenario
+            setActivePanel(null);
         }
     };
 

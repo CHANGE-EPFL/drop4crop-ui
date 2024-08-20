@@ -7,7 +7,12 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
 import PanelTitleWithTooltip from './Title';
 
-const VariablePanel = ({ variables, selectedVariable, setSelectedVariable }) => {
+const VariablePanel = ({
+    variables,
+    selectedVariable,
+    setSelectedVariable,
+    setActivePanel,
+}) => {
     const [showCropSpecific, setShowCropSpecific] = useState(false);
 
     const handleChipClick = (variable) => {
@@ -15,6 +20,7 @@ const VariablePanel = ({ variables, selectedVariable, setSelectedVariable }) => 
             setSelectedVariable(undefined);  // Deselect if the same variable is clicked
         } else {
             setSelectedVariable(variable);  // Select the variable
+            setActivePanel(null);
         }
     };
 

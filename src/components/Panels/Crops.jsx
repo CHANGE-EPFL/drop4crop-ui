@@ -6,13 +6,15 @@ import Link from '@mui/material/Link';
 const CropsPanel = ({
     crops,
     selectedCrop,
-    setSelectedCrop
+    setSelectedCrop,
+    setActivePanel,
 }) => {
     const handleChipClick = (crop) => {
         if (selectedCrop && selectedCrop.id === crop.id) {
             setSelectedCrop(undefined);  // Deselect if the same crop is clicked
         } else {
             setSelectedCrop(crop);  // Select the crop
+            setActivePanel(null);
         }
     };
 

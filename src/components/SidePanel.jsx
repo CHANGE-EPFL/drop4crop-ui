@@ -48,7 +48,6 @@ const SidePanel = ({
   };
 
   useEffect(() => {
-    console.log("Selected crop", selectedCrop, "Selected global water model", selectedGlobalWaterModel, "Selected climate model", selectedClimateModel, "Selected scenario", selectedScenario, "Selected variable", selectedVariable);
     const layerProps = {
       crop: selectedCrop?.id,
       water_model: selectedGlobalWaterModel?.id,
@@ -146,6 +145,7 @@ const SidePanel = ({
           crops={crops}
           selectedCrop={selectedCrop}
           setSelectedCrop={setSelectedCrop}
+          setActivePanel={setActivePanel}
         />
       )}
 
@@ -154,6 +154,7 @@ const SidePanel = ({
           globalWaterModels={globalWaterModels}
           selectedGlobalWaterModel={selectedGlobalWaterModel}
           setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
+          setActivePanel={setActivePanel}
         />
       )}
 
@@ -162,6 +163,7 @@ const SidePanel = ({
           climateModels={climateModels}
           selectedClimateModel={selectedClimateModel}
           setSelectedClimateModel={setSelectedClimateModel}
+          setActivePanel={setActivePanel}
         />
       )}
 
@@ -170,6 +172,7 @@ const SidePanel = ({
           scenarios={scenarios}
           selectedScenario={selectedScenario}
           setSelectedScenario={setSelectedScenario}
+          setActivePanel={setActivePanel}
         />
       )}
 
@@ -178,6 +181,7 @@ const SidePanel = ({
           variables={variables}
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
+          setActivePanel={setActivePanel}
         />
       )}
 

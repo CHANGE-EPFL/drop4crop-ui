@@ -6,13 +6,15 @@ import Link from '@mui/material/Link';
 const ClimateModelsPanel = ({
     climateModels,
     selectedClimateModel,
-    setSelectedClimateModel
+    setSelectedClimateModel,
+    setActivePanel,
 }) => {
     const handleChipClick = (model) => {
         if (selectedClimateModel && selectedClimateModel.id === model.id) {
             setSelectedClimateModel(undefined);  // Deselect if the same model is clicked
         } else {
             setSelectedClimateModel(model);  // Select the model
+            setActivePanel(null);
         }
     };
 
