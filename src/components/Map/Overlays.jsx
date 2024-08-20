@@ -15,11 +15,14 @@ export const NoMapOverlay = () => {
     );
 };
 
+
 export const NoMapMakeSelectionOverlay = () => {
     // Informs the user to select a layer
     return (
-        <div style={mapOverlayStyle}>
-            <p>Use the buttons on the left to select a layer to display</p>
+        <div style={noSelectionMapOverlayStyle}>
+            <div style={selectionBoxStyle}>
+                <p>Use the buttons on the left to select a layer to display</p>
+            </div>
         </div>
     );
 };
@@ -50,6 +53,21 @@ export const MapOverlay = ({ layerName, loading }) => {
     return null;
 };
 
+const noSelectionMapOverlayStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'top',
+    alignItems: 'center',
+    color: 'white',
+    fontSize: '1.2em',
+    textAlign: 'center',
+    zIndex: 999, // Ensure it is above other map elements
+};
 
 const mapOverlayStyle = {
     position: 'absolute',
@@ -84,4 +102,19 @@ const overlayContentStyle = {
     padding: '10px',
     borderRadius: '5px',
     pointerEvents: 'auto', // Make the overlay content interactive
+};
+const selectionBoxStyle = {
+    backgroundColor: '#333',
+    padding: '5px 10px', // Adjust padding to reduce top/bottom space
+    borderRadius: '5px',
+    opacity: '0.95',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
+    color: '#d3d3d3',
+    fontSize: '1em', // Match the legend text size
+    textAlign: 'center',
+    marginTop: '10px',
+    lineHeight: '1.2em', // Reduce line height to minimize vertical space
 };
