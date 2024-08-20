@@ -22,7 +22,7 @@ const CountryPopupContent = ({ country, countryAverage }) => {
                 </Tooltip>
             </span>
             <br />
-            Average: {countryAverage.value.toFixed(2)}
+            Average: {countryAverage ? countryAverage?.value.toFixed(2) : 'Not defined'}
         </div>
     );
 };
@@ -82,30 +82,27 @@ export const MapClickHandler = ({
                     (feature) => feature.properties.name === highlightedFeature.properties.name
                 );
 
-                if (country) {
-                    const countryAverage = countryAverageValues.find(
-                        (average) => average.country.name === country.properties.name
-                    );
-                    if (countryAverage) {
-                        if (!rootRef.current) {
-                            rootRef.current = createRoot(container);
-                        }
-
-                        rootRef.current.render(
-                            <CountryPopupContent
-                                country={country}
-                                countryAverage={countryAverage}
-                            />
-                        );
-
-                        L.popup()
-                            .setLatLng(clickPosition)
-                            .setContent(container)
-                            .openOn(map);
-
-                        return;
-                    }
+                const countryAverage = countryAverageValues.find(
+                    (average) => average.country.name === country.properties.name
+                );
+                if (!rootRef.current) {
+                    rootRef.current = createRoot(container);
                 }
+                console.log('Country:', country);
+                console.log('Country average:', countryAverage);
+                rootRef.current.render(
+                    <CountryPopupContent
+                        country={country}
+                        countryAverage={countryAverage}
+                    />
+                );
+
+                L.popup()
+                    .setLatLng(clickPosition)
+                    .setContent(container)
+                    .openOn(map);
+
+                return;
             }
 
             try {
