@@ -12,6 +12,8 @@ const VariablePanel = ({
     selectedVariable,
     setSelectedVariable,
     setActivePanel,
+    selectedCropVariable,
+    setSelectedCropVariable,
 }) => {
     const [showCropSpecific, setShowCropSpecific] = useState(false);
 
@@ -19,6 +21,9 @@ const VariablePanel = ({
         if (selectedVariable && selectedVariable.id === variable.id) {
             setSelectedVariable(undefined);  // Deselect if the same variable is clicked
         } else {
+            if (selectedCropVariable) {
+                setSelectedCropVariable(undefined);  // Deselect the Crop variable, as we cannot have both at the same time
+            }
             setSelectedVariable(variable);  // Select the variable
             setActivePanel(null);
         }

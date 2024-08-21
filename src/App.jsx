@@ -10,6 +10,7 @@ import {
   climateModelsItems,
   scenariosItems,
   variablesItems,
+  cropVariablesItems,
 } from './variables';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
@@ -20,16 +21,23 @@ const getLayer = async (props) => {
   try {
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
-    const response = await axios.get("/api/layers/map", {
-      params: {
-        crop: props.crop,
-        water_model: props.water_model,
-        climate_model: props.climate_model,
-        scenario: scenario,
-        variable: props.variable,
-        year: props.year,
-      },
-    });
+    const params = {
+      crop: props.crop,
+      water_model: props.water_model,
+      climate_model: props.climate_model,
+      scenario: scenario,
+    };
+    console.log("Crop Variable", props.crop_variable);
+    console.log("Variable", props.variable);
+    if (props.crop_variable) {
+      params.variable = props.crop_variable;
+    } else {
+      params.variable = props.variable;
+      params.year = props.year;
+    }
+
+    const response = await axios.get("/api/layers/map", { params });
+
     if (response && response.data.length === 1) {
       return response.data[0];
     } else {
@@ -58,6 +66,7 @@ const App = () => {
     climate_model: undefined,
     scenario: undefined,
     variable: undefined,
+    crop_variable: undefined,
   });
   const [boundingBox, setBoundingBox] = useState(null);  // The bounding box selected by the user for downloading
   const [enableSelection, setEnableSelection] = useState(false);  // Whether the user is currently selecting a bounding box
@@ -70,6 +79,7 @@ const App = () => {
   const [climateModels, setClimateModels] = useState([]);  // The list of available climate models
   const [scenarios, setScenarios] = useState([]);  // The list of available scenarios
   const [variables, setVariables] = useState([]);  // The list of available variables
+  const [cropVariables, setCropVariables] = useState([]);  // The list of available crop variables
   const [availableYears, setAvailableYears] = useState([]);  // The list of available years
 
   // Manages which panel to show in the SidePanel
@@ -81,7 +91,11 @@ const App = () => {
   const [selectedClimateModel, setSelectedClimateModel] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [selectedVariable, setSelectedVariable] = useState(null);
+  const [selectedCropVariable, setSelectedCropVariable] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
+
+  const [variableForLegend, setVariableForLegend] = useState(undefined);
+
 
   const [countryPolygons, setCountryPolygons] = useState(null);
 
@@ -99,6 +113,7 @@ const App = () => {
       setClimateModels(climateModelsItems.map(m => ({ ...m, enabled: climate_model.includes(m.id) })));
       setScenarios(scenariosItems.map(s => ({ ...s, enabled: scenario.includes(s.id) })));
       setVariables(variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
+      setCropVariables(cropVariablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
       setAvailableYears(year);
       setSelectedTime(year[0]);
 
@@ -125,7 +140,7 @@ const App = () => {
       !selectedLayer.water_model ||
       !selectedLayer.climate_model ||
       !selectedLayer.scenario ||
-      !selectedLayer.variable ||
+      !(selectedLayer.variable || selectedLayer.crop_variable) ||
       !selectedTime
     ) {
       setLayerName(undefined);
@@ -140,6 +155,7 @@ const App = () => {
       climate_model: selectedLayer.climate_model,
       scenario: selectedLayer.scenario,
       variable: selectedLayer.variable,
+      crop_variable: selectedLayer.crop_variable,
       year: selectedTime
     }).then(response => {
       if (response === null) {
@@ -152,6 +168,15 @@ const App = () => {
         setCountryAverageValues(response.country_values);
         setGlobalAverage(response.global_average);
         setLayerStyle(response.style || []);
+
+        // Set what variable appears in the legend
+        if (selectedLayer.variable) {
+          setVariableForLegend(selectedLayer.variable);
+        } else if (selectedLayer.crop_variable) {
+          setVariableForLegend(selectedLayer.crop_variable);
+        } else {
+          setVariableForLegend(undefined);
+        }
       }
       setloadingLayer(false);
     }).catch(error => {
@@ -163,6 +188,7 @@ const App = () => {
     selectedLayer.climate_model,
     selectedLayer.scenario,
     selectedLayer.variable,
+    selectedLayer.crop_variable,
     selectedTime
   ]);
 
@@ -186,12 +212,6 @@ const App = () => {
       setLoadingAll(true);
     }
   }, [loadingGroups, loadingCountries, loadingLayer]);
-  const isCropSpecificVariableSelected = selectedVariable && [
-    'mirca_area_irrigated',
-    'mirca_area_total',
-    'mirca_rainfed',
-    'yield',
-    'production'].includes(selectedVariable.id);
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
@@ -206,11 +226,14 @@ const App = () => {
           clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
+          selectedCropVariable={selectedCropVariable}
+          setSelectedCropVariable={setSelectedCropVariable}
           crops={crops}
           globalWaterModels={globalWaterModels}
           climateModels={climateModels}
           scenarios={scenarios}
           variables={variables}
+          cropVariables={cropVariables}
           activePanel={activePanel} setActivePanel={setActivePanel}
           selectedCrop={selectedCrop} setSelectedCrop={setSelectedCrop}
           selectedGlobalWaterModel={selectedGlobalWaterModel} setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
@@ -230,12 +253,17 @@ const App = () => {
           globalAverage={globalAverage}
           countryAverageValues={countryAverageValues}
           layerStyle={layerStyle}
-          selectedVariable={selectedVariable}
+          selectedVariable={variableForLegend}
           loading={loadingAll}
         />
       </div>
 
-      {!isCropSpecificVariableSelected && selectedLayer.crop !== undefined && selectedLayer.water_model !== undefined && selectedLayer.climate_model !== undefined && selectedLayer.scenario !== undefined && selectedLayer.variable !== undefined ? (
+      {selectedLayer.crop_variable !== undefined
+        && selectedLayer.crop !== undefined
+        && selectedLayer.water_model !== undefined
+        && selectedLayer.climate_model !== undefined
+        && selectedLayer.scenario !== undefined
+        && selectedLayer.variable !== undefined ? (
         <>
           <BottomBar
             selectedTime={selectedTime}

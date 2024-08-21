@@ -3,13 +3,24 @@ import Chip from '@mui/material/Chip';
 import PanelTitleWithTooltip from './Title';
 import Link from '@mui/material/Link';
 
-const CropSpecificPanel = ({ variables, selectedVariable, setSelectedVariable, setActivePanel }) => {
+const CropSpecificPanel = ({
+    cropVariables,
+    selectedCropVariable,
+    setSelectedCropVariable,
+    setActivePanel,
+    selectedVariable,
+    setSelectedVariable,
+}) => {
 
-    const handleChipClick = (variable) => {
-        if (selectedVariable && selectedVariable.id === variable.id) {
-            setSelectedVariable(undefined);  // Deselect if the same variable is clicked
+    const handleChipClick = (cropVariable) => {
+        if (selectedCropVariable && selectedCropVariable.id === cropVariable.id) {
+            setSelectedCropVariable(undefined);  // Deselect if the same variable is clicked
         } else {
-            setSelectedVariable(variable);  // Select the variable
+            if (selectedVariable) {
+                setSelectedVariable(undefined);  // Deselect the variable, as we cannot have both at the same time
+            }
+            console.log("SETTING CROP VARIABLE", cropVariable);
+            setSelectedCropVariable(cropVariable);  // Select the variable
             setActivePanel(null);
         }
     };
@@ -37,17 +48,17 @@ const CropSpecificPanel = ({ variables, selectedVariable, setSelectedVariable, s
             )} />
             <div className="chips-group">
                 <div className="chips-list">
-                    {variables.filter(variable => [
+                    {cropVariables.filter(cropVariable => [
                         'mirca_area_irrigated', 'mirca_area_total', 'mirca_rainfed',
                         'yield', 'production',
-                    ].includes(variable.id)).map(variable => (
+                    ].includes(cropVariable.id)).map(cropVariable => (
                         <Chip
-                            key={variable.id}
-                            label={`${variable.name} [${variable.unit}]`}
+                            key={cropVariable.id}
+                            label={`${cropVariable.name} [${cropVariable.unit}]`}
                             clickable
-                            className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                            // disabled={!variable.enabled}
-                            onClick={() => handleChipClick(variable)}
+                            className={selectedCropVariable && selectedCropVariable.id === cropVariable.id ? 'active' : ''}
+                            disabled={!cropVariable.enabled}
+                            onClick={() => handleChipClick(cropVariable)}
                         />
                     ))}
                 </div>

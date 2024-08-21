@@ -47,6 +47,9 @@ export const variablesItems = [
     { id: 'rg', name: 'Green', abbreviation: 'Rg', unit: 'mm', enabled: false },
     { id: 'wdb', name: 'Blue', abbreviation: 'WDb', unit: 'years', enabled: false },
     { id: 'wdg', name: 'Green', abbreviation: 'WDg', unit: 'years', enabled: false },
+];
+
+export const cropVariablesItems = [
     { id: 'mirca_area_irrigated', name: 'Irrigated Area', abbreviation: 'MircaAreaIrrigated', unit: 'ha', enabled: false },
     { id: 'mirca_area_total', name: 'Total Area', abbreviation: 'MircaAreaTotal', unit: 'ha', enabled: false },
     { id: 'mirca_rainfed', name: 'Rainfed Area', abbreviation: 'MircaRainfed', unit: 'ha', enabled: false },

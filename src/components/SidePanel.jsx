@@ -27,11 +27,13 @@ const SidePanel = ({
   setEnableSelection,
   clearLayers,
   selectedVariable, setSelectedVariable,
+  selectedCropVariable, setSelectedCropVariable,
   crops,
   globalWaterModels,
   climateModels,
   scenarios,
   variables,
+  cropVariables,
   activePanel, setActivePanel,
   selectedCrop, setSelectedCrop,
   selectedGlobalWaterModel, setSelectedGlobalWaterModel,
@@ -44,7 +46,7 @@ const SidePanel = ({
     if (!selectedGlobalWaterModel) return 'globalWaterModels';
     if (!selectedClimateModel) return 'climateModels';
     if (!selectedScenario) return 'scenarios';
-    if (!selectedVariable) return 'variables';
+    if (!selectedVariable && !selectedCropVariable) return 'variables';
     return null;
   };
 
@@ -55,9 +57,17 @@ const SidePanel = ({
       climate_model: selectedClimateModel?.id,
       scenario: selectedScenario?.id,
       variable: selectedVariable?.id,
+      crop_variable: selectedCropVariable?.id,
     };
     onLayerSelect(layerProps);
-  }, [selectedCrop, selectedGlobalWaterModel, selectedClimateModel, selectedScenario, selectedVariable]);
+  }, [
+    selectedCrop,
+    selectedGlobalWaterModel,
+    selectedClimateModel,
+    selectedScenario,
+    selectedVariable,
+    selectedCropVariable
+  ]);
 
   const handlePanelClick = (panel) => {
     setActivePanel(activePanel === panel ? null : panel);
@@ -95,7 +105,7 @@ const SidePanel = ({
                 <span>Time-based variable</span>
               </div>
               <div className="variable-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 35px)` }}>
-                <span>Select one option</span>
+                <span>Select one option from either</span>
               </div>
               <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 70px)` }}>
                 <span>Crop specific variable</span>
@@ -154,7 +164,7 @@ const SidePanel = ({
             <div className="button-content">
               <GrassIcon />
               <span>Crop Specific</span>
-              <span className="current-selection">{selectedVariable && ['mirca_area_irrigated', 'mirca_area_total', 'mirca_rainfed', 'yield', 'production'].includes(selectedVariable.id) ? selectedVariable.name : ''}</span>
+              <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
             </div>
           </button>
         </div>
@@ -216,18 +226,25 @@ const SidePanel = ({
         <VariablePanel
           variables={variables}
           selectedVariable={selectedVariable}
-          selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
           setActivePanel={setActivePanel}
+          // We also need to pass the cropVariables to disable if a variable is set
+          selectedCropVariable={selectedCropVariable}
+          setSelectedCropVariable={setSelectedCropVariable}
         />
       )}
 
       {activePanel === 'cropSpecific' && (
         <CropSpecificPanel
-          variables={variables}
+          cropVariables={cropVariables}
+          selectedCropVariable={selectedCropVariable}
+          setSelectedCropVariable={setSelectedCropVariable}
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
           setActivePanel={setActivePanel}
+          // Also the same here in reverse with variables as above.
+          selectedVariable={selectedVariable}
+          setSelectedVariable={setSelectedVariable}
         />
       )}
 
