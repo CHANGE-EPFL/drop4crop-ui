@@ -186,6 +186,12 @@ const App = () => {
       setLoadingAll(true);
     }
   }, [loadingGroups, loadingCountries, loadingLayer]);
+  const isCropSpecificVariableSelected = selectedVariable && [
+    'mirca_area_irrigated',
+    'mirca_area_total',
+    'mirca_rainfed',
+    'yield',
+    'production'].includes(selectedVariable.id);
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
@@ -229,12 +235,13 @@ const App = () => {
         />
       </div>
 
-      {selectedLayer.crop !== undefined && selectedLayer.water_model !== undefined && selectedLayer.climate_model !== undefined && selectedLayer.scenario !== undefined && selectedLayer.variable !== undefined ?
-        <><BottomBar
-          selectedTime={selectedTime}
-          onTimeChange={handleTimeChange}
-          availableYears={availableYears}
-        />
+      {!isCropSpecificVariableSelected && selectedLayer.crop !== undefined && selectedLayer.water_model !== undefined && selectedLayer.climate_model !== undefined && selectedLayer.scenario !== undefined && selectedLayer.variable !== undefined ? (
+        <>
+          <BottomBar
+            selectedTime={selectedTime}
+            onTimeChange={handleTimeChange}
+            availableYears={availableYears}
+          />
           <div style={toggleContainerMapStyle}>
             <FormControlLabel
               disabled={!layerName}
@@ -263,8 +270,9 @@ const App = () => {
               labelPlacement="end"
               className={!layerName ? 'disabled' : ''}
             />
-          </div></>
-        : null}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 };

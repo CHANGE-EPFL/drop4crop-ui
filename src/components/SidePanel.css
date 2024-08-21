@@ -102,12 +102,10 @@
     pointer-events: none;
 }
 
-/* Arrow Note Styles */
 .arrow-note {
     position: absolute;
     right: -120px;
     width: 120px;
-    top: 50%;
     transform: translateY(-50%);
     display: flex;
     align-items: center;
@@ -116,7 +114,6 @@
     text-align: left;
     white-space: nowrap;
     z-index: 1001;
-    /* Ensure the arrow is above the side panel */
 }
 
 .arrow-note::before {
@@ -124,6 +121,26 @@
     border: solid transparent;
     border-width: 10px;
     border-right-color: #d3d3d3;
+    margin-right: 10px;
+}
+
+.variable-note {
+    position: absolute;
+    right: -120px;
+    width: 120px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #d3d3d3;
+    text-align: left;
+    white-space: nowrap;
+    z-index: 1001;
+}
+
+.variable-note::before {
+    content: '';
+    border: solid transparent;
     margin-right: 10px;
 }
 
@@ -160,3 +177,34 @@
 .popup label {
     color: #d3d3d3;
 }
+
+/* Adjusting the gap and divider for a thinner split */
+.button-group.top .variable-buttons {
+    margin-top: 10px;
+    /* Reduced gap between sections */
+}
+
+/*
+/* Thinner divider line */
+.button-divider {
+    width: 60%;
+    height: 1px;
+    background-color: #555;
+    /* Slightly lighter for subtle separation */
+    margin: 10px auto;
+    /* Reduced margin */
+}
+
+/* Variable buttons with a slight color distinction */
+.button-group .variable-button {
+    background-color: #555;
+    /* Slightly different background color */
+}
+
+.button-group .variable-button:hover,
+.button-group .variable-button.active {
+    background-color: #666;
+    /* Slightly darker on hover/active */
+}
+
+*/

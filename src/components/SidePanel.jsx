@@ -16,6 +16,7 @@ import GlobalWaterModelsPanel from './Panels/GlobalWaterModels';
 import CropsPanel from './Panels/Crops';
 import DownloadPanel from './Panels/Download';
 import InfoPanel from './Panels/Info';
+import CropSpecificPanel from './Panels/CropSpecific';
 
 const SidePanel = ({
   onLayerSelect,
@@ -64,22 +65,43 @@ const SidePanel = ({
 
   const nextUnselected = getNextUnselected();
   const arrowPositions = {
-    crops: 0,
-    globalWaterModels: 1,
-    climateModels: 2,
-    scenarios: 3,
-    variables: 4,
+    crops: { id: 0, name: 'Crop' },
+    globalWaterModels: { id: 1, name: 'Water Model' },
+    climateModels: { id: 2, name: 'Climate Model' },
+    scenarios: { id: 3, name: 'Scenario' },
+    variables: { id: 4, name: 'Variable' },
   };
 
-  const arrowPositionStyle = nextUnselected !== null ? {
-    top: `calc(${arrowPositions[nextUnselected]} * 70px + 35px)`,
+  const arrowPositionStyle = nextUnselected !== null && nextUnselected !== 'variables' ? {
+    top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px)`,
+  } : nextUnselected === 'variables' ? {
+    top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px)`,
   } : { display: 'none' };
+
+
+  const showTwoArrows = nextUnselected === 'variables';
 
   return (
     <div className="side-panel">
       {nextUnselected && (
-        <div className="arrow-note" style={arrowPositionStyle}>
-          <span>Select here</span>
+        <div>
+          {!showTwoArrows ? (
+            <div className="arrow-note" style={arrowPositionStyle}>
+              <span>{`Select a ${arrowPositions[nextUnselected].name}`}</span>
+            </div>
+          ) : (
+            <>
+              <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px' }}>
+                <span>Time-based variable</span>
+              </div>
+              <div className="variable-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 35px)` }}>
+                <span>Select one option</span>
+              </div>
+              <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 70px)` }}>
+                <span>Crop specific variable</span>
+              </div>
+            </>
+          )}
         </div>
       )}
       <div className="button-group top">
@@ -115,18 +137,32 @@ const SidePanel = ({
           </div>
         </button>
 
-        <button onClick={() => handlePanelClick('variables')} className={activePanel === 'variables' ? 'active' : ''}>
-          <div className="button-content">
-            <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
-            <span>Variable</span>
-            <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation}` : ''}</span>
-          </div>
-        </button>
+        {/* Divider line between sections */}
+        <div className="button-divider"></div>
+
+        {/* Variable-related buttons */}
+        <div className="variable-buttons">
+          <button onClick={() => handlePanelClick('variables')} className={`variable - button ${activePanel === 'variables' ? 'active' : ''} `}>
+            <div className="button-content">
+              <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
+              <span>Variable</span>
+              <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation} ` : ''}</span>
+            </div>
+          </button>
+
+          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable - button ${activePanel === 'cropSpecific' ? 'active' : ''} `}>
+            <div className="button-content">
+              <GrassIcon />
+              <span>Crop Specific</span>
+              <span className="current-selection">{selectedVariable && ['mirca_area_irrigated', 'mirca_area_total', 'mirca_rainfed', 'yield', 'production'].includes(selectedVariable.id) ? selectedVariable.name : ''}</span>
+            </div>
+          </button>
+        </div>
       </div>
 
       <div className="button-group bottom">
         <button disabled={!currentLayer}
-          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''}`}>
+          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''} `}>
           <div className="button-content">
             <CloudDownloadOutlinedIcon />
             <span>Download</span>
@@ -178,6 +214,16 @@ const SidePanel = ({
 
       {activePanel === 'variables' && (
         <VariablePanel
+          variables={variables}
+          selectedVariable={selectedVariable}
+          selectedVariable={selectedVariable}
+          setSelectedVariable={setSelectedVariable}
+          setActivePanel={setActivePanel}
+        />
+      )}
+
+      {activePanel === 'cropSpecific' && (
+        <CropSpecificPanel
           variables={variables}
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
