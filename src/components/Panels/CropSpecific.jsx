@@ -8,26 +8,31 @@ const CropSpecificPanel = ({
     selectedCropVariable,
     setSelectedCropVariable,
     setActivePanel,
-    selectedVariable,
     setSelectedVariable,
+    setSelectedClimateModel,
+    setSelectedGlobalWaterModel,
+    setSelectedScenario,
 }) => {
 
     const handleChipClick = (cropVariable) => {
         if (selectedCropVariable && selectedCropVariable.id === cropVariable.id) {
             setSelectedCropVariable(undefined);  // Deselect if the same variable is clicked
         } else {
-            if (selectedVariable) {
-                setSelectedVariable(undefined);  // Deselect the variable, as we cannot have both at the same time
-            }
-            console.log("SETTING CROP VARIABLE", cropVariable);
-            setSelectedCropVariable(cropVariable);  // Select the variable
+            // Deselect the other variables as they don't apply to the crop-specific variables
+            setSelectedClimateModel(undefined);
+            setSelectedGlobalWaterModel(undefined);
+            setSelectedScenario(undefined);
+            setSelectedVariable(undefined);
+
+            // Now select the variable
+            setSelectedCropVariable(cropVariable);
             setActivePanel(null);
         }
     };
 
     return (
         <div className="popup">
-            <PanelTitleWithTooltip title="Crop Specific" tooltip={(
+            <PanelTitleWithTooltip title="Crop Specific Variable" tooltip={(
                 <>
                     Crop-specific irrigated and rainfed harvested areas are taken from MIRCA2000 dataset (
                     <Link

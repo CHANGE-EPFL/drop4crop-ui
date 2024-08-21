@@ -131,18 +131,26 @@ const App = () => {
   const handleTimeChange = (time) => {
     setSelectedTime(time.target.value);
   };
-
   useEffect(() => {
-
     setloadingLayer(true);
-    if (
-      !selectedLayer.crop ||
-      !selectedLayer.water_model ||
-      !selectedLayer.climate_model ||
-      !selectedLayer.scenario ||
-      !(selectedLayer.variable || selectedLayer.crop_variable) ||
-      !selectedTime
-    ) {
+
+    const isBasicFieldsFilled =
+      selectedLayer.crop &&
+      selectedLayer.water_model &&
+      selectedLayer.climate_model &&
+      selectedLayer.scenario &&
+      selectedTime;
+
+    const isStandardScenarioValid =
+      isBasicFieldsFilled &&
+      selectedLayer.variable;
+
+    const isCropSpecificScenarioValid =
+      selectedLayer.crop &&
+      selectedLayer.crop_variable;
+
+    // The function will fire if either the standard scenario or crop-specific scenario is valid
+    if (!isStandardScenarioValid && !isCropSpecificScenarioValid) {
       setLayerName(undefined);
       setloadingLayer(false);
       return;
@@ -169,15 +177,17 @@ const App = () => {
         setGlobalAverage(response.global_average);
         setLayerStyle(response.style || []);
 
-        // Set what variable appears in the legend
-        if (selectedLayer.variable) {
-          setVariableForLegend(selectedLayer.variable);
-        } else if (selectedLayer.crop_variable) {
-          setVariableForLegend(selectedLayer.crop_variable);
-        } else {
-          setVariableForLegend(undefined);
-        }
       }
+      // Set what variable appears in the legend
+      if (selectedLayer.variable) {
+        setVariableForLegend(selectedVariable);
+      } else if (selectedLayer.crop_variable) {
+        setVariableForLegend(selectedCropVariable);
+      } else {
+        setVariableForLegend(undefined);
+      }
+      console.log("Variable for Legend", variableForLegend);
+      console.log("Selected Layer", selectedLayer);
       setloadingLayer(false);
     }).catch(error => {
       console.error("Error getting layer", error);

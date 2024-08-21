@@ -43,10 +43,11 @@ const SidePanel = ({
 
   const getNextUnselected = () => {
     if (!selectedCrop) return 'crops';
+    if (!selectedCropVariable && !selectedVariable) return 'cropSpecific';
+    if (!selectedVariable) return 'variables';
     if (!selectedGlobalWaterModel) return 'globalWaterModels';
     if (!selectedClimateModel) return 'climateModels';
     if (!selectedScenario) return 'scenarios';
-    if (!selectedVariable && !selectedCropVariable) return 'variables';
     return null;
   };
 
@@ -74,26 +75,30 @@ const SidePanel = ({
   };
 
   const nextUnselected = getNextUnselected();
+  console.log("Next unselected", nextUnselected);
   const arrowPositions = {
-    crops: { id: 0, name: 'Crop' },
-    globalWaterModels: { id: 1, name: 'Water Model' },
-    climateModels: { id: 2, name: 'Climate Model' },
-    scenarios: { id: 3, name: 'Scenario' },
-    variables: { id: 4, name: 'Variable' },
+    crops: { id: 0, name: 'crop', offset: 0 },
+    cropSpecific: { id: 1, name: 'crop specific variable', offset: 20 },
+    variables: { id: 2, name: 'variable', offset: 20 },
+    globalWaterModels: { id: 3, name: 'water model', offset: 40 },
+    climateModels: { id: 4, name: 'climate model', offset: 40 },
+    scenarios: { id: 5, name: 'scenario', offset: 40 },
   };
 
-  const arrowPositionStyle = nextUnselected !== null && nextUnselected !== 'variables' ? {
-    top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px)`,
-  } : nextUnselected === 'variables' ? {
-    top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px)`,
-  } : { display: 'none' };
+  const arrowPositionStyle = nextUnselected ? {
+    top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + ${arrowPositions[nextUnselected].offset}px)`,
+  } : {};
 
-
-  const showTwoArrows = nextUnselected === 'variables';
-
+  const showArrows = (
+    nextUnselected !== null && (nextUnselected !== 'variables'
+      || !(selectedCropVariable && selectedCrop)
+      || (selectedVariable && (!selectedGlobalWaterModel || !selectedClimateModel || !selectedScenario)))
+  );
+  const showTwoArrows = (nextUnselected === 'cropSpecific' && !selectedVariable);
+  console.log("Show arrows", showArrows, showTwoArrows, nextUnselected);
   return (
     <div className="side-panel">
-      {nextUnselected && (
+      {showArrows && (
         <div>
           {!showTwoArrows ? (
             <div className="arrow-note" style={arrowPositionStyle}>
@@ -102,13 +107,13 @@ const SidePanel = ({
           ) : (
             <>
               <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px' }}>
-                <span>Time-based variable</span>
+                <span>Crop specific variable</span>
               </div>
               <div className="variable-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 35px)` }}>
                 <span>Select one option from either</span>
               </div>
               <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 70px)` }}>
-                <span>Crop specific variable</span>
+                <span>Time-based variable</span>
               </div>
             </>
           )}
@@ -122,6 +127,30 @@ const SidePanel = ({
             <span className="current-selection">{selectedCrop ? selectedCrop.name : ''}</span>
           </div>
         </button>
+
+        {/* Divider line between sections */}
+        <div className="button-divider"></div>
+
+        {/* Variable-related buttons */}
+        <div className="variable-buttons">
+          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable - button ${activePanel === 'cropSpecific' ? 'active' : ''} `}>
+            <div className="button-content">
+              <GrassIcon />
+              <span>Crop Specific</span>
+              <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
+            </div>
+          </button>
+
+          <button onClick={() => handlePanelClick('variables')} className={`variable - button ${activePanel === 'variables' ? 'active' : ''} `}>
+            <div className="button-content">
+              <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
+              <span>Variable</span>
+              <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation} ` : ''}</span>
+            </div>
+          </button>
+        </div>
+
+        <div className="button-divider"></div>
 
         <button onClick={() => handlePanelClick('globalWaterModels')} className={activePanel === 'globalWaterModels' ? 'active' : ''}>
           <div className="button-content">
@@ -146,28 +175,6 @@ const SidePanel = ({
             <span className="current-selection">{selectedScenario ? selectedScenario.name : ''}</span>
           </div>
         </button>
-
-        {/* Divider line between sections */}
-        <div className="button-divider"></div>
-
-        {/* Variable-related buttons */}
-        <div className="variable-buttons">
-          <button onClick={() => handlePanelClick('variables')} className={`variable - button ${activePanel === 'variables' ? 'active' : ''} `}>
-            <div className="button-content">
-              <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
-              <span>Variable</span>
-              <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation} ` : ''}</span>
-            </div>
-          </button>
-
-          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable - button ${activePanel === 'cropSpecific' ? 'active' : ''} `}>
-            <div className="button-content">
-              <GrassIcon />
-              <span>Crop Specific</span>
-              <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
-            </div>
-          </button>
-        </div>
       </div>
 
       <div className="button-group bottom">
@@ -239,12 +246,12 @@ const SidePanel = ({
           cropVariables={cropVariables}
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
-          selectedVariable={selectedVariable}
-          setSelectedVariable={setSelectedVariable}
           setActivePanel={setActivePanel}
           // Also the same here in reverse with variables as above.
-          selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
+          setSelectedClimateModel={setSelectedClimateModel}
+          setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
+          setSelectedScenario={setSelectedScenario}
         />
       )}
 
