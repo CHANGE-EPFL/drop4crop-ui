@@ -64,7 +64,7 @@ const VariablePanel = ({
                         disableFocusListener disableTouchListener enterDelay={10}
                         arrow
                     >
-                        <HelpOutlineIcon sx={{ fontSize: '0.8rem' }} />
+                        <HelpOutlineIcon sx={{ fontSize: '0.8rem', color: '#d1a766' }} />
                     </Tooltip>
                 </div>
             </div>
@@ -132,7 +132,7 @@ const VariablePanel = ({
                                     arrow
                                     style={{ marginLeft: '5px', marginBottom: '4px' }}
                                 >
-                                    <HelpOutlineIcon sx={{ fontSize: '1rem' }} />
+                                    <HelpOutlineIcon sx={{ fontSize: '1rem', color: '#d1a766' }} />
                                 </Tooltip>
                             </div>
                         </div>

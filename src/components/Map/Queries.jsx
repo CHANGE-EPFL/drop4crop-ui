@@ -15,7 +15,7 @@ const CountryPopupContent = ({ country, countryAverage, onClose }) => {
     };
 
     return (
-        <div style={{ ...popupBoxStyle, width: '250px', height: '150px', padding: '10px', color: 'white', position: 'relative' }}>
+        <div style={{ ...popupBoxStyle, width: '250px', height: '200px', padding: '10px', color: 'white', position: 'relative' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '1em' }}>
                 <b>{country.properties.name}</b>
                 <Tooltip
@@ -28,17 +28,43 @@ const CountryPopupContent = ({ country, countryAverage, onClose }) => {
                 </Tooltip>
             </span>
             <br />
-            <div style={{ marginTop: '10px', lineHeight: '1.2em', textAlign: 'left', width: '100%' }}>
-                <div>WF [m3]: {countryAverage?.wf || '...'}</div>
-                <div>WFb [m3]: {countryAverage?.wfb || '...'}</div>
-                <div>WFg [m3]: {countryAverage?.wfg || '...'}</div>
-                <div>VWC [m3 ton-1]: {countryAverage?.vwc || '...'}</div>
-                <div>VWCb [m3 ton-1]: {countryAverage?.vwcb || '...'}</div>
-                <div>VWCg [m3 ton-1]: {countryAverage?.vwcg || '...'}</div>
-                <div>WDb [years]: {countryAverage?.wdb || '...'}</div>
-                <div>WDg [years]: {countryAverage?.wdg || '...'}</div>
-            </div>
-        </div>
+            <table style={{ marginTop: '10px', lineHeight: '1.2em', textAlign: 'left', width: '100%' }}>
+                <tbody>
+                    <tr>
+                        <td>WF [m3]</td>
+                        <td>{countryAverage?.var_wf.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>WFb [m3]</td>
+                        <td>{countryAverage?.var_wfb.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>WFg [m3]</td>
+                        <td>{countryAverage?.var_wfg.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>VWC [m3 ton-1]</td>
+                        <td>{countryAverage?.var_vwc.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>VWCb [m3 ton-1]</td>
+                        <td>{countryAverage?.var_vwcb.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>VWCg [m3 ton-1]</td>
+                        <td>{countryAverage?.var_vwcg.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>WDb [years]</td>
+                        <td>{countryAverage?.var_wdb.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                    <tr>
+                        <td>WDg [years]</td>
+                        <td>{countryAverage?.var_wdg.toFixed(3) || 'n/a'}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div >
     );
 };
 
