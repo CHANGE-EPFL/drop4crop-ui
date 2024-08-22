@@ -267,49 +267,45 @@ const App = () => {
         />
       </div>
 
-      {selectedLayer.crop_variable !== undefined
-        && selectedLayer.crop !== undefined
-        && selectedLayer.water_model !== undefined
-        && selectedLayer.climate_model !== undefined
-        && selectedLayer.scenario !== undefined
-        && selectedLayer.variable !== undefined ? (
-        <>
-          <BottomBar
-            selectedTime={selectedTime}
-            onTimeChange={handleTimeChange}
-            availableYears={availableYears}
-          />
-          <div style={toggleContainerMapStyle}>
-            <FormControlLabel
-              disabled={!layerName}
-              control={
-                <Switch
-                  checked={countryAverages}
-                  size="small"
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    setCountryAverages(e.target.checked);
-                  }}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#d1a766',
-                    },
-                    '& .MuiSwitch-track': {
-                      backgroundColor: countryAverages ? '#d1a766' : '#888',
-                    },
-                    '& .MuiSwitch-thumb': {
-                      backgroundColor: countryAverages ? '#d1a766' : '#ccc',
-                    },
-                  }}
-                />
-              }
-              label={<Typography variant="body2">Country Scale Values</Typography>}
-              labelPlacement="end"
-              className={!layerName ? 'disabled' : ''}
+      {layerName && !selectedLayer.crop_variable
+        ? (
+          <>
+            <BottomBar
+              selectedTime={selectedTime}
+              onTimeChange={handleTimeChange}
+              availableYears={availableYears}
             />
-          </div>
-        </>
-      ) : null}
+            <div style={toggleContainerMapStyle}>
+              <FormControlLabel
+                disabled={!layerName}
+                control={
+                  <Switch
+                    checked={countryAverages}
+                    size="small"
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setCountryAverages(e.target.checked);
+                    }}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#d1a766',
+                      },
+                      '& .MuiSwitch-track': {
+                        backgroundColor: countryAverages ? '#d1a766' : '#888',
+                      },
+                      '& .MuiSwitch-thumb': {
+                        backgroundColor: countryAverages ? '#d1a766' : '#ccc',
+                      },
+                    }}
+                  />
+                }
+                label={<Typography variant="body2">Country Scale Values</Typography>}
+                labelPlacement="end"
+                className={!layerName ? 'disabled' : ''}
+              />
+            </div>
+          </>
+        ) : null}
     </div>
   );
 };
