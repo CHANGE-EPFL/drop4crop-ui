@@ -23,17 +23,17 @@ const getLayer = async (props) => {
 
     const params = {
       crop: props.crop,
-      water_model: props.water_model,
-      climate_model: props.climate_model,
-      scenario: scenario,
     };
-    console.log("Crop Variable", props.crop_variable);
-    console.log("Variable", props.variable);
+
+
     if (props.crop_variable) {
       params.variable = props.crop_variable;
     } else {
       params.variable = props.variable;
       params.year = props.year;
+      params.scenario = scenario;
+      params.water_model = props.water_model;
+      params.climate_model = props.climate_model;
     }
 
     const response = await axios.get("/api/layers/map", { params });
@@ -186,8 +186,7 @@ const App = () => {
       } else {
         setVariableForLegend(undefined);
       }
-      console.log("Variable for Legend", variableForLegend);
-      console.log("Selected Layer", selectedLayer);
+
       setloadingLayer(false);
     }).catch(error => {
       console.error("Error getting layer", error);

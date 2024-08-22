@@ -37,7 +37,7 @@ const GlobalWaterModelsPanel = ({
                         target="_blank"
                         rel="noopener"
                         sx={{ color: '#d1a766' }}
-                    >ISIMIP2b</Link> (Output Data > Water (global)).
+                    >ISIMIP2b</Link> (Output Data &gt; Water (global)).
                     For each simulation year (timeline 2000-2090), a long-term
                     average centered around the year of interest is considered. In
                     particular, 3-year average for <i>potevap</i>, 5-year average

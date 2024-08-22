@@ -34,7 +34,7 @@ const ClimateModelsPanel = ({
                         target="_blank"
                         rel="noopener"
                         sx={{ color: '#d1a766' }}
-                    >ISIMIP2b</Link> (Input Data > Climate related forcing > Atmospheric
+                    >ISIMIP2b</Link> (Input Data &gt; Climate related forcing &gt; Atmospheric
                     forcing). For each simulation year (timeline 2000-2090), a
                     3-year average centered around the year of interest is considered (for
                     details see <i>future link to our publication</i>).
