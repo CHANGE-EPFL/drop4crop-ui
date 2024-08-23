@@ -267,7 +267,7 @@ const App = () => {
         />
       </div>
 
-      {layerName && !selectedLayer.crop_variable
+      {selectedLayer.crop && selectedLayer.water_model && selectedLayer.climate_model && selectedLayer.scenario
         ? (
           <>
             <BottomBar
