@@ -75,7 +75,7 @@ const SidePanel = ({
   };
 
   const nextUnselected = getNextUnselected();
-  console.log("Next unselected", nextUnselected);
+
   const arrowPositions = {
     crops: { id: 0, name: 'crop', offset: 0 },
     cropSpecific: { id: 1, name: 'crop specific variable', offset: 20 },
@@ -95,7 +95,7 @@ const SidePanel = ({
       || (selectedVariable && (!selectedGlobalWaterModel || !selectedClimateModel || !selectedScenario)))
   );
   const showTwoArrows = (nextUnselected === 'cropSpecific' && !selectedVariable);
-  console.log("Show arrows", showArrows, showTwoArrows, nextUnselected);
+
   return (
     <div className="side-panel">
       {showArrows && (
