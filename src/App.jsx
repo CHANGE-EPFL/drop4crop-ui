@@ -115,7 +115,9 @@ const App = () => {
       setVariables(variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
       setCropVariables(cropVariablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
       setAvailableYears(year);
-      setSelectedTime(year[0]);
+
+      // The initial date will be the first year available in the sorted list of years
+      setSelectedTime(year.sort((a, b) => a - b)[0]);
 
       setLoadingGroups(false);  // We are done loading the groups
     };
