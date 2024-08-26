@@ -9,7 +9,6 @@ import CountryPolygonSwitch from './components/CountryPolygonSwitch';
 
 
 const App = () => {
-  const APIServerURL = window.location.origin + '/api';
   const boundingBoxSelectionRef = useRef(null);
   const { selectedLayer } = useContext(AppContext);
 
@@ -22,7 +21,6 @@ const App = () => {
       }}>
         <div style={{ display: 'flex', flex: 1 }}>
           <SidePanel
-            APIServerURL={APIServerURL}
             clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
           />
           <MapView ref={boundingBoxSelectionRef} />

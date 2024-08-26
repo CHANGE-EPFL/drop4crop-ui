@@ -2,6 +2,8 @@ import React, { createContext, useState } from 'react';
 
 export const AppContext = createContext();
 export const AppProvider = ({ children }) => {
+    const APIServerURL = window.location.origin + '/api';
+
     const [loadingGroups, setLoadingGroups] = useState(true);
     const [loadingCountries, setLoadingCountries] = useState(true);
     const [loadingLayer, setloadingLayer] = useState(false);
@@ -42,6 +44,7 @@ export const AppProvider = ({ children }) => {
     return (
         <AppContext.Provider
             value={{
+                APIServerURL,
                 loadingGroups,
                 setLoadingGroups,
                 loadingCountries,

@@ -30,6 +30,7 @@ const MapView = forwardRef((props, ref) => {
     countryAverageValues,
     layerStyle,
     selectedVariable,
+    isSelecting,
     loading,
   } = useContext(AppContext); // Access state from context
 
@@ -100,15 +101,7 @@ const MapView = forwardRef((props, ref) => {
       />
       {layerName ? (
         <>
-          <MapClickHandler
-            layerName={layerName}
-            APIServerURL={APIServerURL}
-            countryAverages={countryAverages}
-            highlightedFeature={highlightedFeature}
-            setHighlightedFeature={setHighlightedFeature}
-            countryPolygons={countryPolygons}
-            countryAverageValues={countryAverageValues}
-          />
+          <MapClickHandler />
           <LegendControl
             globalAverage={globalAverage}
             colorMap={layerStyle}

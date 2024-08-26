@@ -1,13 +1,14 @@
 import { useMap, useMapEvent } from 'react-leaflet';
 import axios from 'axios';
 import L from 'leaflet';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useContext } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { AppContext } from '../../contexts/AppContext';
 
 const CountryPopupContent = ({ country, countryAverage, onClose }) => {
     const handleClosePopup = () => {
@@ -85,14 +86,16 @@ const PopupContentContainer = () => {
     return containerRef.current;
 };
 
-export const MapClickHandler = ({
-    layerName,
-    APIServerURL,
-    countryAverages,
-    highlightedFeature,
-    countryPolygons,
-    countryAverageValues
-}) => {
+export const MapClickHandler = () => {
+    const {
+        layerName,
+        countryAverages,
+        highlightedFeature,
+        countryPolygons,
+        countryAverageValues,
+        enableSelection,
+        setEnableSelection,
+    } = useContext(AppContext);
     const map = useMap();
     const [clickPosition, setClickPosition] = useState(null);
     const rootRef = useRef(null);
@@ -115,6 +118,12 @@ export const MapClickHandler = ({
     };
 
     useMapEvent('click', (e) => {
+        console.log("CLICK!")
+        if (enableSelection) {
+            console.log("Click during polygon selection")
+            setEnableSelection(false);
+            return;
+        }
         setClickPosition(e.latlng);
     });
 

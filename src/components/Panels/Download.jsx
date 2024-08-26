@@ -1,16 +1,24 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useContext } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import DeleteIcon from '@mui/icons-material/Delete';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import { AppContext } from '../../contexts/AppContext';
 
-const DownloadPanel = ({ currentLayer, APIServerURL, boundingBox, setBoundingBox, setEnableSelection, clearLayers }) => {
+const DownloadPanel = ({ clearLayers }) => {
+    const {
+        enableSelection,
+        setEnableSelection,
+        boundingBox,
+        setBoundingBox,
+        APIServerURL,
+        layerName: currentLayer,
+    } = useContext(AppContext); // Access state from context
+
     const [open, setOpen] = useState(false);
-    const [isSelecting, setIsSelecting] = useState(false);
     const inputRef = useRef(null);
 
     const XYZTileLink = `${APIServerURL}/cog/tiles/{z}/{x}/{y}.png?url=${currentLayer}`;
@@ -22,7 +30,7 @@ const DownloadPanel = ({ currentLayer, APIServerURL, boundingBox, setBoundingBox
 
     useEffect(() => {
         if (!boundingBox) {
-            setIsSelecting(false);
+            setEnableSelection(false);
         }
     }, [boundingBox]);
 
@@ -49,7 +57,6 @@ const DownloadPanel = ({ currentLayer, APIServerURL, boundingBox, setBoundingBox
 
     const handleSelectArea = () => {
         setEnableSelection(true);
-        setIsSelecting(true);
     };
 
     const handleDeleteSelection = () => {
@@ -96,17 +103,12 @@ const DownloadPanel = ({ currentLayer, APIServerURL, boundingBox, setBoundingBox
                     onClick={boundingBox ? handleDownloadClick : handleSelectArea}
                     style={{
                         borderColor: '#d1a766',
-                        color: '#d1a766',
-                        backgroundColor: 'transparent'
+                        color: boundingBox ? 'success' : '#d1a766',
+                        backgroundColor: boundingBox ? 'green' : 'transparent'
                     }}
                 >
-                    {boundingBox ? "Download Data" : isSelecting ? "Select region to download" : "Selection (GeoTIFF)"}
+                    {boundingBox ? "Download Data" : enableSelection ? "Select region to download" : "Selection (GeoTIFF)"}
                 </Button>
-                {boundingBox && (
-                    <IconButton onClick={handleDeleteSelection} style={{ color: '#d1a766', marginLeft: '8px' }}>
-                        <DeleteIcon />
-                    </IconButton>
-                )}
             </Box><br />
             <IconButton
                 display="flex"

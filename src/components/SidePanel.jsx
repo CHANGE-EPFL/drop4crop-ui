@@ -17,12 +17,9 @@ import DownloadPanel from './Panels/Download';
 import InfoPanel from './Panels/Info';
 import CropSpecificPanel from './Panels/CropSpecific';
 
-const SidePanel = ({
-
-  APIServerURL,
-  clearLayers,
-}) => {
+const SidePanel = ({ clearLayers }) => {
   const {
+    APIServerURL,
     boundingBox,
     setBoundingBox,
     setEnableSelection,
@@ -257,14 +254,7 @@ const SidePanel = ({
       )}
 
       {activePanel === 'download' && (
-        <DownloadPanel
-          currentLayer={layerName}
-          APIServerURL={APIServerURL}
-          boundingBox={boundingBox}
-          setBoundingBox={setBoundingBox}
-          setEnableSelection={setEnableSelection}
-          clearLayers={clearLayers}
-        />
+        <DownloadPanel clearLayers={clearLayers} />
       )}
 
       {activePanel === 'info' && (
