@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useEffect, useCallback } from 'react';
+import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWheatAwn, faWater, faCloudSun, faCogs,
   faCog, faInfoCircle, faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 import './SidePanel.css';
-import axios from 'axios';
-import { Chip } from '@material-ui/core';
 import GrassIcon from '@mui/icons-material/Grass';
 import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 import VariablePanel from './Panels/Variables';
@@ -19,27 +18,29 @@ import InfoPanel from './Panels/Info';
 import CropSpecificPanel from './Panels/CropSpecific';
 
 const SidePanel = ({
-  onLayerSelect,
-  currentLayer,
+
   APIServerURL,
-  boundingBox,
-  setBoundingBox,
-  setEnableSelection,
   clearLayers,
-  selectedVariable, setSelectedVariable,
-  selectedCropVariable, setSelectedCropVariable,
-  crops,
-  globalWaterModels,
-  climateModels,
-  scenarios,
-  variables,
-  cropVariables,
-  activePanel, setActivePanel,
-  selectedCrop, setSelectedCrop,
-  selectedGlobalWaterModel, setSelectedGlobalWaterModel,
-  selectedClimateModel, setSelectedClimateModel,
-  selectedScenario, setSelectedScenario,
 }) => {
+  const {
+    boundingBox,
+    setBoundingBox,
+    setEnableSelection,
+    selectedVariable, setSelectedVariable,
+    selectedCropVariable, setSelectedCropVariable,
+    crops,
+    globalWaterModels,
+    climateModels,
+    scenarios,
+    variables,
+    cropVariables,
+    activePanel, setActivePanel,
+    selectedCrop, setSelectedCrop,
+    selectedGlobalWaterModel, setSelectedGlobalWaterModel,
+    selectedClimateModel, setSelectedClimateModel,
+    selectedScenario, setSelectedScenario,
+    setSelectedLayer, layerName,
+  } = useContext(AppContext);
 
   const getNextUnselected = () => {
     if (!selectedCrop) return 'crops';
@@ -51,6 +52,10 @@ const SidePanel = ({
     return null;
   };
 
+  const handleLayerSelect = useCallback((layerProps) => {
+    setSelectedLayer(layerProps);
+  }, [setSelectedLayer]);
+
   useEffect(() => {
     const layerProps = {
       crop: selectedCrop?.id,
@@ -60,14 +65,14 @@ const SidePanel = ({
       variable: selectedVariable?.id,
       crop_variable: selectedCropVariable?.id,
     };
-    onLayerSelect(layerProps);
+    handleLayerSelect(layerProps);
   }, [
     selectedCrop,
     selectedGlobalWaterModel,
     selectedClimateModel,
     selectedScenario,
     selectedVariable,
-    selectedCropVariable
+    selectedCropVariable,
   ]);
 
   const handlePanelClick = (panel) => {
@@ -75,7 +80,7 @@ const SidePanel = ({
   };
 
   const nextUnselected = getNextUnselected();
-  console.log("Next unselected", nextUnselected);
+
   const arrowPositions = {
     crops: { id: 0, name: 'crop', offset: 0 },
     cropSpecific: { id: 1, name: 'crop specific variable', offset: 20 },
@@ -95,7 +100,7 @@ const SidePanel = ({
       || (selectedVariable && (!selectedGlobalWaterModel || !selectedClimateModel || !selectedScenario)))
   );
   const showTwoArrows = (nextUnselected === 'cropSpecific' && !selectedVariable);
-  console.log("Show arrows", showArrows, showTwoArrows, nextUnselected);
+
   return (
     <div className="side-panel">
       {showArrows && (
@@ -128,12 +133,10 @@ const SidePanel = ({
           </div>
         </button>
 
-        {/* Divider line between sections */}
         <div className="button-divider"></div>
 
-        {/* Variable-related buttons */}
         <div className="variable-buttons">
-          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable - button ${activePanel === 'cropSpecific' ? 'active' : ''} `}>
+          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable-button ${activePanel === 'cropSpecific' ? 'active' : ''}`}>
             <div className="button-content">
               <GrassIcon />
               <span>Crop Specific</span>
@@ -141,7 +144,7 @@ const SidePanel = ({
             </div>
           </button>
 
-          <button onClick={() => handlePanelClick('variables')} className={`variable - button ${activePanel === 'variables' ? 'active' : ''} `}>
+          <button onClick={() => handlePanelClick('variables')} className={`variable-button ${activePanel === 'variables' ? 'active' : ''}`}>
             <div className="button-content">
               <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
               <span>Variable</span>
@@ -178,8 +181,8 @@ const SidePanel = ({
       </div>
 
       <div className="button-group bottom">
-        <button disabled={!currentLayer}
-          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''} `}>
+        <button disabled={!layerName}
+          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!layerName ? 'disabled' : ''}`}>
           <div className="button-content">
             <CloudDownloadOutlinedIcon />
             <span>Download</span>
@@ -235,7 +238,6 @@ const SidePanel = ({
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
           setActivePanel={setActivePanel}
-          // We also need to pass the cropVariables to disable if a variable is set
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
         />
@@ -247,7 +249,6 @@ const SidePanel = ({
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
           setActivePanel={setActivePanel}
-          // Also the same here in reverse with variables as above.
           setSelectedVariable={setSelectedVariable}
           setSelectedClimateModel={setSelectedClimateModel}
           setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
@@ -257,7 +258,7 @@ const SidePanel = ({
 
       {activePanel === 'download' && (
         <DownloadPanel
-          currentLayer={currentLayer}
+          currentLayer={layerName}
           APIServerURL={APIServerURL}
           boundingBox={boundingBox}
           setBoundingBox={setBoundingBox}
