@@ -1,17 +1,32 @@
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import {
+    useEffect,
+    useRef,
+    useImperativeHandle,
+    forwardRef,
+    useContext,
+} from 'react';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 import './MapView.css';
+import { AppContext } from '../../contexts/AppContext';
 
 window.type = true;
 
-const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setEnableSelection }, ref) => {
+const BoundingBoxSelection = forwardRef(({ }, ref) => {
+    const {
+        boundingBox,
+        setBoundingBox,
+        enableSelection,
+        setEnableSelection,
+    } = useContext(AppContext);
+
     const map = useMap();
     const drawnItemsRef = useRef(new L.FeatureGroup());
     const drawHandlerRef = useRef(null);
     const deleteMarkerRef = useRef(null);
+    const currentLayerRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
         clearLayers: () => {
@@ -20,6 +35,7 @@ const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setE
                 map.removeLayer(deleteMarkerRef.current);
                 deleteMarkerRef.current = null;
             }
+            currentLayerRef.current = null;
         },
     }));
 
@@ -40,6 +56,9 @@ const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setE
             setBoundingBox(boundingBox);
             setEnableSelection(false);
 
+            // Store the current layer
+            currentLayerRef.current = layer;
+
             // Add delete button
             const deleteButton = L.divIcon({
                 html: '<button style="background: black; color: white; border: none; border-radius: 50%; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">X</button>',
@@ -54,6 +73,7 @@ const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setE
                 map.removeLayer(deleteMarker);
                 setBoundingBox(null);
                 setEnableSelection(false);
+                currentLayerRef.current = null;
             });
 
             // Update marker position when rectangle is edited
@@ -107,6 +127,65 @@ const BoundingBoxSelection = forwardRef(({ setBoundingBox, enableSelection, setE
             map.off('draw:created', handleDrawCreated);
         };
     }, [enableSelection, map, setBoundingBox, setEnableSelection]);
+
+    // Listen for changes in the boundingBox prop to update the drawn rectangle
+    useEffect(() => {
+
+        if (boundingBox) {
+            if (!boundingBox.miny || !boundingBox.minx || !boundingBox.maxy || !boundingBox.maxx) {
+                // Do not allow invalid bounding boxes, wait until all values are set
+                return;
+            } else {
+                // Once we have a valid bounding box, disable the selection
+                setEnableSelection(false);
+            }
+        }
+
+        if (boundingBox && currentLayerRef.current) {
+            // Update the rectangle if it's already drawn
+            const layer = currentLayerRef.current;
+            const newBounds = new L.LatLngBounds(
+                new L.LatLng(boundingBox.miny, boundingBox.minx),
+                new L.LatLng(boundingBox.maxy, boundingBox.maxx)
+            );
+            layer.setBounds(newBounds);
+
+            // Move the delete marker as well
+            if (deleteMarkerRef.current) {
+                deleteMarkerRef.current.setLatLng(newBounds.getNorthEast());
+            }
+        } else if (boundingBox && !currentLayerRef.current) {
+            // If no layer exists, create a new one with the bounding box
+            const bounds = new L.LatLngBounds(
+                new L.LatLng(boundingBox.miny, boundingBox.minx),
+                new L.LatLng(boundingBox.maxy, boundingBox.maxx)
+            );
+            const layer = L.rectangle(bounds, {
+                color: '#d1a766',
+                weight: 2,
+                opacity: 1.0,
+                fillOpacity: 0.2,
+            }).addTo(drawnItemsRef.current);
+            currentLayerRef.current = layer;
+
+            // Add the delete button
+            const deleteButton = L.divIcon({
+                html: '<button style="background: black; color: white; border: none; border-radius: 50%; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">X</button>',
+                iconSize: [20, 20],
+                className: 'delete-button-icon',
+            });
+
+            const deleteMarker = L.marker(layer.getBounds().getNorthEast(), { icon: deleteButton }).addTo(map);
+            deleteMarkerRef.current = deleteMarker;
+            deleteMarker.on('click', () => {
+                drawnItemsRef.current.removeLayer(layer);
+                map.removeLayer(deleteMarker);
+                setBoundingBox(null);
+                setEnableSelection(false);
+                currentLayerRef.current = null;
+            });
+        }
+    }, [boundingBox, map, setBoundingBox]);
 
     return null;
 });
