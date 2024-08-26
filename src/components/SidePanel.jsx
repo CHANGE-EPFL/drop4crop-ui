@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useCallback } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -18,8 +18,7 @@ import InfoPanel from './Panels/Info';
 import CropSpecificPanel from './Panels/CropSpecific';
 
 const SidePanel = ({
-  onLayerSelect,
-  currentLayer,
+
   APIServerURL,
   clearLayers,
 }) => {
@@ -40,6 +39,7 @@ const SidePanel = ({
     selectedGlobalWaterModel, setSelectedGlobalWaterModel,
     selectedClimateModel, setSelectedClimateModel,
     selectedScenario, setSelectedScenario,
+    setSelectedLayer, layerName,
   } = useContext(AppContext);
 
   const getNextUnselected = () => {
@@ -52,6 +52,10 @@ const SidePanel = ({
     return null;
   };
 
+  const handleLayerSelect = useCallback((layerProps) => {
+    setSelectedLayer(layerProps);
+  }, [setSelectedLayer]);
+
   useEffect(() => {
     const layerProps = {
       crop: selectedCrop?.id,
@@ -61,7 +65,7 @@ const SidePanel = ({
       variable: selectedVariable?.id,
       crop_variable: selectedCropVariable?.id,
     };
-    onLayerSelect(layerProps);
+    handleLayerSelect(layerProps);
   }, [
     selectedCrop,
     selectedGlobalWaterModel,
@@ -177,8 +181,8 @@ const SidePanel = ({
       </div>
 
       <div className="button-group bottom">
-        <button disabled={!currentLayer}
-          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''}`}>
+        <button disabled={!layerName}
+          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!layerName ? 'disabled' : ''}`}>
           <div className="button-content">
             <CloudDownloadOutlinedIcon />
             <span>Download</span>
@@ -254,7 +258,7 @@ const SidePanel = ({
 
       {activePanel === 'download' && (
         <DownloadPanel
-          currentLayer={currentLayer}
+          currentLayer={layerName}
           APIServerURL={APIServerURL}
           boundingBox={boundingBox}
           setBoundingBox={setBoundingBox}

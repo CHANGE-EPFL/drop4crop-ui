@@ -1,10 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import Slider from '@mui/material/Slider';
 import './BottomBar.css';
+import { AppContext } from '../contexts/AppContext';
 
-const BottomBar = ({ selectedTime, onTimeChange, availableYears }) => {
+
+const BottomBar = () => {
+  const {
+    setSelectedTime,
+    selectedTime,
+    availableYears,
+  } = useContext(AppContext);
   const initialTime = parseInt(selectedTime, 10);
   const [sliderValue, setSliderValue] = useState(initialTime);
+
+  const onTimeChange = (time) => {
+    setSelectedTime(time.target.value);
+  };
 
   const handleSliderChange = (event, value) => {
     if (availableYears.includes(value)) {
@@ -12,7 +23,6 @@ const BottomBar = ({ selectedTime, onTimeChange, availableYears }) => {
       onTimeChange(event, value);
     }
   };
-
   useEffect(() => {
     if (!availableYears.includes(sliderValue)) {
       setSliderValue(availableYears[0]);
