@@ -38,7 +38,6 @@ const MapView = forwardRef(({
     layer.bringToFront();
   }, []);
 
-
   const geoJsonStyle = useCallback((feature) => ({
     weight: 2,
     color: highlightedFeature && highlightedFeature === feature ? '#ff7800' : '#3388ff',

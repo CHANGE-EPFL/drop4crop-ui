@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useContext } from 'react';
-import { AppContext } from './contexts/AppContext';  // Import only AppContext
+import React, { useEffect, useRef, useContext, useCallback } from 'react';
+import { AppContext } from './contexts/AppContext';
 import MapView from './components/Map/MapView';
 import SidePanel from './components/SidePanel';
 import BottomBar from './components/BottomBar';
@@ -69,40 +69,21 @@ const App = () => {
     setLayerStyle,
     selectedLayer,
     setSelectedLayer,
-    boundingBox,
     setBoundingBox,
     enableSelection,
     setEnableSelection,
     countryAverages,
     setCountryAverages,
-    crops,
     setCrops,
-    globalWaterModels,
     setGlobalWaterModels,
-    climateModels,
     setClimateModels,
-    scenarios,
     setScenarios,
-    variables,
     setVariables,
-    cropVariables,
     setCropVariables,
     availableYears,
     setAvailableYears,
-    activePanel,
-    setActivePanel,
-    selectedCrop,
-    setSelectedCrop,
-    selectedGlobalWaterModel,
-    setSelectedGlobalWaterModel,
-    selectedClimateModel,
-    setSelectedClimateModel,
-    selectedScenario,
-    setSelectedScenario,
     selectedVariable,
-    setSelectedVariable,
     selectedCropVariable,
-    setSelectedCropVariable,
     selectedTime,
     setSelectedTime,
     variableForLegend,
@@ -132,9 +113,9 @@ const App = () => {
     fetchData();
   }, [setCrops, setGlobalWaterModels, setClimateModels, setScenarios, setVariables, setCropVariables, setAvailableYears, setSelectedTime, setLoadingGroups]);
 
-  const handleLayerSelect = (layerId) => {
-    setSelectedLayer(layerId);
-  };
+  const handleLayerSelect = useCallback((layerProps) => {
+    setSelectedLayer(layerProps);
+  }, [setSelectedLayer]);
 
   const handleTimeChange = (time) => {
     setSelectedTime(time.target.value);
@@ -241,25 +222,7 @@ const App = () => {
           onLayerSelect={handleLayerSelect}
           currentLayer={layerName}
           APIServerURL={APIServerURL}
-          boundingBox={boundingBox}
-          setBoundingBox={setBoundingBox}
-          setEnableSelection={setEnableSelection}
           clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
-          selectedVariable={selectedVariable}
-          setSelectedVariable={setSelectedVariable}
-          selectedCropVariable={selectedCropVariable}
-          setSelectedCropVariable={setSelectedCropVariable}
-          crops={crops}
-          globalWaterModels={globalWaterModels}
-          climateModels={climateModels}
-          scenarios={scenarios}
-          variables={variables}
-          cropVariables={cropVariables}
-          activePanel={activePanel} setActivePanel={setActivePanel}
-          selectedCrop={selectedCrop} setSelectedCrop={setSelectedCrop}
-          selectedGlobalWaterModel={selectedGlobalWaterModel} setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
-          selectedClimateModel={selectedClimateModel} setSelectedClimateModel={setSelectedClimateModel}
-          selectedScenario={selectedScenario} setSelectedScenario={setSelectedScenario}
         />
         <MapView
           layerName={layerName}

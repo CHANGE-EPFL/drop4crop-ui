@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
+import { AppContext } from '../contexts/AppContext';  // Import the AppContext
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWheatAwn, faWater, faCloudSun, faCogs,
   faCog, faInfoCircle, faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 import './SidePanel.css';
-import axios from 'axios';
-import { Chip } from '@material-ui/core';
 import GrassIcon from '@mui/icons-material/Grass';
 import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 import VariablePanel from './Panels/Variables';
@@ -22,24 +21,27 @@ const SidePanel = ({
   onLayerSelect,
   currentLayer,
   APIServerURL,
-  boundingBox,
-  setBoundingBox,
-  setEnableSelection,
   clearLayers,
-  selectedVariable, setSelectedVariable,
-  selectedCropVariable, setSelectedCropVariable,
-  crops,
-  globalWaterModels,
-  climateModels,
-  scenarios,
-  variables,
-  cropVariables,
-  activePanel, setActivePanel,
-  selectedCrop, setSelectedCrop,
-  selectedGlobalWaterModel, setSelectedGlobalWaterModel,
-  selectedClimateModel, setSelectedClimateModel,
-  selectedScenario, setSelectedScenario,
 }) => {
+  const {
+    boundingBox,
+    setBoundingBox,
+    enableSelection,
+    setEnableSelection,
+    selectedVariable, setSelectedVariable,
+    selectedCropVariable, setSelectedCropVariable,
+    crops,
+    globalWaterModels,
+    climateModels,
+    scenarios,
+    variables,
+    cropVariables,
+    activePanel, setActivePanel,
+    selectedCrop, setSelectedCrop,
+    selectedGlobalWaterModel, setSelectedGlobalWaterModel,
+    selectedClimateModel, setSelectedClimateModel,
+    selectedScenario, setSelectedScenario,
+  } = useContext(AppContext);
 
   const getNextUnselected = () => {
     if (!selectedCrop) return 'crops';
@@ -67,7 +69,7 @@ const SidePanel = ({
     selectedClimateModel,
     selectedScenario,
     selectedVariable,
-    selectedCropVariable
+    selectedCropVariable,
   ]);
 
   const handlePanelClick = (panel) => {
@@ -128,12 +130,10 @@ const SidePanel = ({
           </div>
         </button>
 
-        {/* Divider line between sections */}
         <div className="button-divider"></div>
 
-        {/* Variable-related buttons */}
         <div className="variable-buttons">
-          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable - button ${activePanel === 'cropSpecific' ? 'active' : ''} `}>
+          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable-button ${activePanel === 'cropSpecific' ? 'active' : ''}`}>
             <div className="button-content">
               <GrassIcon />
               <span>Crop Specific</span>
@@ -141,7 +141,7 @@ const SidePanel = ({
             </div>
           </button>
 
-          <button onClick={() => handlePanelClick('variables')} className={`variable - button ${activePanel === 'variables' ? 'active' : ''} `}>
+          <button onClick={() => handlePanelClick('variables')} className={`variable-button ${activePanel === 'variables' ? 'active' : ''}`}>
             <div className="button-content">
               <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
               <span>Variable</span>
@@ -179,7 +179,7 @@ const SidePanel = ({
 
       <div className="button-group bottom">
         <button disabled={!currentLayer}
-          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''} `}>
+          onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!currentLayer ? 'disabled' : ''}`}>
           <div className="button-content">
             <CloudDownloadOutlinedIcon />
             <span>Download</span>
@@ -235,7 +235,6 @@ const SidePanel = ({
           selectedVariable={selectedVariable}
           setSelectedVariable={setSelectedVariable}
           setActivePanel={setActivePanel}
-          // We also need to pass the cropVariables to disable if a variable is set
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
         />
@@ -247,7 +246,6 @@ const SidePanel = ({
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
           setActivePanel={setActivePanel}
-          // Also the same here in reverse with variables as above.
           setSelectedVariable={setSelectedVariable}
           setSelectedClimateModel={setSelectedClimateModel}
           setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
