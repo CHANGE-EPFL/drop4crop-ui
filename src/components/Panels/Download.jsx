@@ -6,6 +6,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import { AppContext } from '../../contexts/AppContext';
 
 const DownloadPanel = ({ clearLayers }) => {
@@ -29,6 +30,7 @@ const DownloadPanel = ({ clearLayers }) => {
     const downloadEntireTifLink = `${APIServerURL}/layers/${currentLayer}/download`;
 
     useEffect(() => {
+        console.log("Bounding box: ", boundingBox);
         if (!boundingBox) {
             setEnableSelection(false);
         }
@@ -83,41 +85,23 @@ const DownloadPanel = ({ clearLayers }) => {
                 readOnly
                 style={{ position: 'absolute', left: '-9999px' }}
             />
-            <Box>
-                <h4>Current layer</h4>
-                <Button
-                    variant='outlined'
-                    style={{
-                        borderColor: '#d1a766',
-                        color: '#d1a766',
-                        backgroundColor: 'transparent'
-                    }}
-                    href={downloadEntireTifLink}
-                >
-                    Entire map (GeoTIFF)
-                </Button>
-            </Box><br />
-            <Box display="flex" >
-                <Button
-                    variant="outlined"
-                    onClick={boundingBox ? handleDownloadClick : handleSelectArea}
-                    style={{
-                        borderColor: '#d1a766',
-                        color: boundingBox ? 'success' : '#d1a766',
-                        backgroundColor: boundingBox ? 'green' : 'transparent'
-                    }}
-                >
-                    {boundingBox ? "Download Data" : enableSelection ? "Select region to download" : "Selection (GeoTIFF)"}
-                </Button>
-            </Box><br />
-            <IconButton
-                display="flex"
+
+            <h4>Current layer</h4>
+            <Button
+                variant="outlined"
                 onClick={handleCopyLink}
-                style={{ cursor: 'pointer', color: '#d1a766' }}
+                style={{
+                    borderColor: '#d1a766',
+                    color: '#d1a766',
+                    backgroundColor: 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '75%',
+                }}
             >
                 <Typography style={{ cursor: 'pointer', color: '#d1a766' }}>XYZ Tile</Typography>
                 <ContentCopyIcon style={{ marginLeft: '4px' }} />
-            </IconButton>
+            </Button>
             <Snackbar
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
                 open={open}
@@ -132,6 +116,130 @@ const DownloadPanel = ({ clearLayers }) => {
                     </React.Fragment>
                 }
             />
+            <br />
+            <Button
+                variant='outlined'
+                style={{
+                    borderColor: '#d1a766',
+                    color: '#d1a766',
+                    backgroundColor: 'transparent',
+                    width: '75%',
+                }}
+                href={downloadEntireTifLink}
+            >
+                Entire map (GeoTIFF)
+            </Button>
+            <br /><br />
+            <Button
+                variant="outlined"
+                onClick={boundingBox ? handleDownloadClick : handleSelectArea}
+                style={{
+                    borderColor: '#d1a766',
+                    color: boundingBox ? 'success' : '#d1a766',
+                    backgroundColor: boundingBox ? 'green' : 'transparent',
+                    width: '75%',
+                }}
+            >
+                {boundingBox ? "Download Data" : enableSelection ? "Select region to download" : "Selection (GeoTIFF)"}
+            </Button>
+            <br /><br />
+
+            {(enableSelection || boundingBox) && (
+                <Box
+                    display="grid"
+                    gridTemplateColumns="1fr 1fr"
+                    gap={2}
+                    alignItems="center"
+                    marginTop={2}
+                    width="75%"
+                >
+                    <TextField
+                        label="Longitude [min]"
+                        variant="outlined"
+                        value={boundingBox ? boundingBox.minx : ''}
+                        onChange={(e) => setBoundingBox({ ...boundingBox, minx: e.target.value })}
+                        InputLabelProps={{
+                            style: { color: '#d1a766' }, // Match label color
+                        }}
+                        inputProps={{
+                            style: { color: '#d1a766' }, // Match input text color
+                        }}
+                        style={{
+                            borderColor: '#d1a766',
+                            color: '#d1a766',
+                            backgroundColor: 'transparent',
+                            width: '100%',
+                        }}
+                        InputProps={{
+                            style: { borderColor: '#d1a766' }, // Match border color
+                        }}
+                    />
+                    <TextField
+                        label="Latitude [min]"
+                        variant="outlined"
+                        value={boundingBox ? boundingBox.miny : ''}
+                        onChange={(e) => setBoundingBox({ ...boundingBox, miny: e.target.value })}
+                        InputLabelProps={{
+                            style: { color: '#d1a766' }, // Match label color
+                        }}
+                        inputProps={{
+                            style: { color: '#d1a766' }, // Match input text color
+                        }}
+                        style={{
+                            borderColor: '#d1a766',
+                            color: '#d1a766',
+                            backgroundColor: 'transparent',
+                            width: '100%',
+                        }}
+                        InputProps={{
+                            style: { borderColor: '#d1a766' }, // Match border color
+                        }}
+                    />
+                    <TextField
+                        label="Longitude [max]"
+                        variant="outlined"
+                        value={boundingBox ? boundingBox.maxx : ''}
+                        onChange={(e) => setBoundingBox({ ...boundingBox, maxx: e.target.value })}
+                        InputLabelProps={{
+                            style: { color: '#d1a766' }, // Match label color
+                        }}
+                        inputProps={{
+                            style: { color: '#d1a766' }, // Match input text color
+                        }}
+                        style={{
+                            borderColor: '#d1a766',
+                            color: '#d1a766',
+                            backgroundColor: 'transparent',
+                            width: '100%',
+                        }}
+                        InputProps={{
+                            style: { borderColor: '#d1a766' }, // Match border color
+                        }}
+                    />
+                    <TextField
+                        label="Latitude [max]"
+                        variant="outlined"
+                        value={boundingBox ? boundingBox.maxy : ''}
+                        onChange={(e) => setBoundingBox({ ...boundingBox, maxy: e.target.value })}
+                        InputLabelProps={{
+                            style: { color: '#d1a766' }, // Match label color
+                        }}
+                        inputProps={{
+                            style: { color: '#d1a766' }, // Match input text color
+                        }}
+                        style={{
+                            borderColor: '#d1a766',
+                            color: '#d1a766',
+                            backgroundColor: 'transparent',
+                            width: '100%',
+                        }}
+                        InputProps={{
+                            style: { borderColor: '#d1a766' }, // Match border color
+                        }}
+                    />
+                </Box>
+            )}
+
         </div>
     );
 };
