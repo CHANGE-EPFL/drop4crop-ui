@@ -5,9 +5,7 @@ import SidePanel from './components/SidePanel';
 import BottomBar from './components/BottomBar';
 import './App.css';
 import axios from 'axios';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import { Typography } from '@mui/material';
+import CountryPolygonSwitch from './components/CountryPolygonSwitch';
 import {
   cropItems,
   globalWaterModelsItems,
@@ -57,23 +55,14 @@ const App = () => {
     setLoadingCountries,
     loadingLayer,
     setloadingLayer,
-    loadingAll,
     setLoadingAll,
     layerName,
     setLayerName,
-    globalAverage,
     setGlobalAverage,
-    countryAverageValues,
     setCountryAverageValues,
-    layerStyle,
     setLayerStyle,
     selectedLayer,
     setSelectedLayer,
-    setBoundingBox,
-    enableSelection,
-    setEnableSelection,
-    countryAverages,
-    setCountryAverages,
     setCrops,
     setGlobalWaterModels,
     setClimateModels,
@@ -86,9 +75,7 @@ const App = () => {
     selectedCropVariable,
     selectedTime,
     setSelectedTime,
-    variableForLegend,
     setVariableForLegend,
-    countryPolygons,
     setCountryPolygons,
   } = useContext(AppContext);
 
@@ -224,22 +211,7 @@ const App = () => {
           APIServerURL={APIServerURL}
           clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
         />
-        <MapView
-          layerName={layerName}
-          APIServerURL={APIServerURL}
-          setBoundingBox={setBoundingBox}
-          enableSelection={enableSelection}
-          setEnableSelection={setEnableSelection}
-          ref={boundingBoxSelectionRef}
-          countryAverages={countryAverages}
-          setCountryAverages={setCountryAverages}
-          countryPolygons={countryPolygons}
-          globalAverage={globalAverage}
-          countryAverageValues={countryAverageValues}
-          layerStyle={layerStyle}
-          selectedVariable={variableForLegend}
-          loading={loadingAll}
-        />
+        <MapView ref={boundingBoxSelectionRef} />
       </div>
 
       {selectedLayer.crop && selectedLayer.water_model && selectedLayer.climate_model && selectedLayer.scenario
@@ -250,35 +222,7 @@ const App = () => {
               onTimeChange={handleTimeChange}
               availableYears={availableYears}
             />
-            <div style={toggleContainerMapStyle}>
-              <FormControlLabel
-                disabled={!layerName}
-                control={
-                  <Switch
-                    checked={countryAverages}
-                    size="small"
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setCountryAverages(e.target.checked);
-                    }}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#d1a766',
-                      },
-                      '& .MuiSwitch-track': {
-                        backgroundColor: countryAverages ? '#d1a766' : '#888',
-                      },
-                      '& .MuiSwitch-thumb': {
-                        backgroundColor: countryAverages ? '#d1a766' : '#ccc',
-                      },
-                    }}
-                  />
-                }
-                label={<Typography variant="body2">Country Scale Values</Typography>}
-                labelPlacement="end"
-                className={!layerName ? 'disabled' : ''}
-              />
-            </div>
+            <CountryPolygonSwitch />
           </>
         ) : null}
     </div>
@@ -286,21 +230,3 @@ const App = () => {
 };
 
 export default App;
-
-const toggleContainerMapStyle = {
-  position: 'absolute',
-  bottom: '110px',
-  left: '100px',
-  display: 'flex',
-  alignItems: 'center',
-  backgroundColor: '#333',
-  color: '#d3d3d3',
-  borderColor: 'rgba(0, 0, 0, 0.7)',
-  boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)',
-  zIndex: 1000,
-  opacity: '0.8',
-  borderTop: '1px solid #444',
-  justifyContent: 'center',
-  paddingLeft: '20px',
-  borderRadius: '10px',
-};

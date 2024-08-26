@@ -1,4 +1,4 @@
-import React, { useState, useCallback, forwardRef, useEffect } from 'react';
+import React, { useState, useCallback, forwardRef, useContext } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -10,26 +10,29 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import './MapView.css';
 import BoundingBoxSelection from './BoundingBoxSelection';
-import { ScaleControl } from 'react-leaflet'
+import { ScaleControl } from 'react-leaflet';
 import { MapOverlay } from './Overlays';
 import { MapClickHandler } from './Queries';
 import { LegendControl } from './Legend';
+import { AppContext } from '../../contexts/AppContext';
 
-const MapView = forwardRef(({
-  layerName,
-  APIServerURL,
-  setBoundingBox,
-  enableSelection,
-  setEnableSelection,
-  countryAverages,
-  setCountryAverages,
-  countryPolygons,
-  globalAverage,
-  countryAverageValues,
-  layerStyle,
-  selectedVariable,
-  loading,
-}, ref) => {
+const MapView = forwardRef((props, ref) => {
+  const {
+    layerName,
+    APIServerURL,
+    setBoundingBox,
+    enableSelection,
+    setEnableSelection,
+    countryAverages,
+    setCountryAverages,
+    countryPolygons,
+    globalAverage,
+    countryAverageValues,
+    layerStyle,
+    selectedVariable,
+    loading,
+  } = useContext(AppContext); // Access state from context
+
   const [highlightedFeature, setHighlightedFeature] = useState(null);
 
   const highlightFeature = useCallback((e) => {
@@ -57,45 +60,47 @@ const MapView = forwardRef(({
   const bounds = L.latLngBounds(corner1, corner2);
 
   return (
-    <>
-      <MapContainer
-        center={[35, 20]}
-        zoom={1}
-        style={{ height: "100vh", width: "100%", backgroundColor: "#252525" }}
-        zoomControl={false}
-        maxBoundsViscosity={1.0}
-        maxBounds={bounds}
-        minZoom={2}
-      >
-        <MapOverlay layerName={layerName} loading={loading} />
+    <MapContainer
+      center={[35, 20]}
+      zoom={1}
+      style={{ height: "100vh", width: "100%", backgroundColor: "#252525" }}
+      zoomControl={false}
+      maxBoundsViscosity={1.0}
+      maxBounds={bounds}
+      minZoom={2}
+    >
+      <MapOverlay layerName={layerName} loading={loading} />
+      <TileLayer
+        url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains='abcd'
+        maxZoom={20}
+        zIndex={0}
+      />
+      {layerName && !loading ? (
         <TileLayer
-          url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          subdomains='abcd'
-          maxZoom={20}
-          zIndex={0}
-        />
-        {layerName && !loading ? <TileLayer
           url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${layerName}`}
           zIndex={1}
-        /> : null}
-        {countryAverages && (
-          <GeoJSON
-            data={countryPolygons}
-            style={geoJsonStyle}
-            onEachFeature={onEachFeature}
-          />
-        )}
-        <ZoomControl position="bottomright" />
-        <ScaleControl imperial={false} maxWidth={250} />
-        <BoundingBoxSelection
-          ref={ref}
-          setBoundingBox={setBoundingBox}
-          enableSelection={enableSelection}
-          setEnableSelection={setEnableSelection}
         />
-        {layerName ?
-          <><MapClickHandler
+      ) : null}
+      {countryAverages && (
+        <GeoJSON
+          data={countryPolygons}
+          style={geoJsonStyle}
+          onEachFeature={onEachFeature}
+        />
+      )}
+      <ZoomControl position="bottomright" />
+      <ScaleControl imperial={false} maxWidth={250} />
+      <BoundingBoxSelection
+        ref={ref}
+        setBoundingBox={setBoundingBox}
+        enableSelection={enableSelection}
+        setEnableSelection={setEnableSelection}
+      />
+      {layerName ? (
+        <>
+          <MapClickHandler
             layerName={layerName}
             APIServerURL={APIServerURL}
             countryAverages={countryAverages}
@@ -104,14 +109,14 @@ const MapView = forwardRef(({
             countryPolygons={countryPolygons}
             countryAverageValues={countryAverageValues}
           />
-            <LegendControl
-              globalAverage={globalAverage}
-              colorMap={layerStyle}
-              selectedVariable={selectedVariable}
-            />
-          </> : null}
-      </MapContainer>
-    </>
+          <LegendControl
+            globalAverage={globalAverage}
+            colorMap={layerStyle}
+            selectedVariable={selectedVariable}
+          />
+        </>
+      ) : null}
+    </MapContainer>
   );
 });
 

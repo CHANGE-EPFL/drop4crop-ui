@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { AppContext } from '../contexts/AppContext';  // Import the AppContext
+import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWheatAwn, faWater, faCloudSun, faCogs,
@@ -26,7 +26,6 @@ const SidePanel = ({
   const {
     boundingBox,
     setBoundingBox,
-    enableSelection,
     setEnableSelection,
     selectedVariable, setSelectedVariable,
     selectedCropVariable, setSelectedCropVariable,
