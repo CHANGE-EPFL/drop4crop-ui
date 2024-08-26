@@ -1,9 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useContext } from 'react';
+import { AppContext } from './contexts/AppContext';  // Import only AppContext
 import MapView from './components/Map/MapView';
 import SidePanel from './components/SidePanel';
 import BottomBar from './components/BottomBar';
 import './App.css';
 import axios from 'axios';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import { Typography } from '@mui/material';
 import {
   cropItems,
   globalWaterModelsItems,
@@ -12,19 +16,14 @@ import {
   variablesItems,
   cropVariablesItems,
 } from './variables';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import { Typography } from '@mui/material';
 
 const getLayer = async (props) => {
-  // This function is used to get the map's layer name from the API
   try {
     const scenario = props.year === 2000 ? "historical" : props.scenario;
 
     const params = {
       crop: props.crop,
     };
-
 
     if (props.crop_variable) {
       params.variable = props.crop_variable;
@@ -49,62 +48,73 @@ const getLayer = async (props) => {
 };
 
 const App = () => {
-  // Set a variable to store whether we are loading or not, helps to show a loading spinner
-  const [loadingGroups, setLoadingGroups] = useState(true);
-  const [loadingCountries, setLoadingCountries] = useState(true);
-  const [loadingLayer, setloadingLayer] = useState(false); // False because we don't load a layer on start
-  const [loadingAll, setLoadingAll] = useState(true);
-  const APIServerURL = window.location.origin + '/api';
-
-  const [layerName, setLayerName] = useState(undefined);  // The name of the current layer
-  const [globalAverage, setGlobalAverage] = useState(undefined);  // The global average value of the current layer
-  const [countryAverageValues, setCountryAverageValues] = useState(undefined);  // The country average values of the current layer
-  const [layerStyle, setLayerStyle] = useState([]);  // The style of the current layer, for the legend
-  const [selectedLayer, setSelectedLayer] = useState({ // Layer properties to discover the layer from the API
-    crop: undefined,
-    water_model: undefined,
-    climate_model: undefined,
-    scenario: undefined,
-    variable: undefined,
-    crop_variable: undefined,
-  });
-  const [boundingBox, setBoundingBox] = useState(null);  // The bounding box selected by the user for downloading
-  const [enableSelection, setEnableSelection] = useState(false);  // Whether the user is currently selecting a bounding box
-  const [countryAverages, setCountryAverages] = useState(false);  // Information about country averages in country view
   const boundingBoxSelectionRef = useRef(null);
 
-  // These determine what is available in the menus
-  const [crops, setCrops] = useState([]);  // The list of available crops
-  const [globalWaterModels, setGlobalWaterModels] = useState([]);  // The list of available global water models
-  const [climateModels, setClimateModels] = useState([]);  // The list of available climate models
-  const [scenarios, setScenarios] = useState([]);  // The list of available scenarios
-  const [variables, setVariables] = useState([]);  // The list of available variables
-  const [cropVariables, setCropVariables] = useState([]);  // The list of available crop variables
-  const [availableYears, setAvailableYears] = useState([]);  // The list of available years
+  const {
+    loadingGroups,
+    setLoadingGroups,
+    loadingCountries,
+    setLoadingCountries,
+    loadingLayer,
+    setloadingLayer,
+    loadingAll,
+    setLoadingAll,
+    layerName,
+    setLayerName,
+    globalAverage,
+    setGlobalAverage,
+    countryAverageValues,
+    setCountryAverageValues,
+    layerStyle,
+    setLayerStyle,
+    selectedLayer,
+    setSelectedLayer,
+    boundingBox,
+    setBoundingBox,
+    enableSelection,
+    setEnableSelection,
+    countryAverages,
+    setCountryAverages,
+    crops,
+    setCrops,
+    globalWaterModels,
+    setGlobalWaterModels,
+    climateModels,
+    setClimateModels,
+    scenarios,
+    setScenarios,
+    variables,
+    setVariables,
+    cropVariables,
+    setCropVariables,
+    availableYears,
+    setAvailableYears,
+    activePanel,
+    setActivePanel,
+    selectedCrop,
+    setSelectedCrop,
+    selectedGlobalWaterModel,
+    setSelectedGlobalWaterModel,
+    selectedClimateModel,
+    setSelectedClimateModel,
+    selectedScenario,
+    setSelectedScenario,
+    selectedVariable,
+    setSelectedVariable,
+    selectedCropVariable,
+    setSelectedCropVariable,
+    selectedTime,
+    setSelectedTime,
+    variableForLegend,
+    setVariableForLegend,
+    countryPolygons,
+    setCountryPolygons,
+  } = useContext(AppContext);
 
-  // Manages which panel to show in the SidePanel
-  const [activePanel, setActivePanel] = useState(null);
-
-  // These determine the selected items in the menus
-  const [selectedCrop, setSelectedCrop] = useState(null);
-  const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
-  const [selectedClimateModel, setSelectedClimateModel] = useState(null);
-  const [selectedScenario, setSelectedScenario] = useState(null);
-  const [selectedVariable, setSelectedVariable] = useState(null);
-  const [selectedCropVariable, setSelectedCropVariable] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
-
-  const [variableForLegend, setVariableForLegend] = useState(undefined);
-
-
-  const [countryPolygons, setCountryPolygons] = useState(null);
+  const APIServerURL = window.location.origin + '/api';
 
   useEffect(() => {
     const fetchData = async () => {
-      // Initialise the menus with their values, setting all to false
-      // we will ask the API if we can enable them depending if they are available
-      // Request from API at GET /layers/groups to get the list of available layers
-      // return is an object with keys of the key "id" in each layer group, these are to be set to enabled: true, and the rest to enabled: false
       const response = await axios.get('/api/layers/groups');
       const { crop, water_model, climate_model, scenario, variable, year } = response.data;
 
@@ -116,15 +126,11 @@ const App = () => {
       setCropVariables(cropVariablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
       setAvailableYears(year);
 
-      // The initial date will be the first year available in the sorted list of years
       setSelectedTime(year.sort((a, b) => a - b)[0]);
-
-      setLoadingGroups(false);  // We are done loading the groups
+      setLoadingGroups(false);
     };
     fetchData();
-
-
-  }, []);
+  }, [setCrops, setGlobalWaterModels, setClimateModels, setScenarios, setVariables, setCropVariables, setAvailableYears, setSelectedTime, setLoadingGroups]);
 
   const handleLayerSelect = (layerId) => {
     setSelectedLayer(layerId);
@@ -133,6 +139,7 @@ const App = () => {
   const handleTimeChange = (time) => {
     setSelectedTime(time.target.value);
   };
+
   useEffect(() => {
     setloadingLayer(true);
 
@@ -151,7 +158,6 @@ const App = () => {
       selectedLayer.crop &&
       selectedLayer.crop_variable;
 
-    // The function will fire if either the standard scenario or crop-specific scenario is valid
     if (!isStandardScenarioValid && !isCropSpecificScenarioValid) {
       setLayerName(undefined);
       setloadingLayer(false);
@@ -178,9 +184,7 @@ const App = () => {
         setCountryAverageValues(response.country_values);
         setGlobalAverage(response.global_average);
         setLayerStyle(response.style || []);
-
       }
-      // Set what variable appears in the legend
       if (selectedLayer.variable) {
         setVariableForLegend(selectedVariable);
       } else if (selectedLayer.crop_variable) {
@@ -200,9 +204,16 @@ const App = () => {
     selectedLayer.scenario,
     selectedLayer.variable,
     selectedLayer.crop_variable,
-    selectedTime
+    selectedTime,
+    setLayerName,
+    setCountryAverageValues,
+    setGlobalAverage,
+    setLayerStyle,
+    setloadingLayer,
+    setVariableForLegend,
+    selectedVariable,
+    selectedCropVariable
   ]);
-
 
   useEffect(() => {
     axios.get("/api/countries")
@@ -213,16 +224,15 @@ const App = () => {
       .catch(error => {
         console.error("Error getting countries", error);
       });
-  }, []);
+  }, [setCountryPolygons, setLoadingCountries]);
 
   useEffect(() => {
-    // If we are done loading the groups and countries, we are done loading everything
     if (loadingGroups === false && loadingCountries === false && loadingLayer === false) {
       setLoadingAll(false);
     } else {
       setLoadingAll(true);
     }
-  }, [loadingGroups, loadingCountries, loadingLayer]);
+  }, [loadingGroups, loadingCountries, loadingLayer, setLoadingAll]);
 
   return (
     <div style={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
