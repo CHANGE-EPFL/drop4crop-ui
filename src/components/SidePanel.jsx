@@ -143,7 +143,7 @@ const SidePanel = ({ clearLayers }) => {
 
           <button onClick={() => handlePanelClick('variables')} className={`variable-button ${activePanel === 'variables' ? 'active' : ''}`}>
             <div className="button-content">
-              <FontAwesomeIcon icon={faLayerGroup} size="2xl" />
+              <FontAwesomeIcon icon={faLayerGroup} size="xl" />
               <span>Variable</span>
               <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation} ` : ''}</span>
             </div>
@@ -154,7 +154,7 @@ const SidePanel = ({ clearLayers }) => {
 
         <button onClick={() => handlePanelClick('globalWaterModels')} className={activePanel === 'globalWaterModels' ? 'active' : ''}>
           <div className="button-content">
-            <FontAwesomeIcon icon={faWater} size="2xl" />
+            <FontAwesomeIcon icon={faWater} size="xl" />
             <span>Water Model</span>
             <span className="current-selection">{selectedGlobalWaterModel ? selectedGlobalWaterModel.name : ''}</span>
           </div>
@@ -162,7 +162,7 @@ const SidePanel = ({ clearLayers }) => {
 
         <button onClick={() => handlePanelClick('climateModels')} className={activePanel === 'climateModels' ? 'active' : ''}>
           <div className="button-content">
-            <FontAwesomeIcon icon={faCloudSun} size="2xl" />
+            <FontAwesomeIcon icon={faCloudSun} size="xl" />
             <span>Climate Model</span>
             <span className="current-selection">{selectedClimateModel ? selectedClimateModel.name : ''}</span>
           </div>
@@ -170,7 +170,7 @@ const SidePanel = ({ clearLayers }) => {
 
         <button onClick={() => handlePanelClick('scenarios')} className={activePanel === 'scenarios' ? 'active' : ''}>
           <div className="button-content">
-            <FontAwesomeIcon icon={faCogs} size="2xl" />
+            <FontAwesomeIcon icon={faCogs} size="xl" />
             <span>Scenario</span>
             <span className="current-selection">{selectedScenario ? selectedScenario.name : ''}</span>
           </div>
