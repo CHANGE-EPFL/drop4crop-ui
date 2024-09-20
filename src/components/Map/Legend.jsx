@@ -20,8 +20,8 @@ const createLegendContainer = (
     legendContainer.style.display = 'flex';
     legendContainer.style.flexDirection = 'column';
     legendContainer.style.alignItems = 'center';
-    legendContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4)'; // Add drop shadow
-    legendContainer.style.width = '120px'; // Add fixed width
+    legendContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4)';
+    legendContainer.style.width = '120px';
 
     const toggleButton = L.DomUtil.create('button', 'toggle-button', legendContainer);
     toggleButton.style.position = 'absolute';
@@ -42,7 +42,6 @@ const createLegendContainer = (
     averageDisplay.style.textAlign = 'left';
     averageDisplay.style.width = '100%';
     averageDisplay.innerHTML = `<strong>Global: ${globalAverage ? globalAverage.toFixed(2) : 'N/A'}</strong>`;
-
 
     const legendContent = L.DomUtil.create('div', 'legend-content', legendContainer);
     legendContent.style.display = isVisible ? 'block' : 'none';
@@ -73,9 +72,26 @@ const createLegendContainer = (
         legendLabels.style.justifyContent = 'space-between';
         legendLabels.style.height = '200px';
 
-        colorMap.forEach(entry => {
+        // Extracting the min and max values from the colorMap, ensuring they are floored and ceiled
+        const rawMinValue = Math.min(...colorMap.map(c => c.label));
+        const rawMaxValue = Math.max(...colorMap.map(c => c.label));
+        const minValue = Math.floor(rawMinValue);
+        const maxValue = Math.ceil(rawMaxValue);
+
+        // Calculate three equal intervals between min and max
+        const interval = (maxValue - minValue) / 4;
+        const labelValues = [
+            minValue,
+            Math.round(minValue + interval),
+            Math.round(minValue + 2 * interval),
+            Math.round(minValue + 3 * interval),
+            maxValue,
+        ];
+
+        // Render only the 5 labels
+        labelValues.forEach((value) => {
             const label = L.DomUtil.create('div', 'legend-label', legendLabels);
-            label.innerHTML = `<span>${entry.label}</span>`;
+            label.innerHTML = `<span>${value}</span>`;
             label.style.color = '#fff';
         });
     }
