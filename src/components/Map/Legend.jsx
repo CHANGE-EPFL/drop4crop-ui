@@ -72,11 +72,11 @@ const createLegendContainer = (
         legendLabels.style.justifyContent = 'space-between';
         legendLabels.style.height = '200px';
 
-        // Extracting the min and max values from the colorMap, ensuring they are floored and ceiled
+        // Extracting the min and max values from the colorMap, ensuring they are rounded
         const rawMinValue = Math.min(...colorMap.map(c => c.label));
         const rawMaxValue = Math.max(...colorMap.map(c => c.label));
-        const minValue = Math.floor(rawMinValue);
-        const maxValue = Math.ceil(rawMaxValue);
+        const minValue = Math.round(rawMinValue);
+        const maxValue = Math.round(rawMaxValue);
 
         // Calculate three equal intervals between min and max
         const interval = (maxValue - minValue) / 4;
