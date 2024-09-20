@@ -43,7 +43,7 @@ const BottomBar = () => {
   ];
 
   return (
-    <div className="bottom-bar">
+    <div style={bottomBarStyle}>
       <Slider
         min={2000}
         max={2090}
@@ -94,3 +94,21 @@ const BottomBar = () => {
 };
 
 export default BottomBar;
+
+const bottomBarStyle = {
+  position: 'absolute',
+  bottom: '30px',
+  left: '100px',
+  right: '50px',
+  backgroundColor: '#333',
+  color: '#d3d3d3',
+  padding: '10px 40px',
+  borderTop: '1px solid #444',
+  display: 'flex',
+  justifyContent: 'center',
+  zIndex: '1000',
+  boxSizing: 'border-box',
+  overflow: 'hidden',
+  opacity: '0.8',
+  borderRadius: '10px',
+};
