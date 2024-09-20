@@ -24,19 +24,20 @@ const App = () => {
             clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
           />
           <MapView ref={boundingBoxSelectionRef} />
-        </div>
 
-        {(
-          selectedLayer.crop
-          && selectedLayer.water_model
-          && selectedLayer.climate_model
-          && selectedLayer.scenario
-        ) ? (
-          <>
-            <BottomBar />
-            <CountryPolygonSwitch />
-          </>
-        ) : null}
+
+          {(
+            selectedLayer.crop
+            && selectedLayer.water_model
+            && selectedLayer.climate_model
+            && selectedLayer.scenario
+          ) ? (
+            <>
+              <BottomBar />
+              <CountryPolygonSwitch />
+            </>
+          ) : null}
+        </div>
       </div>
     </LayerManagerProvider>
   );
