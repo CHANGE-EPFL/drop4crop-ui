@@ -80,7 +80,7 @@ const MapView = forwardRef((props, ref) => {
       />
       {layerName && !loading ? (
         <TileLayer
-          url={`/api/cog/tiles/{z}/{x}/{y}.png?url=${layerName}`}
+          url={`/api/tiles/{z}/{x}/{y}?layer=${layerName}`}
           zIndex={1}
         />
       ) : null}
