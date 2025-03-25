@@ -178,13 +178,13 @@ const SidePanel = ({ clearLayers }) => {
       </div>
 
       <div className="button-group bottom">
-        <button disabled={!layerName}
+        {/* <button disabled={!layerName}
           onClick={() => handlePanelClick('download')} className={`${activePanel === 'download' ? 'active' : ''} ${!layerName ? 'disabled' : ''}`}>
           <div className="button-content">
             <CloudDownloadOutlinedIcon />
             <span>Download</span>
           </div>
-        </button>
+        </button> */}
         <button onClick={() => handlePanelClick('info')} className={activePanel === 'info' ? 'active' : ''}>
           <div className="button-content">
             <FontAwesomeIcon icon={faInfoCircle} size="2xl" />

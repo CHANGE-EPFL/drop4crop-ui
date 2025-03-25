@@ -31,15 +31,16 @@ export const AppProvider = ({ children }) => {
     const [cropVariables, setCropVariables] = useState([]);
     const [availableYears, setAvailableYears] = useState([]);
     const [activePanel, setActivePanel] = useState(null);
-    const [selectedCrop, setSelectedCrop] = useState(null);
-    const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
-    const [selectedClimateModel, setSelectedClimateModel] = useState(null);
-    const [selectedScenario, setSelectedScenario] = useState(null);
-    const [selectedVariable, setSelectedVariable] = useState(null);
+    const [selectedCrop, setSelectedCrop] = useState({ id: "maize", name: "Maize", enabled: true });
+    const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState({ id: "cwatm", name: "CWatM", enabled: true });
+    const [selectedClimateModel, setSelectedClimateModel] = useState({ id: "gfdl-esm2m", name: "GFDL-ESM2M", enabled: true });
+    const [selectedScenario, setSelectedScenario] = useState({ id: "rcp26", name: "RCP 2.6", enabled: true });
+    const [selectedVariable, setSelectedVariable] = useState({ id: "etg", name: "Green", abbreviation: "ETg", unit: "mm", enabled: true });
     const [selectedCropVariable, setSelectedCropVariable] = useState(null);
-    const [selectedTime, setSelectedTime] = useState(null);
+    const [selectedTime, setSelectedTime] = useState(2010);
     const [variableForLegend, setVariableForLegend] = useState(undefined);
     const [countryPolygons, setCountryPolygons] = useState(null);
+
 
     return (
         <AppContext.Provider

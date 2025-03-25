@@ -34,7 +34,7 @@ const App = () => {
           ) ? (
             <>
               <BottomBar />
-              <CountryPolygonSwitch />
+              {/* <CountryPolygonSwitch /> */}
             </>
           ) : null}
         </div>
