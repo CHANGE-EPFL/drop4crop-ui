@@ -1,9 +1,10 @@
-import React, { useState, useCallback, forwardRef, useContext } from 'react';
+import React, { useState, useCallback, forwardRef, useContext, useEffect, useRef } from 'react';
 import {
   MapContainer,
   TileLayer,
   ZoomControl,
-  GeoJSON
+  GeoJSON,
+  useMap
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -16,25 +17,53 @@ import { MapClickHandler } from './Queries';
 import { LegendControl } from './Legend';
 import { AppContext } from '../../contexts/AppContext';
 
+function SetInitialZoom({ zoom }) {
+  const map = useMap();
+  const initialSet = useRef(false);
+  useEffect(() => {
+    if (!initialSet.current) {
+      map.setZoom(zoom);
+      initialSet.current = true;
+    }
+  }, [map, zoom]);
+  return null;
+}
+
 const MapView = forwardRef((props, ref) => {
   const {
     layerName,
-    APIServerURL,
     setBoundingBox,
     enableSelection,
     setEnableSelection,
     countryAverages,
-    setCountryAverages,
     countryPolygons,
     globalAverage,
-    countryAverageValues,
     layerStyle,
     selectedVariable,
-    isSelecting,
     loading,
-  } = useContext(AppContext); // Access state from context
+  } = useContext(AppContext);
 
+  // Ref for container to compute its width
+  const containerRef = useRef(null);
+  // Initialize computedZoom as null, so we don't render the map until it's set.
+  const [computedZoom, setComputedZoom] = useState(null);
   const [highlightedFeature, setHighlightedFeature] = useState(null);
+
+  useEffect(() => {
+    const updateZoom = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.clientWidth;
+
+        // Calculate the zoom level based on the container width
+        // Assuming the tile size is 256x256 pixels
+        const newZoom = Math.floor(Math.log2(width / 256));
+        setComputedZoom(newZoom);
+      }
+    };
+
+    updateZoom();
+  }, []);
+
 
   const highlightFeature = useCallback((e) => {
     const layer = e.target;
@@ -56,60 +85,68 @@ const MapView = forwardRef((props, ref) => {
     });
   }, [highlightFeature]);
 
-  const corner1 = L.latLng(-90, -200);
-  const corner2 = L.latLng(90, 200);
-  const bounds = L.latLngBounds(corner1, corner2);
+  if (computedZoom === null) {
+    // Wait until we have the container width
+    return <div ref={containerRef} style={{ height: "100vh", width: "100%", backgroundColor: "#262626" }}>Loading...</div>;
+  }
 
   return (
-    <MapContainer
-      center={[35, 20]}
-      zoom={1}
-      style={{ height: "100vh", width: "100%", backgroundColor: "#252525" }}
-      zoomControl={false}
-      maxBoundsViscosity={1.0}
-      maxBounds={bounds}
-      minZoom={2}
-    >
-      <MapOverlay layerName={layerName} loading={loading} />
-      <TileLayer
-        url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        subdomains='abcd'
-        maxZoom={20}
-        zIndex={0}
-      />
-      {layerName && !loading ? (
+    <div ref={containerRef} style={{ height: "100vh", width: "100%", backgroundColor: "#262626" }}>
+      <MapContainer
+        center={[0, 0]}
+        zoom={computedZoom}
+        minZoom={computedZoom}
+        style={{ height: "100%", width: "100%", backgroundColor: "#262626" }}
+        zoomControl={false}
+        maxBoundsViscosity={1.0}
+        maxBounds={[[-85, -180], [85, 180]]}
+        worldCopyJump={false}
+      >
+        <SetInitialZoom zoom={computedZoom} />
+        <MapOverlay layerName={layerName} loading={loading} />
         <TileLayer
-          url={`/api/tiles/{z}/{x}/{y}?layer=${layerName}`}
-          zIndex={1}
+          url='https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          subdomains='abcd'
+          maxZoom={20}
+          zIndex={0}
+          noWrap={true}
         />
-      ) : null}
-      {countryAverages && (
-        <GeoJSON
-          data={countryPolygons}
-          style={geoJsonStyle}
-          onEachFeature={onEachFeature}
-        />
-      )}
-      <ZoomControl position="bottomright" />
-      <ScaleControl imperial={false} maxWidth={250} />
-      <BoundingBoxSelection
-        ref={ref}
-        setBoundingBox={setBoundingBox}
-        enableSelection={enableSelection}
-        setEnableSelection={setEnableSelection}
-      />
-      {layerName ? (
-        <>
-          <MapClickHandler />
-          <LegendControl
-            globalAverage={globalAverage}
-            colorMap={layerStyle}
-            selectedVariable={selectedVariable}
+        {layerName && !loading ? (
+          <TileLayer
+            url={`/api/tiles/{z}/{x}/{y}?layer=${layerName}`}
+            maxZoom={20}
+            zIndex={1}
+            noWrap={true}
           />
-        </>
-      ) : null}
-    </MapContainer>
+        ) : null}
+        {countryAverages && (
+          <GeoJSON
+            data={countryPolygons}
+            style={geoJsonStyle}
+            onEachFeature={onEachFeature}
+          />
+        )}
+        <ZoomControl position="bottomright" />
+        <ScaleControl imperial={false} maxWidth={250} />
+        <BoundingBoxSelection
+          ref={ref}
+          setBoundingBox={setBoundingBox}
+          enableSelection={enableSelection}
+          setEnableSelection={setEnableSelection}
+        />
+        {layerName ? (
+          <>
+            <MapClickHandler />
+            <LegendControl
+              globalAverage={globalAverage}
+              colorMap={layerStyle}
+              selectedVariable={selectedVariable}
+            />
+          </>
+        ) : null}
+      </MapContainer>
+    </div>
   );
 });
 

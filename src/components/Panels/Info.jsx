@@ -7,12 +7,12 @@ const InfoPanel = () => {
             <p>
                 <a href="https://www.epfl.ch/labs/change/" target="_blank" rel="noopener noreferrer" style={linkStyle}>CHANGE lab</a>
             </p>
-            <br />
+            {/* <br />
             <p>
                 <a href="https://www.epfl.ch/labs/change/publications" target="_blank" rel="noopener noreferrer" style={linkStyle}>
                     Our publications
                 </a>
-            </p>
+            </p> */}
         </div>
     );
 }
