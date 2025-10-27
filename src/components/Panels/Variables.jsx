@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
@@ -16,6 +17,10 @@ const VariablePanel = ({
     setSelectedCropVariable,
 }) => {
     const [showCropSpecific, setShowCropSpecific] = useState(false);
+
+    const handleClose = () => {
+        setActivePanel(null);
+    };
 
     const handleChipClick = (variable) => {
         if (selectedVariable && selectedVariable.id === variable.id) {
@@ -32,13 +37,31 @@ const VariablePanel = ({
     return (
         <div className="popup">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <PanelTitleWithTooltip title="Variable" tooltip={(
-                    <>
-                        Definition and details about the listed variables can be found in [<i>future link to our publication</i>].
-                    </>
-                )} />
-
-
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <PanelTitleWithTooltip title="Variable" tooltip={(
+                        <>
+                            Definition and details about the listed variables can be found in [<i>future link to our publication</i>].
+                        </>
+                    )} />
+                </div>
+                <Tooltip
+                    title="Close panel"
+                    placement="left"
+                    disableFocusListener disableTouchListener enterDelay={10}
+                    arrow
+                >
+                    <CloseIcon
+                        sx={{
+                            fontSize: '1.2rem',
+                            color: '#d1a766',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                color: '#ffffff'
+                            }
+                        }}
+                        onClick={handleClose}
+                    />
+                </Tooltip>
             </div>
 
             <>

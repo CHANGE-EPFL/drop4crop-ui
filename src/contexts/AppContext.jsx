@@ -30,7 +30,7 @@ export const AppProvider = ({ children }) => {
     const [variables, setVariables] = useState([]);
     const [cropVariables, setCropVariables] = useState([]);
     const [availableYears, setAvailableYears] = useState([]);
-    const [activePanel, setActivePanel] = useState(null);
+    const [activePanel, setActivePanel] = useState('info');
     const [selectedCrop, setSelectedCrop] = useState({ id: "maize", name: "Maize", enabled: true });
     const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState({ id: "cwatm", name: "CWatM", enabled: true });
     const [selectedClimateModel, setSelectedClimateModel] = useState({ id: "gfdl-esm2m", name: "GFDL-ESM2M", enabled: true });

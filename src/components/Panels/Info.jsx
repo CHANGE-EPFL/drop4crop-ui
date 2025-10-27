@@ -1,9 +1,36 @@
 import React from "react";
+import Typography from '@mui/material/Typography';
+import Tooltip from '@mui/material/Tooltip';
+import CloseIcon from '@mui/icons-material/Close';
 
-const InfoPanel = () => {
+const InfoPanel = ({ onClick, onClose }) => {
   return (
-    <div className="popup">
-      <h3>Info & Attribution</h3>
+    <div className="popup" onClick={onClick}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="h6" style={{ fontSize: '1rem' }}>Info & Attribution</Typography>
+        </div>
+        {onClose && (
+          <Tooltip
+            title="Close panel"
+            placement="left"
+            disableFocusListener disableTouchListener enterDelay={10}
+            arrow
+          >
+            <CloseIcon
+              sx={{
+                fontSize: '1.2rem',
+                color: '#d1a766',
+                cursor: 'pointer',
+                '&:hover': {
+                  color: '#ffffff'
+                }
+              }}
+              onClick={onClose}
+            />
+          </Tooltip>
+        )}
+      </div>
       <p style={{ margin: "5px 0", fontSize: "12px" }}></p>
       <p style={{ margin: "5px 0", fontSize: "12px" }}>
         Data and content provided by the{" "}

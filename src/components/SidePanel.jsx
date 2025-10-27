@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useCallback } from 'react';
+import React, { useContext, useEffect, useCallback, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -18,6 +18,8 @@ import InfoPanel from './Panels/Info';
 import CropSpecificPanel from './Panels/CropSpecific';
 
 const SidePanel = ({ clearLayers }) => {
+  const [isFirstTimeInfo, setIsFirstTimeInfo] = useState(true);
+
   const {
     APIServerURL,
     boundingBox,
@@ -74,6 +76,32 @@ const SidePanel = ({ clearLayers }) => {
 
   const handlePanelClick = (panel) => {
     setActivePanel(activePanel === panel ? null : panel);
+    // If it's the first time info and user clicks any panel, disable first-time behavior
+    if (isFirstTimeInfo) {
+      setIsFirstTimeInfo(false);
+    }
+  };
+
+  const handlePageClick = () => {
+    // If it's the first time info panel is open, close it when clicking anywhere
+    if (isFirstTimeInfo && activePanel === 'info') {
+      setActivePanel(null);
+      setIsFirstTimeInfo(false);
+    }
+  };
+
+  const handleInfoPanelClick = (e) => {
+    // Prevent the page click from closing the info panel if clicking inside it (for first time)
+    if (isFirstTimeInfo) {
+      e.stopPropagation();
+    }
+  };
+
+  const handleInfoClose = () => {
+    setActivePanel(null);
+    if (isFirstTimeInfo) {
+      setIsFirstTimeInfo(false);
+    }
   };
 
   const nextUnselected = getNextUnselected();
@@ -90,6 +118,16 @@ const SidePanel = ({ clearLayers }) => {
   const arrowPositionStyle = nextUnselected ? {
     top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + ${arrowPositions[nextUnselected].offset}px)`,
   } : {};
+
+  // Add page click listener for first-time info dismissal
+  useEffect(() => {
+    if (isFirstTimeInfo && activePanel === 'info') {
+      document.addEventListener('click', handlePageClick);
+      return () => {
+        document.removeEventListener('click', handlePageClick);
+      };
+    }
+  }, [isFirstTimeInfo, activePanel]);
 
   const showArrows = (
     nextUnselected !== null && (nextUnselected !== 'variables'
@@ -258,7 +296,10 @@ const SidePanel = ({ clearLayers }) => {
       )}
 
       {activePanel === 'info' && (
-        <InfoPanel />
+        <InfoPanel
+          onClick={isFirstTimeInfo ? handleInfoPanelClick : undefined}
+          onClose={handleInfoClose}
+        />
       )}
     </div>
   );

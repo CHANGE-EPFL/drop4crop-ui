@@ -9,6 +9,9 @@ const CropsPanel = ({
     setSelectedCrop,
     setActivePanel,
 }) => {
+    const handleClose = () => {
+        setActivePanel(null);
+    };
     const handleChipClick = (crop) => {
         if (selectedCrop && selectedCrop.id === crop.id) {
             setSelectedCrop(undefined);  // Deselect if the same crop is clicked
@@ -20,18 +23,22 @@ const CropsPanel = ({
 
     return (
         <div className="popup">
-            <PanelTitleWithTooltip title="Crop" tooltip={(
-                <>
-                    The crops are grouped according to the MIRCA2000
-                    dataset (
-                    <Link
-                        href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008GB003435"
-                        target="_blank"
-                        rel="noopener"
-                        sx={{ color: '#d1a766' }}
-                    >Portmann et al., 2010</Link>).
-                </>
-            )} />
+            <PanelTitleWithTooltip
+                title="Crop"
+                tooltip={(
+                    <>
+                        The crops are grouped according to the MIRCA2000
+                        dataset (
+                        <Link
+                            href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008GB003435"
+                            target="_blank"
+                            rel="noopener"
+                            sx={{ color: '#d1a766' }}
+                        >Portmann et al., 2010</Link>).
+                    </>
+                )}
+                onClose={handleClose}
+            />
             <div className="chips-list">
                 {crops.map(crop => (
                     <Chip

@@ -8,6 +8,9 @@ const ScenarioPanel = ({
     setSelectedScenario,
     setActivePanel,
 }) => {
+    const handleClose = () => {
+        setActivePanel(null);
+    };
     const handleChipClick = (scenario) => {
         if (selectedScenario && selectedScenario.id === scenario.id) {
             setSelectedScenario(undefined);  // Deselect if the same scenario is clicked
@@ -19,12 +22,16 @@ const ScenarioPanel = ({
 
     return (
         <div className="popup">
-            <PanelTitleWithTooltip title="Scenario" tooltip={(
-                <>
-                    Representative Concentration Pathways (RCP) as formally
-                    adopted by the Intergovernmental Panel Climate Change (IPCC).
-                </>
-            )} />
+            <PanelTitleWithTooltip
+                title="Scenario"
+                tooltip={(
+                    <>
+                        Representative Concentration Pathways (RCP) as formally
+                        adopted by the Intergovernmental Panel Climate Change (IPCC).
+                    </>
+                )}
+                onClose={handleClose}
+            />
             <div className="chips-list">
                 {scenarios.map(scenario => (
                     <Chip

@@ -9,6 +9,9 @@ const GlobalWaterModelsPanel = ({
     setSelectedGlobalWaterModel,
     setActivePanel,
 }) => {
+    const handleClose = () => {
+        setActivePanel(null);
+    };
     const handleChipClick = (model) => {
         if (selectedGlobalWaterModel && selectedGlobalWaterModel.id === model.id) {
             setSelectedGlobalWaterModel(undefined);  // Deselect if the same model is clicked
@@ -20,31 +23,35 @@ const GlobalWaterModelsPanel = ({
 
     return (
         <div className="popup">
-            <PanelTitleWithTooltip title="Global Water Model" tooltip={(
-                <>
-                    Potential evapotranspiration (<i>potevap</i>), total groundwater
-                    recharge (<i>qr</i>), surface runoff (<i>qs</i>), soil moisture
-                    content at root zone (<i>rootmoist</i>) used in the crop-specific
-                    evapotranspiration model (<i>future link to our publication</i>) are
-                    derived from the corresponding Global Water Model,
-                    in <Link
-                        href="https://data.isimip.org/"
-                        target="_blank"
-                        rel="noopener"
-                        sx={{ color: '#d1a766' }}
-                    >ISIMIP Repository</Link>, simulation protocol <Link
-                        href="https://www.isimip.org/protocol/2b/"
-                        target="_blank"
-                        rel="noopener"
-                        sx={{ color: '#d1a766' }}
-                    >ISIMIP2b</Link> (Output Data &gt; Water (global)).
-                    For each simulation year (timeline 2000-2090), a long-term
-                    average centered around the year of interest is considered. In
-                    particular, 3-year average for <i>potevap</i>, 5-year average
-                    for <i>qs</i> and <i>rootmoist</i>, 10-year average for <i>qr</i> (for
-                    details see <i>future link to our publication</i>).
-                </>
-            )} />
+            <PanelTitleWithTooltip
+                title="Global Water Model"
+                tooltip={(
+                    <>
+                        Potential evapotranspiration (<i>potevap</i>), total groundwater
+                        recharge (<i>qr</i>), surface runoff (<i>qs</i>), soil moisture
+                        content at root zone (<i>rootmoist</i>) used in the crop-specific
+                        evapotranspiration model (<i>future link to our publication</i>) are
+                        derived from the corresponding Global Water Model,
+                        in <Link
+                            href="https://data.isimip.org/"
+                            target="_blank"
+                            rel="noopener"
+                            sx={{ color: '#d1a766' }}
+                        >ISIMIP Repository</Link>, simulation protocol <Link
+                            href="https://www.isimip.org/protocol/2b/"
+                            target="_blank"
+                            rel="noopener"
+                            sx={{ color: '#d1a766' }}
+                        >ISIMIP2b</Link> (Output Data &gt; Water (global)).
+                        For each simulation year (timeline 2000-2090), a long-term
+                        average centered around the year of interest is considered. In
+                        particular, 3-year average for <i>potevap</i>, 5-year average
+                        for <i>qs</i> and <i>rootmoist</i>, 10-year average for <i>qr</i> (for
+                        details see <i>future link to our publication</i>).
+                    </>
+                )}
+                onClose={handleClose}
+            />
             <div className="chips-list">
                 {globalWaterModels.map(model => (
                     <Chip
