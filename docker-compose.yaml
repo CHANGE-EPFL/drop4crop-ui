@@ -15,22 +15,17 @@ services:
   drop4crop-api:
     build:
       context: ../drop4crop-api
-    entrypoint: uvicorn --host=0.0.0.0 app.main:app --reload --port 8000
+      dockerfile: Dockerfile.dev  # Uses the dockerfile containing cargo-watch
     environment:
       - DB_HOST=drop4crop-db
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=psql
       - DB_NAME=postgres
-      - DB_PREFIX=postgresql+asyncpg
+      - DB_PREFIX=postgresql
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
-      - KEYCLOAK_API_ID=${KEYCLOAK_API_ID}
-      - KEYCLOAK_API_SECRET=${KEYCLOAK_API_SECRET}
       - KEYCLOAK_REALM=${KEYCLOAK_REALM}
       - KEYCLOAK_URL=${KEYCLOAK_URL}
-      - GEOSERVER_URL=https://drop4crop-dev.epfl.ch/geoserver
-      - GEOSERVER_USER=${GEOSERVER_USER}
-      - GEOSERVER_PASSWORD=${GEOSERVER_PASSWORD}
       - S3_BUCKET_ID=${S3_BUCKET_ID}
       - S3_URL=${S3_URL}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
@@ -38,15 +33,22 @@ services:
       - S3_PREFIX=${S3_PREFIX}
       - TILE_CACHE_URL=tile-cache
       - TILE_CACHE_PORT=6379
+      - DEPLOYMENT=dev
+      - APP_NAME=drop4crop
     ports:
-      - 8015:8000
+      - 3005:3000
     depends_on:
       - drop4crop-db
     volumes:
-      - ../drop4crop-api/app:/app/app
+      - ../drop4crop-api/src:/app/src
+      - ../drop4crop-api/migration:/app/migration  # Mount migration directory
+      - drop4crop-api-rust-data:/app/target  # Store builds in docker volume
+      - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
+      - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
+      - ../drop4crop-api/bacon.toml:/app/bacon.toml  # Mount bacon config
     labels:
       - "traefik.http.routers.drop4crop-bff.rule=Host(`drop4crop`) && PathPrefix(`/api`)"
-      - "traefik.http.services.drop4crop-bff.loadbalancer.server.port=8000"
+      - "traefik.http.services.drop4crop-bff.loadbalancer.server.port=3000"
 
   drop4crop-db:
     image: postgis/postgis:16-master
@@ -87,5 +89,49 @@ services:
     ports:
       - 6379:6379
 
+
+  # drop4crop-api-rust:
+  #   build:
+  #     context: ../drop4crop-api-rust
+  #     dockerfile: Dockerfile.dev  # Uses the dockerfile containing cargo-watch
+  #   environment:
+  #     - S3_BUCKET_ID=${S3_BUCKET_ID}
+  #     # - S3_URL=${S3_URL}
+  #     - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+  #     - S3_SECRET_KEY=${S3_SECRET_KEY}
+  #     - DB_HOST=drop4crop-db
+  #     - DB_PORT=5432
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=psql
+  #     - DB_NAME=postgres
+  #     - DB_PREFIX=postgresql
+  #     # - S3_PREFIX=${S3_PREFIX}
+  #     # - DB_HOST=sensormap-db
+  #     # - DB_PORT=5432
+  #     # - DB_USER=postgres
+  #     # - DB_PASSWORD=psql
+  #     # - DB_NAME=postgres
+  #     # - DB_PREFIX=postgresql
+  #     # - KEYCLOAK_UI_ID=${KEYCLOAK_CLIENT_ID}
+  #     # - KEYCLOAK_BFF_ID=${KEYCLOAK_BFF_ID}
+  #     # - KEYCLOAK_BFF_SECRET=${KEYCLOAK_BFF_SECRET}
+  #     # - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+  #     # - KEYCLOAK_URL=${KEYCLOAK_URL}
+  #     - DEPLOYMENT=dev
+  #     - APP_NAME=drop4crop
+  #     - REDIS_URL=tile-cache
+  #     - REDIS_PORT=6379
+  #   ports:
+  #     - 3005:3000
+  #   volumes:
+  #     - ../drop4crop-api-rust/src:/app/src
+  #     - drop4crop-api-rust-data:/app/target  # Store builds in docker volume
+  #     - ../drop4crop-api-rust/Cargo.toml:/app/Cargo.toml
+  #     - ../drop4crop-api-rust/Cargo.lock:/app/Cargo.lock
+  #   labels:
+  #     - "traefik.http.routers.drop4crop-api-rust.rule=Host(`drop4crop`) && PathPrefix(`/tiles`)"
+  #     - "traefik.http.services.drop4crop-api-rust.loadbalancer.server.port=3000"
+
 volumes:
   drop4crop-db-data:
+  drop4crop-api-rust-data:

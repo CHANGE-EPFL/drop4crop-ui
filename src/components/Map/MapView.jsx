@@ -106,7 +106,7 @@ const MapView = forwardRef((props, ref) => {
         <MapOverlay layerName={layerName} loading={loading} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-          attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+          attribution="© Data and content by: F. Bassani, Q. Sun, S. Bonetti | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors | &copy; <a href='https://carto.com/attributions'>CARTO</a>"
           subdomains="abcd"
           maxZoom={20}
           noWrap={true}
