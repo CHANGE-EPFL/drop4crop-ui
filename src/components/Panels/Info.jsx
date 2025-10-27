@@ -43,9 +43,33 @@ const InfoPanel = ({ onClick, onClose }) => {
           CHANGE lab
         </a>
         :
-        <br />• Francesca Bassani
-        <br />• Qiming Sun
-        <br />• Sara Bonetti
+        <br />•{" "}
+        <a
+          href="https://people.epfl.ch/francesca.bassani"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={linkStyle}
+        >
+          Francesca Bassani
+        </a>
+        <br />•{" "}
+        <a
+          href="https://people.epfl.ch/qiming.sun"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={linkStyle}
+        >
+          Qiming Sun
+        </a>
+        <br />•{" "}
+        <a
+          href="https://people.epfl.ch/sara.bonetti"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={linkStyle}
+        >
+          Sara Bonetti
+        </a>
       </p>
 
       <div
@@ -55,35 +79,38 @@ const InfoPanel = ({ onClick, onClose }) => {
           paddingTop: "15px",
         }}
       >
-        <p style={{ margin: "5px 0", fontSize: "12px" }}>
-          © 2025 - Developed by{" "}
-          <a
-            href="https://github.com/evanjt"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={linkStyle}
-          >
-            Evan Thomas
-          </a>
-        </p>
-        <p style={{ margin: "5px 0", fontSize: "12px" }}>
-          <a
-            href="https://github.com/CHANGE-EPFL/drop4crop-api"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={linkStyle}
-          >
-            API Repository <span style={{ fontSize: "10px" }}>🔗</span>
-          </a>
-          <br />
-          <a
-            href="https://github.com/CHANGE-EPFL/drop4crop-ui"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={linkStyle}
-          >
-            UI Repository <span style={{ fontSize: "10px" }}>🔗</span>
-          </a>
+        <p style={{ margin: "5px 0", fontSize: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>
+            © 2025 - Developed by{" "}
+            <a
+              href="https://github.com/evanjt"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={linkStyle}
+            >
+              Evan Thomas
+            </a>
+          </span>
+          <span>
+            Code:{" "}
+            <a
+              href="https://github.com/CHANGE-EPFL/drop4crop-api"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={linkStyle}
+            >
+              API
+            </a>
+            {" | "}
+            <a
+              href="https://github.com/CHANGE-EPFL/drop4crop-ui"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={linkStyle}
+            >
+              UI
+            </a>
+          </span>
         </p>
       </div>
 
