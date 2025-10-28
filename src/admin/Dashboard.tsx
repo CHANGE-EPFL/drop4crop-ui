@@ -6,7 +6,7 @@ import {
     useDataProvider,
     useNotify,
 } from 'react-admin';
-import { Grid, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Grid, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent } from '@mui/material';
 import Box from '@mui/material/Box';
 import { useNavigate } from 'react-router-dom';
 import dataProvider from './dataProvider/index';
@@ -44,15 +44,14 @@ const Dashboard = () => {
     const dataProvider = useDataProvider();
 
     const handleRedirectDisabledLayers = () => {
-        // Navigate to list with filter
-        navigate({
-            pathname: '/layers',
-            search: '?filter={"enabled":false}',
+        // Use react-admin redirect with URL-encoded filter
+        redirect('list', 'layers', {}, {
+            search: '?filter=%7B%22enabled%22%3Afalse%7D'
         });
     }
 
     const handleRedirectAllLayers = () => {
-        redirect('list', '/layers');
+        redirect('list', 'layers');
     }
 
     if (isPending || enabledLayersIsPending) return <Loading />;
@@ -76,34 +75,63 @@ const Dashboard = () => {
                             </Grid>
 
                             <Grid item xs={12}>
-                                <TableContainer component={Paper}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell align="center">Metric</TableCell>
-                                                <TableCell align="center">Value</TableCell>
-                                                <TableCell align="center">Action</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            <TableRow>
-                                                <TableCell align="center">Total layers</TableCell>
-                                                <TableCell align="center">{total}</TableCell>
-                                                <TableCell align="center"><Button onClick={handleRedirectAllLayers}>Goto layers</Button></TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell align="center">Total enabled layers</TableCell>
-                                                <TableCell align="center">{totalEnabledLayers} ({(totalEnabledLayers / total * 100).toFixed(2)}%)</TableCell>
-                                                <TableCell align="center"><Button onClick={handleRedirectDisabledLayers}>Goto disabled layers</Button></TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell align="center">Layers with styles</TableCell>
-                                                <TableCell align="center">{totalLayersWithoutStyles} ({(totalLayersWithoutStyles / total * 100).toFixed(2)}%)</TableCell>
-                                                <TableCell align="center"></TableCell>
-                                            </TableRow>
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
+                                <Grid container spacing={3}>
+                                    <Grid item xs={12} sm={6}>
+                                        <Card>
+                                            <CardContent>
+                                                <Typography variant="h6" color="primary" gutterBottom>
+                                                    Layers Overview
+                                                </Typography>
+                                                <Typography variant="h4" gutterBottom>
+                                                    {totalEnabledLayers} / {total}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary" gutterBottom>
+                                                    ({(totalEnabledLayers / total * 100).toFixed(2)}% enabled)
+                                                </Typography>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={handleRedirectAllLayers}
+                                                    fullWidth
+                                                    sx={{ mb: 1 }}
+                                                >
+                                                    View All Layers
+                                                </Button>
+                                                <Button
+                                                    variant="outlined"
+                                                    color="secondary"
+                                                    onClick={handleRedirectDisabledLayers}
+                                                    fullWidth
+                                                >
+                                                    View Disabled Layers
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <Card>
+                                            <CardContent>
+                                                <Typography variant="h6" color="warning" gutterBottom>
+                                                    Layers Without Styles
+                                                </Typography>
+                                                <Typography variant="h4" gutterBottom>
+                                                    {totalLayersWithoutStyles}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary" gutterBottom>
+                                                    ({(totalLayersWithoutStyles / total * 100).toFixed(2)}% need styling)
+                                                </Typography>
+                                                <Button
+                                                    variant="outlined"
+                                                    color="warning"
+                                                    fullWidth
+                                                    disabled
+                                                >
+                                                    Coming Soon
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                </Grid>
                             </Grid>
                         </Grid>
                     </>
