@@ -6,7 +6,7 @@ import {
     useDataProvider,
     useNotify,
 } from 'react-admin';
-import { Grid, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent } from '@mui/material';
+import { Grid, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, CircularProgress } from '@mui/material';
 import Box from '@mui/material/Box';
 import { useNavigate } from 'react-router-dom';
 import dataProvider from './dataProvider/index';
@@ -54,7 +54,11 @@ const Dashboard = () => {
         redirect('list', 'layers');
     }
 
-    if (isPending || enabledLayersIsPending) return <Loading />;
+    if (isPending || enabledLayersIsPending) return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <CircularProgress />
+        </Box>
+    );
     if (!data) return null;
     if (error) return <p>Error: {error}</p>;
 

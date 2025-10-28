@@ -1,13 +1,17 @@
-version: '3.8'
-
 services:
   traefik:
-    image: traefik:v2.9.6
+    image: traefik:v3.5.3
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--serversTransport.insecureSkipVerify=true"
     ports:
-      - "88:80"
+      - "80:80"
+      - "443:443"
       - "8088:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -23,9 +27,12 @@ services:
       - DB_PASSWORD=psql
       - DB_NAME=postgres
       - DB_PREFIX=postgresql
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      # Local development Keycloak settings (override .env)
+      - KEYCLOAK_CLIENT_ID=drop4crop-ui
+      - KEYCLOAK_API_ID=drop4crop-api
+      - KEYCLOAK_API_SECRET=mock-secret
+      - KEYCLOAK_REALM=drop4crop
+      - KEYCLOAK_URL=https://drop4crop-keycloak/
       - S3_BUCKET_ID=${S3_BUCKET_ID}
       - S3_URL=${S3_URL}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
@@ -39,6 +46,7 @@ services:
       - 3005:3000
     depends_on:
       - drop4crop-db
+      - drop4crop-keycloak
     volumes:
       - ../drop4crop-api/src:/app/src
       - ../drop4crop-api/migration:/app/migration  # Mount migration directory
@@ -48,6 +56,8 @@ services:
       - ../drop4crop-api/bacon.toml:/app/bacon.toml  # Mount bacon config
     labels:
       - "traefik.http.routers.drop4crop-bff.rule=Host(`drop4crop`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.drop4crop-bff.entrypoints=websecure"
+      - "traefik.http.routers.drop4crop-bff.tls=true"
       - "traefik.http.services.drop4crop-bff.loadbalancer.server.port=3000"
 
   drop4crop-db:
@@ -66,8 +76,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - VITE_KEYCLOAK_CLIENT_ID=drop4crop-ui
+      - VITE_KEYCLOAK_REALM=drop4crop
+      - VITE_KEYCLOAK_URL=https://drop4crop-keycloak/
+      - VITE_KEYCLOAK_BROWSER_URL=https://drop4crop-keycloak/
+    ports:
+      - "5173:5173"  # Temporarily expose port for testing
     labels:
       - "traefik.http.routers.drop4crop-ui.rule=Host(`drop4crop`)"
+      - "traefik.http.routers.drop4crop-ui.entrypoints=websecure"
+      - "traefik.http.routers.drop4crop-ui.tls=true"
       - "traefik.http.services.drop4crop-ui.loadbalancer.server.port=5173"
     volumes:
       - .:/app
@@ -77,48 +97,25 @@ services:
     ports:
       - 6379:6379
 
-
-  # drop4crop-api-rust:
-  #   build:
-  #     context: ../drop4crop-api-rust
-  #     dockerfile: Dockerfile.dev  # Uses the dockerfile containing cargo-watch
-  #   environment:
-  #     - S3_BUCKET_ID=${S3_BUCKET_ID}
-  #     # - S3_URL=${S3_URL}
-  #     - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-  #     - S3_SECRET_KEY=${S3_SECRET_KEY}
-  #     - DB_HOST=drop4crop-db
-  #     - DB_PORT=5432
-  #     - DB_USER=postgres
-  #     - DB_PASSWORD=psql
-  #     - DB_NAME=postgres
-  #     - DB_PREFIX=postgresql
-  #     # - S3_PREFIX=${S3_PREFIX}
-  #     # - DB_HOST=sensormap-db
-  #     # - DB_PORT=5432
-  #     # - DB_USER=postgres
-  #     # - DB_PASSWORD=psql
-  #     # - DB_NAME=postgres
-  #     # - DB_PREFIX=postgresql
-  #     # - KEYCLOAK_UI_ID=${KEYCLOAK_CLIENT_ID}
-  #     # - KEYCLOAK_BFF_ID=${KEYCLOAK_BFF_ID}
-  #     # - KEYCLOAK_BFF_SECRET=${KEYCLOAK_BFF_SECRET}
-  #     # - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-  #     # - KEYCLOAK_URL=${KEYCLOAK_URL}
-  #     - DEPLOYMENT=dev
-  #     - APP_NAME=drop4crop
-  #     - REDIS_URL=tile-cache
-  #     - REDIS_PORT=6379
-  #   ports:
-  #     - 3005:3000
-  #   volumes:
-  #     - ../drop4crop-api-rust/src:/app/src
-  #     - drop4crop-api-rust-data:/app/target  # Store builds in docker volume
-  #     - ../drop4crop-api-rust/Cargo.toml:/app/Cargo.toml
-  #     - ../drop4crop-api-rust/Cargo.lock:/app/Cargo.lock
-  #   labels:
-  #     - "traefik.http.routers.drop4crop-api-rust.rule=Host(`drop4crop`) && PathPrefix(`/tiles`)"
-  #     - "traefik.http.services.drop4crop-api-rust.loadbalancer.server.port=3000"
+  drop4crop-keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    command: start-dev --import-realm
+    environment:
+      KC_DB: dev-file
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8888
+      KC_PROXY_ENABLED: true
+      KC_PROXY_HEADERS: "forwarded"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./keycloak-realm-dev.json:/opt/keycloak/data/import/realm.json:ro
+    labels:
+      - "traefik.http.routers.drop4crop-keycloak.rule=Host(`drop4crop-keycloak`)"
+      - "traefik.http.routers.drop4crop-keycloak.entrypoints=websecure"
+      - "traefik.http.routers.drop4crop-keycloak.tls=true"
+      - "traefik.http.services.drop4crop-keycloak.loadbalancer.server.port=8888"
 
 volumes:
   drop4crop-db-data:

@@ -1,0 +1,113 @@
+{
+  "id": "drop4crop",
+  "realm": "drop4crop",
+  "displayName": "Drop4Crop Development",
+  "enabled": true,
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "accessTokenLifespan": 3600,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "oauth2DeviceCodeLifespan": 600,
+  "oauth2DevicePollingInterval": 5,
+  "requiredCredentials": ["password"],
+  "clients": [
+    {
+      "id": "drop4crop-ui",
+      "clientId": "drop4crop-ui",
+      "name": "Drop4Crop UI",
+      "enabled": true,
+      "clientAuthenticatorType": "public",
+      "redirectUris": ["https://drop4crop/admin", "https://drop4crop/*", "http://drop4crop/*", "https://drop4crop:88/*", "http://drop4crop:88/*", "http://localhost:*", "https://localhost:*"],
+      "webOrigins": ["*"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "publicClient": true
+    },
+    {
+      "id": "drop4crop-api",
+      "clientId": "drop4crop-api",
+      "name": "Drop4Crop API",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "mock-secret",
+      "redirectUris": ["http://drop4crop/*"],
+      "webOrigins": ["*"],
+      "serviceAccountsEnabled": true,
+      "publicClient": false
+    }
+  ],
+  "users": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@drop4crop.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": ["admin", "user"],
+      "clientRoles": {},
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Regular",
+      "lastName": "User",
+      "email": "user@drop4crop.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": ["user"],
+      "clientRoles": {},
+      "notBefore": 0,
+      "groups": []
+    }
+  ],
+  "roles": {
+    "realm": [
+      {"name": "admin"},
+      {"name": "user"}
+    ]
+  }
+}

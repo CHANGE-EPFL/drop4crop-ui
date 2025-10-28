@@ -16,6 +16,10 @@ import Dashboard from "./Dashboard";
 const initOptions = {
   onLoad: "login-required",
   checkLoginIframe: false,
+  enableLogging: true,
+  // Disable silent SSO check to avoid iframe timeout issues
+  silentCheckSsoRedirectUri: null,
+  pkceMethod: false,
 };
 
 const getPermissions = (decoded) => {
@@ -42,8 +46,15 @@ const App = () => {
   useEffect(() => {
     const initKeyCloakClient = async () => {
       try {
+        console.log('Starting Keycloak initialization...');
         const response = await axios.get("/api/config/keycloak");
         const keycloakConfig = response.data;
+        const browserKeycloakUrl = import.meta.env.VITE_KEYCLOAK_BROWSER_URL;
+        if (browserKeycloakUrl) {
+          keycloakConfig.url = browserKeycloakUrl;
+        }
+
+        console.log('Keycloak config:', keycloakConfig);
 
         // Initialize Keycloak here, once you have the configuration
         const keycloakClient = new Keycloak({
@@ -51,12 +62,24 @@ const App = () => {
           realm: keycloakConfig.realm,
           clientId: keycloakConfig.clientId,
         });
+
+        console.log('About to init Keycloak with options:', initOptions);
         await keycloakClient.init(initOptions);
+
+        const redirectUri = window.location.origin + "/admin";
+        console.log('Using redirect URI:', redirectUri);
+        console.log('Window location origin:', window.location.origin);
+        console.log('Window location href:', window.location.href);
+        console.log('Keycloak client config:', {
+          url: keycloakConfig.url,
+          realm: keycloakConfig.realm,
+          clientId: keycloakConfig.clientId
+        });
 
         authProvider.current = keycloakAuthProvider(keycloakClient, {
           onPermissions: getPermissions,
-          loginRedirectUri: window.location.origin + "/admin",
-          logoutRedirectUri: window.location.origin + "/admin",
+          loginRedirectUri: redirectUri,
+          logoutRedirectUri: redirectUri,
         });
         dataProvider.current = simpleRestProvider(
           apiUrl,

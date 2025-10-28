@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -101,7 +101,8 @@ const createLegendContainer = (
         setIsVisible(!isVisible);
     };
 
-    ReactDOM.render(<MinimizeIcon fontSize="small" />, toggleButton);
+    const root = createRoot(toggleButton);
+    root.render(<MinimizeIcon fontSize="small" />);
 
     return legendContainer;
 };

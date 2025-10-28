@@ -1,9 +1,15 @@
-FROM node:23.4.0
+FROM node:25.0.0
 
 # Set the working directory in the container
 WORKDIR /app
 
+# Copy package files first for better caching
 COPY package.json yarn.lock ./
+
+# Install dependencies
+RUN yarn install
+
+# Copy the rest of the application
 COPY . .
 
 # Start your Yarn application

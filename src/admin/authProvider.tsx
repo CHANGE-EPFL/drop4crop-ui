@@ -1,6 +1,6 @@
 import { AuthProvider } from 'react-admin';
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 
 export type PermissionsFunction = (decoded: KeycloakTokenParsed) => any;
 
