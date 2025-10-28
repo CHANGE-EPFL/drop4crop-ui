@@ -65,24 +65,12 @@ services:
   drop4crop-ui:
     build:
       context: .
-      dockerfile: Dockerfile.dev  # Uses the dockerfile containing yarn dev
+      dockerfile: Dockerfile.dev
     labels:
       - "traefik.http.routers.drop4crop-ui.rule=Host(`drop4crop`)"
       - "traefik.http.services.drop4crop-ui.loadbalancer.server.port=5173"
     volumes:
-      - ../drop4crop-ui:/app
-
-  drop4crop-admin:
-    build:
-      context: ../drop4crop-admin
-      dockerfile: Dockerfile.dev  # Uses the dockerfile containing yarn dev
-    labels:
-      - "traefik.http.routers.drop4crop-admin.rule=Host(`drop4crop`) && PathPrefix(`/admin`)"
-      - "traefik.http.services.drop4crop-admin.loadbalancer.server.port=5173"
-    volumes:
-      - ../drop4crop-admin:/app
-    ports:
-      - 5173:5173
+      - .:/app
 
   tile-cache:
     image: redis:7.4.0
