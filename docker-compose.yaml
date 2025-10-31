@@ -32,14 +32,13 @@ services:
       - KEYCLOAK_API_ID=drop4crop-api
       - KEYCLOAK_API_SECRET=mock-secret
       - KEYCLOAK_REALM=drop4crop
-      - KEYCLOAK_URL=https://drop4crop-keycloak/
+      - KEYCLOAK_URL=http://drop4crop-keycloak
       - S3_BUCKET_ID=${S3_BUCKET_ID}
       - S3_URL=${S3_URL}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
       - S3_PREFIX=${S3_PREFIX}
-      - TILE_CACHE_URL=tile-cache
-      - TILE_CACHE_PORT=6379
+      - TILE_CACHE_URI=redis://:${REDIS_PASSWORD}@tile-cache:6379/0
       - DEPLOYMENT=dev
       - APP_NAME=drop4crop
     ports:
@@ -94,6 +93,7 @@ services:
 
   tile-cache:
     image: redis:7.4.0
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
       - 6379:6379
 
@@ -105,8 +105,9 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_PORT: 8888
-      KC_PROXY_ENABLED: true
-      KC_PROXY_HEADERS: "forwarded"
+      KC_HOSTNAME: drop4crop-keycloak
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
     ports:
       - "8888:8888"
     volumes:
