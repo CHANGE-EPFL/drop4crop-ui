@@ -3,8 +3,7 @@ import {
     TextField,
     BooleanField,
     BulkDeleteButton,
-    DatagridConfigurable,
-    SelectColumnsButton,
+    Datagrid,
     BulkExportButton,
     BulkUpdateButton,
     useGetList,
@@ -26,10 +25,13 @@ import {
     TextInput,
     BooleanInput,
     SelectInput,
+    useDataProvider,
+    Button,
 } from "react-admin";
 import { useState } from 'react';
+import { createStyleGradient } from '../../utils/styleUtils';
 import { FilterList, FilterListItem } from 'react-admin';
-import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/LocalOffer';
 import {
     globalWaterModelsItems,
@@ -53,6 +55,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export const ColorBar = () => {
     const record = useRecordContext();
@@ -69,10 +72,9 @@ export const ColorBar = () => {
             />
         );
     }
-    const style = record.style;
-    const gradient = `linear-gradient(to right, ${style.map(
-        color => `rgba(${color.red},${color.green},${color.blue},${color.opacity / 255})`
-    ).join(", ")})`;
+
+    const gradient = createStyleGradient(record.style);
+
     return (
         <Box
             sx={{
@@ -88,58 +90,170 @@ export const ColorBar = () => {
 };
 
 
+// ColorBar wrapper for dropdown use
+const DropdownColorBar = ({ styleData, ...props }) => {
+    // Debug: Log the data structure
+    console.log('DropdownColorBar received:', styleData);
+
+    let processedStyleData = [];
+
+    if (!styleData) {
+        // Empty data, show grey bar
+        return (
+            <Box
+                sx={{
+                    height: '8px',
+                    width: '60px',
+                    backgroundColor: '#e0e0e0',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                }}
+                {...props}
+            />
+        );
+    }
+
+    // If styleData is the complete style object with nested style array
+    if (styleData.style && Array.isArray(styleData.style)) {
+        processedStyleData = styleData.style;
+        console.log('Using styleData.style:', processedStyleData);
+    }
+    // If styleData is an array of StyleItem objects
+    else if (Array.isArray(styleData) && styleData.length > 0 && styleData[0].red !== undefined) {
+        processedStyleData = styleData;
+        console.log('Using direct StyleItem array:', processedStyleData);
+    }
+    // If styleData is an array of style records (CRUD response)
+    else if (Array.isArray(styleData)) {
+        styleData.forEach(styleRecord => {
+            if (styleRecord.style && Array.isArray(styleRecord.style)) {
+                processedStyleData = processedStyleData.concat(styleRecord.style);
+            }
+        });
+        console.log('Using concatenated style records:', processedStyleData);
+    }
+
+    // If no valid data, show grey bar
+    if (processedStyleData.length === 0) {
+        console.log('No valid style data found, showing grey bar');
+        return (
+            <Box
+                sx={{
+                    height: '8px',
+                    width: '60px',
+                    backgroundColor: '#e0e0e0',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd'
+                }}
+                {...props}
+            />
+        );
+    }
+
+    console.log('Final processed style data:', processedStyleData);
+
+    // Create gradient
+    const gradient = createStyleGradient(processedStyleData);
+    console.log('Generated gradient:', gradient);
+
+    return (
+        <Box
+            sx={{
+                height: '8px',
+                width: '60px',
+                backgroundImage: gradient,
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                backgroundColor: '#e0e0e0', // Fallback color
+                backgroundSize: '100% 100%',
+                backgroundRepeat: 'no-repeat'
+            }}
+            {...props}
+        />
+    );
+};
+
 const StyleSelectMenu = () => {
     const { data, loading } = useGetList('styles');
-    const [updateMany] = useUpdateMany();
+    const dataProvider = useDataProvider();
     const { selectedIds } = useListContext();
     const notify = useNotify();
     const refresh = useRefresh();
     const unselectAll = useUnselectAll('layers');
     const [selectedStyle, setSelectedStyle] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
 
     if (loading) return <Loading small />;
     if (!data || selectedIds.length === 0) return null;
 
-    const handleChange = (event) => {
+    const handleChange = async (event) => {
         const newStyleId = event.target.value;
         setSelectedStyle(newStyleId);
+        setIsUpdating(true);
 
-        updateMany(
-            'layers',
-            { ids: selectedIds, data: { style_id: newStyleId } }
-        ).then(() => {
+        try {
+            // Update each layer individually
+            const updatePromises = selectedIds.map(layerId =>
+                dataProvider.update('layers', {
+                    id: layerId,
+                    data: { style_id: newStyleId },
+                })
+            );
+
+            await Promise.all(updatePromises);
+
             const styleName = data.find(style => style.id === newStyleId)?.name || newStyleId;
-            notify(`Applied style "${styleName}" to ${selectedIds.length} layer(s)`, { type: 'success' });
+            notify(`✅ Applied style "${styleName}" to ${selectedIds.length} layer(s)`, { type: 'success' });
             refresh();
             unselectAll();
             setSelectedStyle('');
-        }).catch(() => {
-            notify('Error updating layer style', { type: 'error' });
-        });
+        } catch (error) {
+            console.error('Error updating layer styles:', error);
+            notify('❌ Error updating layer style', { type: 'error' });
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     return (
-        <Box sx={{ minWidth: 120 }}>
+        <Box sx={{ minWidth: 250 }}>
             <Select
                 size="small"
                 value={selectedStyle}
                 onChange={handleChange}
                 displayEmpty
                 placeholder="Apply Style"
-                sx={{ height: '36px' }}
+                disabled={isUpdating}
+                sx={{
+                    height: '36px',
+                    minWidth: 250,
+                    '& .MuiSelect-select': {
+                        display: 'flex',
+                        alignItems: 'center'
+                    }
+                }}
             >
                 <MenuItem disabled value="">
-                    <em>Apply Style to {selectedIds.length} selected</em>
+                    <em>🎨 Apply Style to {selectedIds.length} selected</em>
                 </MenuItem>
-                {data.map(style => (
-                    <MenuItem key={style.id} value={style.id}>
-                        {style.name}
-                    </MenuItem>
-                ))}
+                {data.map(style => {
+                    return (
+                        <MenuItem key={style.id} value={style.id}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" sx={{ flex: 1 }}>
+                                    🎨 {style.name}
+                                </Typography>
+                                <Box sx={{ width: 60, height: 8, borderRadius: '4px', border: '1px solid #ddd', backgroundImage: createStyleGradient(style.style), backgroundColor: '#e0e0e0', backgroundSize: '100% 100%' }} />
+                            </Box>
+                        </MenuItem>
+                    );
+                })}
             </Select>
         </Box>
     );
 };
+
 
 const BulkActionButtons = () => {
     const { selectedIds } = useListContext();
@@ -171,181 +285,97 @@ const BulkActionButtons = () => {
             <BulkDeleteButton
                 mutationMode="pessimistic"
                 confirmColor="error"
-                confirmContent={`Are you sure you want to delete ${selectedIds.length} selected layers?`}
+                confirmContent={`Are you sure you want to delete ${selectedIds.length} selected layers and their associated S3 files? This action cannot be undone.`}
+                confirmTitle="Confirm Bulk Delete"
+                label="Delete"
+                icon={<DeleteIcon />}
             />
         </Stack>
     );
 };
 
 
-export const FilterSidebar = () => {
+const ListActions = ({ setUploadDialogOpen }) => {
+    const { selectedIds } = useListContext();
+
     return (
-        <Card sx={{
-            order: -1,
-            mr: 2,
-            mt: 1,
-            width: 280,
-            borderRadius: 2,
-            boxShadow: 1
-        }}>
-            <CardContent sx={{ pb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="subtitle1" fontWeight="medium">
-                        Filters
-                    </Typography>
-                </Box>
-
-                <Stack spacing={2}>
-                    <FilterList
-                        label="Status"
-                        icon={<CategoryIcon sx={{ fontSize: 16 }} />}
-                        sx={{ '& .RaFilterList-item': { py: 0.5 } }}
-                    >
-                        <FilterListItem
-                            label={<Chip size="small" color="success" label="Enabled" />}
-                            value={{ enabled: true }}
+        <TopToolbar sx={{ justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" component="h2" sx={{ mr: 2 }}>
+                    Layers
+                </Typography>
+                <FilterButton />
+                {selectedIds.length > 0 && (
+                    <>
+                        <Divider orientation="vertical" flexItem />
+                        <Typography variant="body2" color="text.secondary">
+                            {selectedIds.length} selected
+                        </Typography>
+                        <Divider orientation="vertical" flexItem />
+                        <BulkUpdateButton
+                            label="Enable"
+                            mutationMode="pessimistic"
+                            data={{ enabled: true }}
+                            icon={<CheckCircleIcon />}
+                            color="success"
                         />
-                        <FilterListItem
-                            label={<Chip size="small" color="default" label="Disabled" />}
-                            value={{ enabled: false }}
+                        <BulkUpdateButton
+                            label="Disable"
+                            mutationMode="pessimistic"
+                            data={{ enabled: false }}
+                            color="error"
                         />
-                    </FilterList>
-
-                    <FilterList
-                        label="Type"
-                        icon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                        sx={{ '& .RaFilterList-item': { py: 0.5 } }}
-                    >
-                        <FilterListItem
-                            label={<Chip size="small" color="primary" label="Crop Specific" />}
-                            value={{ is_crop_specific: true }}
+                        <StyleSelectMenu />
+                        <BulkExportButton />
+                        <BulkDeleteButton
+                            mutationMode="pessimistic"
+                            confirmColor="error"
+                            confirmContent={`Are you sure you want to delete ${selectedIds.length} selected layers and their associated S3 files? This action cannot be undone.`}
+                            confirmTitle="Confirm Bulk Delete"
+                            label="Delete"
+                            icon={<DeleteIcon />}
                         />
-                        <FilterListItem
-                            label={<Chip size="small" variant="outlined" label="General" />}
-                            value={{ is_crop_specific: false }}
-                        />
-                    </FilterList>
-
-                    <Divider sx={{ my: 1 }} />
-
-                    <FilterList
-                        label="Crop"
-                        icon={<GrassIcon sx={{ fontSize: 16 }} />}
-                        sx={{ maxHeight: 250, overflow: 'auto' }}
-                    >
-                        {cropItems.map(item => (
-                            <FilterListItem
-                                key={item.id}
-                                label={item.name}
-                                value={{ crop: item.id }}
-                                sx={{ fontSize: '0.875rem' }}
-                            />
-                        ))}
-                    </FilterList>
-
-                    <FilterList
-                        label="Water Model"
-                        icon={<FontAwesomeIcon icon={faWater} style={{ fontSize: 14 }} />}
-                        sx={{ maxHeight: 200, overflow: 'auto' }}
-                    >
-                        {globalWaterModelsItems.map(item => (
-                            <FilterListItem
-                                key={item.id}
-                                label={item.name}
-                                value={{ water_model: item.id }}
-                                sx={{ fontSize: '0.875rem' }}
-                            />
-                        ))}
-                    </FilterList>
-
-                    <FilterList
-                        label="Climate Model"
-                        icon={<FontAwesomeIcon icon={faCloudSun} style={{ fontSize: 14 }} />}
-                        sx={{ maxHeight: 200, overflow: 'auto' }}
-                    >
-                        {climateModelsItems.map(item => (
-                            <FilterListItem
-                                key={item.id}
-                                label={item.name}
-                                value={{ climate_model: item.id }}
-                                sx={{ fontSize: '0.875rem' }}
-                            />
-                        ))}
-                    </FilterList>
-
-                    <FilterList
-                        label="Scenario"
-                        icon={<FontAwesomeIcon icon={faCogs} style={{ fontSize: 14 }} />}
-                        sx={{ maxHeight: 150, overflow: 'auto' }}
-                    >
-                        {scenariosItems.map(item => (
-                            <FilterListItem
-                                key={item.id}
-                                label={item.name}
-                                value={{ scenario: item.id }}
-                                sx={{ fontSize: '0.875rem' }}
-                            />
-                        ))}
-                    </FilterList>
-
-                    <FilterList
-                        label="Variable"
-                        icon={<FontAwesomeIcon icon={faLayerGroup} style={{ fontSize: 14 }} />}
-                        sx={{ maxHeight: 200, overflow: 'auto' }}
-                    >
-                        {variablesItems.map(item => (
-                            <FilterListItem
-                                key={item.id}
-                                label={item.name}
-                                value={{ variable: item.id }}
-                                sx={{ fontSize: '0.875rem' }}
-                            />
-                        ))}
-                    </FilterList>
-
-                    <FilterList
-                        label="Year"
-                        icon={<FontAwesomeIcon icon={faCalendarAlt} style={{ fontSize: 14 }} />}
-                        sx={{ maxHeight: 150, overflow: 'auto' }}
-                    >
-                        {yearItems.map(item => (
-                            <FilterListItem
-                                key={item.id}
-                                label={item.name}
-                                value={{ year: item.id }}
-                                sx={{ fontSize: '0.875rem' }}
-                            />
-                        ))}
-                    </FilterList>
-                </Stack>
-            </CardContent>
-        </Card>
-    )
+                    </>
+                )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton
+                    size="small"
+                    onClick={() => window.location.reload()}
+                    title="Refresh"
+                >
+                    <RefreshIcon />
+                </IconButton>
+                <ExportButton />
+                <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<CloudUploadIcon />}
+                    size="small"
+                    onClick={() => setUploadDialogOpen(true)}
+                >
+                    Upload Layer
+                </Button>
+            </Box>
+        </TopToolbar>
+    );
 };
-const ListActions = () => (
-    <TopToolbar sx={{ justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h6" component="h2" sx={{ mr: 2 }}>
-                Layers
-            </Typography>
-            <FilterButton />
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton
-                size="small"
-                onClick={() => window.location.reload()}
-                title="Refresh"
-            >
-                <RefreshIcon />
-            </IconButton>
-            <SelectColumnsButton />
-            <ExportButton />
-            <CreateButton />
-        </Box>
-    </TopToolbar>
-);
+
+// Upload Dialog with UppyUploader
+const UploadDialog = ({ open, onClose }) => {
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+            <DialogTitle>Upload New Layer</DialogTitle>
+            <DialogContent sx={{ pb: 3 }}>
+                <UppyUploader />
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 export const LayerList = () => {
+    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+
     const PostPagination = props => (
         <Pagination
             rowsPerPageOptions={[10, 25, 50, 100, 250, 500, 1000]}
@@ -354,49 +384,33 @@ export const LayerList = () => {
     );
 
     return (
-        <List
-            queryOptions={{ refetchInterval: 5000 }}
-            aside={<FilterSidebar />}
-            storeKey={false}
-            perPage={25}
-            pagination={<PostPagination />}
-            actions={<ListActions />}
-            sort={{ field: 'uploaded_at', order: 'DESC' }}
-            empty={false}
-            sx={{ '& .RaList-content': { mt: 2 } }}
-            filters={[
-                <SearchInput source="q" alwaysOn />,
-                <BooleanInput source="enabled" />,
-                <BooleanInput source="is_crop_specific" />,
-                <SelectInput source="crop" choices={cropItems} />,
-                <SelectInput source="water_model" choices={globalWaterModelsItems} />,
-                <SelectInput source="climate_model" choices={climateModelsItems} />,
-                <SelectInput source="scenario" choices={scenariosItems} />,
-                <SelectInput source="variable" choices={variablesItems} />,
-                <SelectInput source="year" choices={yearItems} />,
-            ]}
-        >
-            {/* Upload Section */}
-            <Box sx={{ mb: 3 }}>
-                <Card sx={{ borderRadius: 2, boxShadow: 1, maxWidth: 600, mx: 'auto' }}>
-                    <CardContent sx={{ pb: 2, pt: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <CloudUploadIcon sx={{ mr: 1, color: 'primary.main' }} />
-                            <Typography variant="h6" component="h3">
-                                Upload New Layer
-                            </Typography>
-                        </Box>
-                        <UppyUploader />
-                    </CardContent>
-                </Card>
-            </Box>
-
+        <>
+            <List
+                queryOptions={{ refetchInterval: 5000 }}
+                storeKey={false}
+                perPage={25}
+                pagination={<PostPagination />}
+                actions={<ListActions setUploadDialogOpen={setUploadDialogOpen} />}
+                sort={{ field: 'uploaded_at', order: 'DESC' }}
+                empty={false}
+                sx={{ '& .RaList-content': { mt: 2 } }}
+                filters={[
+                    <SearchInput source="q" alwaysOn />,
+                    <BooleanInput source="enabled" />,
+                    <BooleanInput source="is_crop_specific" />,
+                    <SelectInput source="crop" choices={cropItems} />,
+                    <SelectInput source="water_model" choices={globalWaterModelsItems} />,
+                    <SelectInput source="climate_model" choices={climateModelsItems} />,
+                    <SelectInput source="scenario" choices={scenariosItems} />,
+                    <SelectInput source="variable" choices={variablesItems} />,
+                    <SelectInput source="year" choices={yearItems} />,
+                ]}
+            >
             {/* Layers Table */}
             <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
-                <DatagridConfigurable
-                    rowClick="show"
-                    bulkActionButtons={<BulkActionButtons />}
+                <Datagrid
                     size="medium"
+                    rowSelect={true}
                     sx={{
                         '& .RaDatagrid-headerCell': {
                             fontWeight: 600,
@@ -467,9 +481,12 @@ export const LayerList = () => {
                         label="Style"
                         render={record => (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {record.style?.name ? (
+                                {record.style_id ? (
                                     <Typography variant="body2">
-                                        {record.style.name}
+                                        {record.style?.length > 0 && record.style[0]?.name ?
+                                            record.style[0].name :
+                                            'Applied style'
+                                        }
                                     </Typography>
                                 ) : (
                                     <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -510,9 +527,16 @@ export const LayerList = () => {
                             </Box>
                         )}
                     />
-                </DatagridConfigurable>
+                </Datagrid>
             </Card>
         </List>
+
+        {/* Upload Dialog */}
+        <UploadDialog
+            open={uploadDialogOpen}
+            onClose={() => setUploadDialogOpen(false)}
+        />
+        </>
     );
 };
 

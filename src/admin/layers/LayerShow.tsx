@@ -12,12 +12,12 @@ import {
     ListButton,
 } from "react-admin";
 import { Typography, Box, Chip, Card, CardContent, Stack, Divider } from '@mui/material';
+import { createStyleGradient } from '../../utils/styleUtils';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ListIcon from '@mui/icons-material/List';
 
-export const ColorBar = () => {
-    const record = useRecordContext();
+export const ColorBar = ({ record }) => {
     if (!record || !record.style || record.style.length == 0) {
         return (
             <Box
@@ -32,10 +32,8 @@ export const ColorBar = () => {
             />
         );
     }
-    const style = record.style;
-    const gradient = `linear-gradient(to right, ${style.map(
-        color => `rgba(${color.red},${color.green},${color.blue},${color.opacity / 255})`
-    ).join(", ")})`;
+
+    const gradient = createStyleGradient(record.style);
 
     return (
         <Box
@@ -60,164 +58,200 @@ const LayerShowActions = () => (
     </TopToolbar>
 );
 
-export const LayerShow = () => {
+const LayerShowContent = () => {
+    const record = useRecordContext();
+
+    if (!record) {
+        return <div>No data available</div>;
+    }
+
     return (
-        <Show actions={<LayerShowActions />}>
-            <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
-                <CardContent sx={{ p: 3 }}>
-                    <Stack spacing={3}>
-                        {/* Header Section */}
-                        <Box>
-                            <Typography variant="h4" component="h1" gutterBottom>
-                                Layer Details
-                            </Typography>
-                            <Stack direction="row" spacing={2} alignItems="center">
-                                <Chip
-                                    color="primary"
-                                    label={useRecordContext()?.crop || 'Unknown Crop'}
-                                    size="medium"
-                                />
-                                <Chip
-                                    color={useRecordContext()?.enabled ? 'success' : 'default'}
-                                    label={useRecordContext()?.enabled ? 'Enabled' : 'Disabled'}
-                                    variant={useRecordContext()?.enabled ? 'filled' : 'outlined'}
-                                />
-                                <Chip
-                                    color={useRecordContext()?.is_crop_specific ? 'secondary' : 'default'}
-                                    label={useRecordContext()?.is_crop_specific ? 'Crop Specific' : 'General'}
-                                    variant="outlined"
-                                />
-                            </Stack>
-                        </Box>
+        <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
+            <CardContent sx={{ p: 3 }}>
+                <Stack spacing={3}>
+                    {/* Header Section */}
+                    <Box>
+                        <Typography variant="h4" component="h1" gutterBottom>
+                            Layer Details
+                        </Typography>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                            <Chip
+                                color="primary"
+                                label={record.crop || 'Unknown Crop'}
+                                size="medium"
+                            />
+                            <Chip
+                                color={record.enabled ? 'success' : 'default'}
+                                label={record.enabled ? 'Enabled' : 'Disabled'}
+                                variant={record.enabled ? 'filled' : 'outlined'}
+                            />
+                            <Chip
+                                color={record.is_crop_specific ? 'secondary' : 'default'}
+                                label={record.is_crop_specific ? 'Crop Specific' : 'General'}
+                                variant="outlined"
+                            />
+                        </Stack>
+                    </Box>
 
-                        <Divider />
+                    <Divider />
 
-                        {/* Basic Information */}
-                        <Box>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Basic Information
-                            </Typography>
-                            <Stack spacing={2}>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Layer Name
-                                        </Typography>
-                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                            {useRecordContext()?.layer_name}
-                                        </Typography>
-                                    </Box>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Filename
-                                        </Typography>
-                                        <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                                            {useRecordContext()?.filename}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            </Stack>
-                        </Box>
-
-                        <Divider />
-
-                        {/* Model Configuration */}
-                        <Box>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Model Configuration
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                    {/* Basic Information */}
+                    <Box>
+                        <Typography variant="h6" gutterBottom color="primary">
+                            Basic Information
+                        </Typography>
+                        <Stack spacing={2}>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                                 <Box>
                                     <Typography variant="body2" color="text.secondary">
-                                        Water Model
+                                        Layer Name
                                     </Typography>
                                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {useRecordContext()?.water_model}
+                                        {record.layer_name}
                                     </Typography>
                                 </Box>
                                 <Box>
                                     <Typography variant="body2" color="text.secondary">
-                                        Climate Model
+                                        Filename
                                     </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {useRecordContext()?.climate_model}
-                                    </Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Scenario
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {useRecordContext()?.scenario}
-                                    </Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Variable
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
-                                        {useRecordContext()?.variable}
-                                    </Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Year
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {useRecordContext()?.year}
-                                    </Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        ID
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                        {useRecordContext()?.id}
+                                    <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                                        {record.filename}
                                     </Typography>
                                 </Box>
                             </Box>
-                        </Box>
-
-                        <Divider />
-
-                        {/* Style Information */}
-                        <Box>
-                            <Typography variant="h6" gutterBottom color="primary">
-                                Style Configuration
-                            </Typography>
-                            <Stack spacing={2}>
-                                {useRecordContext()?.style_id ? (
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Applied Style
-                                        </Typography>
-                                        <ReferenceField source="style_id" reference="styles" link="show">
-                                            <Typography variant="body1" sx={{ fontWeight: 500, color: 'primary.main' }}>
-                                                {useRecordContext()?.style?.name}
-                                            </Typography>
-                                        </ReferenceField>
-                                    </Box>
-                                ) : (
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Applied Style
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                                            No style applied
-                                        </Typography>
-                                    </Box>
-                                )}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
                                 <Box>
                                     <Typography variant="body2" color="text.secondary">
-                                        Style Preview
+                                        Min Value
                                     </Typography>
-                                    <ColorBar />
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.min_value?.toFixed(2) || 'N/A'}
+                                    </Typography>
                                 </Box>
-                            </Stack>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Max Value
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.max_value?.toFixed(2) || 'N/A'}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Global Average
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.global_average?.toFixed(2) || 'N/A'}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Stack>
+                    </Box>
+
+                    <Divider />
+
+                    {/* Model Configuration */}
+                    <Box>
+                        <Typography variant="h6" gutterBottom color="primary">
+                            Model Configuration
+                        </Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Water Model
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                    {record.water_model}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Climate Model
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                    {record.climate_model}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Scenario
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                    {record.scenario}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Variable
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
+                                    {record.variable}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Year
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                    {record.year}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    ID
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                    {record.id}
+                                </Typography>
+                            </Box>
                         </Box>
-                    </Stack>
-                </CardContent>
-            </Card>
+                    </Box>
+
+                    <Divider />
+
+                    {/* Style Information */}
+                    <Box>
+                        <Typography variant="h6" gutterBottom color="primary">
+                            Style Configuration
+                        </Typography>
+                        <Stack spacing={2}>
+                            {record.style_id ? (
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Applied Style
+                                    </Typography>
+                                    <ReferenceField source="style_id" reference="styles" link="show">
+                                        <TextField source="name" />
+                                    </ReferenceField>
+                                </Box>
+                            ) : (
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Applied Style
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                        No style applied
+                                    </Typography>
+                                </Box>
+                            )}
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">
+                                    Style Preview
+                                </Typography>
+                                <ColorBar record={record} />
+                            </Box>
+                        </Stack>
+                    </Box>
+                </Stack>
+            </CardContent>
+        </Card>
+    );
+};
+
+export const LayerShow = () => {
+    return (
+        <Show actions={<LayerShowActions />}>
+            <LayerShowContent />
         </Show>
     )
 };

@@ -7,16 +7,14 @@ import {
     TextField,
     useRecordContext,
 } from "react-admin";
+import { createStyleGradient } from '../../utils/styleUtils';
 
 // Custom ColorBar component
 export const ColorBar = () => {
     const record = useRecordContext();
     if (!record || !record.style) return null;
-    const style = record.style;
 
-    const gradient = `linear-gradient(to right, ${style.map(
-        color => `rgba(${color.red},${color.green},${color.blue},${color.opacity / 255})`
-    ).join(", ")})`;
+    const gradient = createStyleGradient(record.style);
 
     return (
         <div style={{ height: '20px', marginBottom: '10px', background: gradient }} />

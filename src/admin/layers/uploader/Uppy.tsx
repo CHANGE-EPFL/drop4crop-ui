@@ -1,7 +1,10 @@
 import React, { useRef, useState, useContext } from "react";
 import { useNotify, useRefresh, AuthContext } from "react-admin";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
@@ -9,6 +12,111 @@ import XHR from "@uppy/xhr-upload";
 import "@uppy/core/css/style.min.css";
 import "@uppy/dashboard/css/style.min.css";
 import "./UppyUploader.css"; // Import custom CSS
+
+// Simple file list component for efficient bulk uploads
+const UppyFileList = ({ uppy }) => {
+  const [files, setFiles] = useState([]);
+
+  React.useEffect(() => {
+    const updateFiles = () => {
+      setFiles(Object.values(uppy.getFiles()));
+    };
+
+    // Initial load
+    updateFiles();
+
+    // Listen for file changes
+    uppy.on('file-added', updateFiles);
+    uppy.on('file-removed', updateFiles);
+    uppy.on('upload-progress', updateFiles);
+    uppy.on('upload-success', updateFiles);
+    uppy.on('upload-error', updateFiles);
+
+    return () => {
+      uppy.off('file-added', updateFiles);
+      uppy.off('file-removed', updateFiles);
+      uppy.off('upload-progress', updateFiles);
+      uppy.off('upload-success', updateFiles);
+      uppy.off('upload-error', updateFiles);
+    };
+  }, [uppy]);
+
+  const handleRemoveFile = (fileId) => {
+    uppy.removeFile(fileId);
+  };
+
+  const getStatusIcon = (file) => {
+    if (file.error) {
+      return <ErrorIcon color="error" fontSize="small" />;
+    }
+    if (file.progress.complete) {
+      return <CheckCircleIcon color="success" fontSize="small" />;
+    }
+    if (file.progress.uploadStarted) {
+      return <CircularProgress size={16} thickness={2} />;
+    }
+    return <CircularProgress size={16} thickness={2} variant="indeterminate" />;
+  };
+
+  const getStatusText = (file) => {
+    if (file.error) {
+      return `Error: ${file.error.message || 'Upload failed'}`;
+    }
+    if (file.progress.complete) {
+      return 'Upload complete';
+    }
+    if (file.progress.uploadStarted) {
+      return `Uploading... ${Math.round(file.progress.percentage)}%`;
+    }
+    return 'Waiting to upload';
+  };
+
+  if (files.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box sx={{ border: '1px solid #ddd', borderRadius: 1, bgcolor: 'background.paper' }}>
+      <Typography variant="subtitle2" sx={{ p: 1, borderBottom: '1px solid #ddd', bgcolor: 'grey.50' }}>
+        Upload Queue ({files.length} files)
+      </Typography>
+      <List dense sx={{ maxHeight: 280, overflow: 'auto', p: 0 }}>
+        {files.map((file) => (
+          <ListItem
+            key={file.id}
+            sx={{
+              px: 1,
+              py: 0.5,
+              borderBottom: '1px solid #f0f0f0',
+              '&:last-child': { borderBottom: 'none' }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+              {getStatusIcon(file)}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" noWrap sx={{ fontSize: '0.85rem' }}>
+                  {file.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  {getStatusText(file)}
+                </Typography>
+              </Box>
+              {!file.progress.uploadStarted && (
+                <IconButton
+                  size="small"
+                  onClick={() => handleRemoveFile(file.id)}
+                  sx={{ p: 0.5 }}
+                >
+                  <CancelIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
+};
 
 export const UppyUploader = () => {
   const refresh = useRefresh();
@@ -38,7 +146,7 @@ export const UppyUploader = () => {
       endpoint: "/api/layers/uploads",
       headers: headers,
       limit: 25,
-      timeout: 5 * 60 * 1000, // 5 minutes timeout
+      timeout: 15 * 60 * 1000, // 15 minutes timeout
       onBeforeRequest: (request) => {
         console.log("Uppy: Starting upload request", request);
       },
@@ -232,8 +340,10 @@ export const UppyUploader = () => {
         </Typography>
       </Box>
 
-      {/* Progress indicator area */}
-      <Box id="uppy-progress" sx={{ mt: 2 }} />
+      {/* Simple file list for uploads */}
+      <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
+        <UppyFileList uppy={uppy} />
+      </Box>
     </Box>
   );
 };
