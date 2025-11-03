@@ -116,6 +116,30 @@ const MapView = forwardRef((props, ref) => {
             url={`/api/tiles/{z}/{x}/{y}?layer=${layerName}`}
             maxZoom={20}
             noWrap={true}
+            eventHandlers={{
+              tileerror: (error, tile) => {
+                console.error('Tile loading error:', {
+                  error,
+                  tile: tile.src,
+                  layerName,
+                  timestamp: new Date().toISOString()
+                });
+              },
+              tileload: (tile) => {
+                console.log('Tile loaded successfully:', {
+                  tile: tile.src,
+                  layerName,
+                  timestamp: new Date().toISOString()
+                });
+              },
+              tileloadstart: (tile) => {
+                console.log('Tile load started:', {
+                  tile: tile.src,
+                  layerName,
+                  timestamp: new Date().toISOString()
+                });
+              }
+            }}
           />
         )}
         {countryAverages && (

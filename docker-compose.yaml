@@ -1,17 +1,11 @@
 services:
   traefik:
-    image: traefik:v3.5.3
+    image: traefik:v2.9.6
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--serversTransport.insecureSkipVerify=true"
     ports:
-      - "80:80"
-      - "443:443"
+      - "88:80"
       - "8088:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -32,32 +26,38 @@ services:
       - KEYCLOAK_API_ID=drop4crop-api
       - KEYCLOAK_API_SECRET=mock-secret
       - KEYCLOAK_REALM=drop4crop
-      - KEYCLOAK_URL=http://drop4crop-keycloak
-      - S3_BUCKET_ID=${S3_BUCKET_ID}
-      - S3_URL=${S3_URL}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_PREFIX=${S3_PREFIX}
-      - TILE_CACHE_URI=redis://:${REDIS_PASSWORD}@tile-cache:6379/0
+      - KEYCLOAK_URL=http://drop4crop-keycloak:8888/
+      # Local S3 settings (MinIO)
+      - S3_BUCKET_ID=drop4crop-dev
+      - S3_ENDPOINT=http://drop4crop-s3:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_REGION=us-east-1
+      - S3_PREFIX=drop4crop
+      - TILE_CACHE_URI=redis://:defaultpassword@tile-cache:6379/0
+      - REDIS_PASSWORD=defaultpassword
       - DEPLOYMENT=dev
       - APP_NAME=drop4crop
     ports:
       - 3005:3000
     depends_on:
-      - drop4crop-db
-      - drop4crop-keycloak
+      drop4crop-db:
+        condition: service_healthy
+      drop4crop-keycloak:
+        condition: service_healthy
+      drop4crop-s3:
+        condition: service_healthy
     volumes:
       - ../drop4crop-api/src:/app/src
       - ../drop4crop-api/migration:/app/migration  # Mount migration directory
-      - drop4crop-api-rust-data:/app/target  # Store builds in docker volume
+#      - drop4crop-api-rust-data:/app/target  # Store builds in docker volume
       - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
       - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
       - ../drop4crop-api/bacon.toml:/app/bacon.toml  # Mount bacon config
     labels:
-      - "traefik.http.routers.drop4crop-bff.rule=Host(`drop4crop`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.drop4crop-bff.entrypoints=websecure"
-      - "traefik.http.routers.drop4crop-bff.tls=true"
-      - "traefik.http.services.drop4crop-bff.loadbalancer.server.port=3000"
+      - "traefik.http.routers.drop4crop-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.drop4crop-api.priority=100"
+      - "traefik.http.services.drop4crop-api.loadbalancer.server.port=3000"
 
   drop4crop-db:
     image: postgis/postgis:16-master
@@ -70,6 +70,11 @@ services:
     volumes:
       - drop4crop-db-data:/var/lib/postgresql/data
       - ./rasters:/rasters
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   drop4crop-ui:
     build:
@@ -79,33 +84,68 @@ services:
       - NODE_ENV=development
       - VITE_KEYCLOAK_CLIENT_ID=drop4crop-ui
       - VITE_KEYCLOAK_REALM=drop4crop
-      - VITE_KEYCLOAK_URL=https://drop4crop-keycloak/
-      - VITE_KEYCLOAK_BROWSER_URL=https://drop4crop-keycloak/
-    ports:
-      - "5173:5173"  # Temporarily expose port for testing
+      - VITE_KEYCLOAK_URL=http://localhost:8888/
     labels:
-      - "traefik.http.routers.drop4crop-ui.rule=Host(`drop4crop`)"
-      - "traefik.http.routers.drop4crop-ui.entrypoints=websecure"
-      - "traefik.http.routers.drop4crop-ui.tls=true"
+      - "traefik.http.routers.drop4crop-ui.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.drop4crop-ui.priority=1"
       - "traefik.http.services.drop4crop-ui.loadbalancer.server.port=5173"
     volumes:
       - .:/app
 
   tile-cache:
     image: redis:7.4.0
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass defaultpassword
     ports:
       - 6379:6379
 
+  drop4crop-s3:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - drop4crop-s3-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    labels:
+      - "traefik.http.routers.drop4crop-s3.rule=Host(`drop4crop-s3`)"
+      - "traefik.http.services.drop4crop-s3.loadbalancer.server.port=9000"
+      - "traefik.http.routers.drop4crop-s3-console.rule=Host(`drop4crop-s3`) && PathPrefix(`/minio`)"
+      - "traefik.http.services.drop4crop-s3-console.loadbalancer.server.port=9001"
+
+  s3-setup:
+    image: minio/mc:latest
+    depends_on:
+      drop4crop-s3:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set local http://drop4crop-s3:9000 minioadmin minioadmin;
+      /usr/bin/mc mb local/drop4crop-dev --ignore-existing;
+      /usr/bin/mc anonymous set public local/drop4crop-dev;
+      echo 'S3 bucket initialized';
+      "
+    restart: "no"
+
   drop4crop-keycloak:
     image: quay.io/keycloak/keycloak:25.0.6
-    command: start-dev --import-realm
+    command:
+      - start-dev
+      - --import-realm
     environment:
       KC_DB: dev-file
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_PORT: 8888
       KC_HOSTNAME: drop4crop-keycloak
+      KC_HOSTNAME_PORT: 8888
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
     ports:
@@ -114,10 +154,16 @@ services:
       - ./keycloak-realm-dev.json:/opt/keycloak/data/import/realm.json:ro
     labels:
       - "traefik.http.routers.drop4crop-keycloak.rule=Host(`drop4crop-keycloak`)"
-      - "traefik.http.routers.drop4crop-keycloak.entrypoints=websecure"
-      - "traefik.http.routers.drop4crop-keycloak.tls=true"
+      - "traefik.http.routers.drop4crop-keycloak.priority=50"
       - "traefik.http.services.drop4crop-keycloak.loadbalancer.server.port=8888"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8888"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
 volumes:
   drop4crop-db-data:
   drop4crop-api-rust-data:
+  drop4crop-s3-data:
