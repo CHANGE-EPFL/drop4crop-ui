@@ -13,7 +13,7 @@ services:
   drop4crop-api:
     build:
       context: ../drop4crop-api
-      dockerfile: Dockerfile.dev  # Uses the dockerfile containing cargo-watch
+      dockerfile: Dockerfile.dev # Uses the dockerfile containing cargo-watch
     environment:
       - DB_HOST=drop4crop-db
       - DB_PORT=5432
@@ -28,12 +28,12 @@ services:
       - KEYCLOAK_REALM=drop4crop
       - KEYCLOAK_URL=http://drop4crop-keycloak:8888/
       # Local S3 settings (MinIO)
-      - S3_BUCKET_ID=drop4crop-dev
+      - S3_BUCKET_ID=drop4crop
       - S3_ENDPOINT=http://drop4crop-s3:9000
       - S3_ACCESS_KEY=minioadmin
       - S3_SECRET_KEY=minioadmin
       - S3_REGION=us-east-1
-      - S3_PREFIX=drop4crop
+      - S3_PREFIX=local
       - TILE_CACHE_URI=redis://:defaultpassword@tile-cache:6379/0
       - REDIS_PASSWORD=defaultpassword
       - DEPLOYMENT=dev
@@ -49,11 +49,11 @@ services:
         condition: service_healthy
     volumes:
       - ../drop4crop-api/src:/app/src
-      - ../drop4crop-api/migration:/app/migration  # Mount migration directory
-#      - drop4crop-api-rust-data:/app/target  # Store builds in docker volume
+      - ../drop4crop-api/migration:/app/migration # Mount migration directory
+      - drop4crop-api-rust-data:/app/target # Store builds in docker volume
       - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
       - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
-      - ../drop4crop-api/bacon.toml:/app/bacon.toml  # Mount bacon config
+      - ../drop4crop-api/bacon.toml:/app/bacon.toml # Mount bacon config
     labels:
       - "traefik.http.routers.drop4crop-api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.drop4crop-api.priority=100"
@@ -127,9 +127,9 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set local http://drop4crop-s3:9000 minioadmin minioadmin;
-      /usr/bin/mc mb local/drop4crop-dev --ignore-existing;
-      /usr/bin/mc anonymous set public local/drop4crop-dev;
+      /usr/bin/mc alias set drop4crop-s3 http://drop4crop-s3:9000 minioadmin minioadmin;
+      /usr/bin/mc mb drop4crop-s3/drop4crop --ignore-existing;
+      /usr/bin/mc anonymous set public drop4crop-s3/drop4crop;
       echo 'S3 bucket initialized';
       "
     restart: "no"

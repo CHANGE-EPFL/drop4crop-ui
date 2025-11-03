@@ -118,12 +118,19 @@ const UppyFileList = ({ uppy }) => {
   );
 };
 
-export const UppyUploader = () => {
+export const UppyUploader = ({ onUploadProgress, actionButton }) => {
   const refresh = useRefresh();
   const notify = useNotify();
   const pondRef = useRef(null);
   const authProvider = useContext(AuthContext);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadState, setUploadState] = useState({
+    totalFiles: 0,
+    completedFiles: 0,
+    successfulFiles: 0,
+    failedFiles: 0,
+    isUploading: false
+  });
 
   // Get the token using the auth provider
   const token = authProvider?.getToken() || "dev-token";
@@ -138,14 +145,14 @@ export const UppyUploader = () => {
       restrictions: {
         allowedFileTypes: [".tif", ".tiff"],
         maxFileSize: 250 * 1024 * 1024, // 250MB
-        maxNumberOfFiles: 25,
+        // maxNumberOfFiles removed - no limit on number of files
       },
       autoProceed: true,
       debug: true, // Enable debug mode
     }).use(XHR, {
       endpoint: "/api/layers/uploads",
       headers: headers,
-      limit: 25,
+      limit: 50, // Increased concurrent uploads from 25 to 50
       timeout: 15 * 60 * 1000, // 15 minutes timeout
       onBeforeRequest: (request) => {
         console.log("Uppy: Starting upload request", request);
@@ -157,29 +164,50 @@ export const UppyUploader = () => {
           headers: response.headers,
         });
 
-        // Try to parse response safely
-        let parsedResponse;
-        try {
-          parsedResponse = JSON.parse(response.response);
-        } catch (e) {
-          console.error("Uppy: Failed to parse response as JSON", e);
-          notify(`Upload failed: Invalid server response`, {
-            type: "error",
-          });
-          return;
-        }
-
+        // Track actual HTTP completion
         if (response.status === 200 || response.status === 201) {
-          notify("File uploaded successfully", { type: "success" });
+          console.log("Uppy: Upload HTTP success");
           refresh();
+
+          // Update state to track actual HTTP completion
+          setUploadState(prev => {
+            const newState = {
+              ...prev,
+              completedFiles: prev.completedFiles + 1,
+              successfulFiles: prev.successfulFiles + 1
+            };
+
+            console.log("Uppy: HTTP completion - Updated state", newState);
+
+            // Check if all files are actually complete
+            if (newState.completedFiles === newState.totalFiles && newState.totalFiles > 0) {
+              console.log("Uppy: All HTTP requests complete, showing summary");
+              setTimeout(() => showSummaryNotification(newState), 500); // Small delay to ensure all processing is done
+            }
+
+            return newState;
+          });
         } else {
-          console.error("Uppy: Upload failed", parsedResponse);
-          const errorMsg =
-            parsedResponse?.detail?.message ||
-            parsedResponse?.message ||
-            parsedResponse?.error ||
-            "Unknown upload error";
-          notify(`Upload failed: ${errorMsg}`, { type: "error" });
+          console.error("Uppy: Upload HTTP failed");
+
+          // Track HTTP failure
+          setUploadState(prev => {
+            const newState = {
+              ...prev,
+              completedFiles: prev.completedFiles + 1,
+              failedFiles: prev.failedFiles + 1
+            };
+
+            console.log("Uppy: HTTP failure - Updated state", newState);
+
+            // Check if all files are complete (including failures)
+            if (newState.completedFiles === newState.totalFiles && newState.totalFiles > 0) {
+              console.log("Uppy: All HTTP requests complete (with failures), showing summary");
+              setTimeout(() => showSummaryNotification(newState), 500);
+            }
+
+            return newState;
+          });
         }
       },
       onProgress: (progress) => {
@@ -187,7 +215,7 @@ export const UppyUploader = () => {
       },
       onUploadError: (error) => {
         console.error("Uppy: Upload error", error);
-        notify(`Upload error: ${error.message}`, { type: "error" });
+        // Individual error notifications removed - will be handled in summary
       },
     })
   );
@@ -207,14 +235,83 @@ export const UppyUploader = () => {
 
   uppy.on("upload-error", (file, error, response) => {
     console.error("Uppy: Upload error", file, error, response);
-    notify(`Upload failed for ${file.name}: ${error.message}`, {
-      type: "error",
-    });
+    // Individual error notifications removed - will be handled in summary
   });
 
   uppy.on("error", (error) => {
     console.error("Uppy: General error", error);
   });
+
+  // Track upload progress for summary notification
+  uppy.on("upload", (data) => {
+    // Upload is starting - initialize tracking
+    const fileIDs = data?.fileIDs || uppy.getFiles().map(f => f.id);
+    const fileCount = fileIDs.length;
+    console.log("Uppy: Upload starting for", fileCount, "files", { fileIDs, data });
+    setUploadState({
+      totalFiles: fileCount,
+      completedFiles: 0,
+      successfulFiles: 0,
+      failedFiles: 0,
+      isUploading: true
+    });
+  });
+
+  uppy.on("upload-success", (file, response) => {
+    console.log("Uppy: File uploaded successfully (Uppy level)", file.name);
+    // Don't update state here - wait for HTTP completion in onAfterResponse
+  });
+
+  uppy.on("upload-error", (file, error, response) => {
+    console.log("Uppy: File upload failed (Uppy level)", file.name, error.message);
+    // Don't update state here - wait for HTTP completion in onAfterResponse
+  });
+
+  
+  // Update parent component with progress
+  React.useEffect(() => {
+    if (onUploadProgress) {
+      onUploadProgress({
+        completed: uploadState.completedFiles,
+        total: uploadState.totalFiles,
+        isUploading: uploadState.isUploading
+      });
+    }
+  }, [uploadState, onUploadProgress]);
+
+  // Function to show summary notification
+  const showSummaryNotification = (state) => {
+    const { successfulFiles, failedFiles, totalFiles } = state;
+
+    if (successfulFiles === totalFiles) {
+      // All files successful
+      notify(`✅ Successfully uploaded ${successfulFiles} of ${totalFiles} files`, {
+        type: "success",
+        autoHideDuration: 5000
+      });
+    } else if (successfulFiles > 0) {
+      // Partial success
+      notify(`⚠️ Uploaded ${successfulFiles} of ${totalFiles} files successfully (${failedFiles} failed)`, {
+        type: "warning",
+        autoHideDuration: 8000
+      });
+    } else {
+      // All failed
+      notify(`❌ Failed to upload all ${totalFiles} files`, {
+        type: "error",
+        autoHideDuration: 8000
+      });
+    }
+
+    // Reset upload state
+    setUploadState({
+      totalFiles: 0,
+      completedFiles: 0,
+      successfulFiles: 0,
+      failedFiles: 0,
+      isUploading: false
+    });
+  };
 
   // Handle drag and drop
   const handleDragOver = (e) => {
@@ -339,6 +436,9 @@ export const UppyUploader = () => {
           Existing files with the same name will be replaced
         </Typography>
       </Box>
+
+      {/* Action button - positioned between drop area and file list */}
+      {actionButton}
 
       {/* Simple file list for uploads */}
       <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
