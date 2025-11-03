@@ -351,11 +351,9 @@ const ListActions = ({ setUploadDialogOpen }) => {
                     variant="contained"
                     color="primary"
                     startIcon={<CloudUploadIcon />}
-                    size="small"
                     onClick={() => setUploadDialogOpen(true)}
-                >
-                    Upload Layer
-                </Button>
+                    label="UPLOAD"
+                />
             </Box>
         </TopToolbar>
     );
@@ -369,7 +367,7 @@ const UploadDialog = ({ open, onClose }) => {
     const isUploading = uploadProgress.isUploading && uploadProgress.total > 0;
 
     return (
-        <Dialog open={open} maxWidth="lg" fullWidth>
+        <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
             <DialogTitle sx={{
                 display: 'flex',
                 alignItems: 'center',
