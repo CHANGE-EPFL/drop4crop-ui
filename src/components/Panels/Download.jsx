@@ -22,7 +22,7 @@ const DownloadPanel = ({ clearLayers }) => {
     const [open, setOpen] = useState(false);
     const inputRef = useRef(null);
 
-    const XYZTileLink = `${APIServerURL}/cog/tiles/{z}/{x}/{y}.png?url=${currentLayer}`;
+    const XYZTileLink = `${APIServerURL}/tiles/{z}/{x}/{y}?layer=${currentLayer}`;
     const downloadTifLink = boundingBox
         ? `${APIServerURL}/layers/${currentLayer}/download?minx=${boundingBox.minx}&miny=${boundingBox.miny}&maxx=${boundingBox.maxx}&maxy=${boundingBox.maxy}`
         : null;

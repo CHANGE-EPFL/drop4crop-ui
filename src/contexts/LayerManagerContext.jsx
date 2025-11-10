@@ -26,8 +26,10 @@ export const LayerManagerProvider = ({ children }) => {
         setCropVariables,
         setAvailableYears,
         setSelectedTime,
+        loadingGroups,
         setLoadingGroups,
         setCountryPolygons,
+        loadingCountries,
         setLoadingCountries,
         setLoadingAll,
         selectedLayer,
@@ -46,29 +48,47 @@ export const LayerManagerProvider = ({ children }) => {
         try {
             const scenario = props.year === 2000 ? "historical" : props.scenario;
 
+            // Build STAC search parameters
             const params = {
                 crop: props.crop,
+                limit: 1  // We only need one result
             };
 
             if (props.crop_variable) {
                 params.variable = props.crop_variable;
             } else {
                 params.variable = props.variable;
-                params.year = props.year;
+                params.datetime = props.year;  // STAC uses datetime parameter
                 params.scenario = scenario;
                 params.water_model = props.water_model;
                 params.climate_model = props.climate_model;
             }
 
-            const response = await axios.get("/api/layers/map", { params });
+            // Use STAC search endpoint instead of custom /api/layers/map
+            const response = await axios.get("/api/stac/search", { params });
 
-            if (response && response.data.length === 1) {
-                return response.data[0];
+            // Parse STAC GeoJSON response
+            if (response && response.data.features && response.data.features.length === 1) {
+                const stacItem = response.data.features[0];
+
+                // Transform STAC item to match old format for compatibility
+                return {
+                    layer_name: stacItem.id,
+                    country_values: stacItem.properties.country_values || null,
+                    global_average: stacItem.properties.global_average || null,
+                    style: stacItem.properties.style || [],
+                    // Include STAC-specific fields for future use
+                    stac_item: stacItem,
+                    // STAC provides direct tile URL
+                    tile_url: stacItem.assets?.tiles?.href,
+                    download_url: stacItem.assets?.download?.href
+                };
             } else {
                 return null;
             }
         } catch (error) {
-            console.error("Error fetching layer:", error);
+            console.error("Error fetching layer from STAC:", error);
+            return null;
         }
     };
 
@@ -161,9 +181,14 @@ export const LayerManagerProvider = ({ children }) => {
                 setScenarios(scenariosItems.map(s => ({ ...s, enabled: scenario.includes(s.id) })));
                 setVariables(variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
                 setCropVariables(cropVariablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
-                setAvailableYears(year);
 
-                setSelectedTime(year.sort((a, b) => a - b)[0]);
+                // Filter out null values and sort years chronologically
+                const validYears = year.filter(y => y !== null).sort((a, b) => a - b);
+                setAvailableYears(validYears);
+
+                if (validYears.length > 0) {
+                    setSelectedTime(validYears[0]);
+                }
                 setLoadingGroups(false);
             } catch (error) {
                 console.error("Error fetching layer groups:", error);
@@ -198,12 +223,12 @@ export const LayerManagerProvider = ({ children }) => {
     }, [setCountryPolygons, setLoadingCountries]);
 
     useEffect(() => {
-        if (setLoadingGroups === false && setLoadingCountries === false) {
+        if (loadingGroups === false && loadingCountries === false) {
             setLoadingAll(false);
         } else {
             setLoadingAll(true);
         }
-    }, [setLoadingGroups, setLoadingCountries, setLoadingAll]);
+    }, [loadingGroups, loadingCountries, setLoadingAll]);
 
     return (
         <LayerManagerContext.Provider value={{}}>

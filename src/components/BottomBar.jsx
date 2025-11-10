@@ -24,10 +24,20 @@ const BottomBar = () => {
     }
   };
   useEffect(() => {
-    if (!availableYears.includes(sliderValue)) {
-      setSliderValue(availableYears[0]);
+    // When availableYears changes, update sliderValue if it's not in the available years
+    if (availableYears.length > 0 && !availableYears.includes(sliderValue)) {
+      const firstAvailableYear = availableYears[0];
+      setSliderValue(firstAvailableYear);
+      setSelectedTime(firstAvailableYear);
     }
-  }, [availableYears, sliderValue]);
+  }, [availableYears, sliderValue, setSelectedTime]);
+
+  useEffect(() => {
+    // Sync sliderValue with selectedTime when selectedTime changes from outside
+    if (selectedTime !== sliderValue && availableYears.includes(selectedTime)) {
+      setSliderValue(selectedTime);
+    }
+  }, [selectedTime, sliderValue, availableYears]);
 
   const marks = [
     { value: 2000, label: '2000' },
