@@ -20,9 +20,11 @@ const DownloadPanel = ({ clearLayers }) => {
     } = useContext(AppContext); // Access state from context
 
     const [open, setOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
     const inputRef = useRef(null);
 
     const XYZTileLink = `${APIServerURL}/tiles/{z}/{x}/{y}?layer=${currentLayer}`;
+    const STACLink = `${APIServerURL}/stac`;
     const downloadTifLink = boundingBox
         ? `${APIServerURL}/layers/${currentLayer}/download?minx=${boundingBox.minx}&miny=${boundingBox.miny}&maxx=${boundingBox.maxx}&maxy=${boundingBox.maxy}`
         : null;
@@ -36,19 +38,21 @@ const DownloadPanel = ({ clearLayers }) => {
         }
     }, [boundingBox]);
 
-    const handleCopyLink = () => {
+    const handleCopyLink = (link, message) => {
         if (navigator.clipboard) {
-            navigator.clipboard.writeText(XYZTileLink).then(() => {
+            navigator.clipboard.writeText(link).then(() => {
+                setSnackbarMessage(message);
                 setOpen(true);
             }).catch(err => {
                 console.error('Failed to copy: ', err);
             });
         } else {
             const input = inputRef.current;
-            input.value = XYZTileLink;
+            input.value = link;
             input.select();
             input.setSelectionRange(0, 99999); // For mobile devices
             document.execCommand('copy');
+            setSnackbarMessage(message);
             setOpen(true);
         }
     };
@@ -77,37 +81,45 @@ const DownloadPanel = ({ clearLayers }) => {
 
     return (
         <div className="popup">
-            <h3>Download</h3>
+            <Typography variant="h6" style={{ fontSize: '1rem', marginBottom: '15px' }}>Download</Typography>
             <input
                 ref={inputRef}
                 type="text"
-                value={XYZTileLink}
                 readOnly
                 style={{ position: 'absolute', left: '-9999px' }}
             />
 
-            <h4>Current layer</h4>
-            <Button
-                variant="outlined"
-                onClick={handleCopyLink}
-                style={{
-                    borderColor: '#d1a766',
-                    color: '#d1a766',
-                    backgroundColor: 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: '75%',
-                }}
-            >
-                <Typography style={{ cursor: 'pointer', color: '#d1a766' }}>XYZ Tile</Typography>
-                <ContentCopyIcon style={{ marginLeft: '4px' }} />
-            </Button>
+            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#d1a766' }}>
+                STAC Server
+            </Typography>
+
+            <Box sx={{ mb: 2 }}>
+                <Button
+                    variant="text"
+                    fullWidth
+                    onClick={() => handleCopyLink(STACLink, "STAC API endpoint copied to clipboard")}
+                    sx={{
+                        color: '#d1a766',
+                        justifyContent: 'flex-start',
+                        textTransform: 'none',
+                        padding: '4px 8px',
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
+                        }
+                    }}
+                >
+                    <ContentCopyIcon sx={{ fontSize: '1rem', mr: 1 }} />
+                    Copy STAC Server Link
+                </Button>
+            </Box>
+
             <Snackbar
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
                 open={open}
                 autoHideDuration={3000}
                 onClose={handleCloseSnackbar}
-                message="XYZ link copied to clipboard. To use in QGIS: Layer > Add Layer > Add XYZ Layer > New > URL: Paste > OK"
+                message={snackbarMessage}
                 action={
                     <React.Fragment>
                         <IconButton size="small" aria-label="close" color="inherit" onClick={handleCloseSnackbar}>
@@ -116,33 +128,68 @@ const DownloadPanel = ({ clearLayers }) => {
                     </React.Fragment>
                 }
             />
-            <br />
-            <Button
-                variant='outlined'
-                style={{
-                    borderColor: '#d1a766',
-                    color: '#d1a766',
-                    backgroundColor: 'transparent',
-                    width: '75%',
-                }}
-                href={downloadEntireTifLink}
-            >
-                Entire map (GeoTIFF)
-            </Button>
-            <br /><br />
-            <Button
-                variant="outlined"
-                onClick={boundingBox ? handleDownloadClick : handleSelectArea}
-                style={{
-                    borderColor: '#d1a766',
-                    color: boundingBox ? 'success' : '#d1a766',
-                    backgroundColor: boundingBox ? 'green' : 'transparent',
-                    width: '75%',
-                }}
-            >
-                {boundingBox ? "Download Data" : enableSelection ? "Select region to download" : "Selection (GeoTIFF)"}
-            </Button>
-            <br /><br />
+
+            <div style={{ borderTop: "1px solid #d1a766", marginBottom: '15px' }} />
+
+            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#d1a766' }}>
+                Download
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                <Button
+                    variant="outlined"
+                    fullWidth
+                    href={downloadEntireTifLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    disabled={!currentLayer}
+                    sx={{
+                        borderColor: '#d1a766',
+                        color: '#d1a766',
+                        backgroundColor: 'transparent',
+                        textTransform: 'none',
+                        justifyContent: 'flex-start',
+                        fontSize: '0.875rem',
+                        padding: '8px 16px',
+                        '&:hover': {
+                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
+                            borderColor: '#d1a766',
+                        },
+                        '&.Mui-disabled': {
+                            borderColor: 'rgba(209, 167, 102, 0.3)',
+                            color: 'rgba(209, 167, 102, 0.3)',
+                        }
+                    }}
+                >
+                    Entire Map (GeoTIFF)
+                </Button>
+
+                <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={boundingBox ? handleDownloadClick : handleSelectArea}
+                    disabled={!currentLayer}
+                    sx={{
+                        borderColor: boundingBox ? '#4caf50' : '#d1a766',
+                        color: boundingBox ? '#4caf50' : '#d1a766',
+                        backgroundColor: boundingBox ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                        textTransform: 'none',
+                        justifyContent: 'flex-start',
+                        fontSize: '0.875rem',
+                        padding: '8px 16px',
+                        '&:hover': {
+                            backgroundColor: boundingBox ? 'rgba(76, 175, 80, 0.2)' : 'rgba(209, 167, 102, 0.08)',
+                            borderColor: boundingBox ? '#4caf50' : '#d1a766',
+                        },
+                        '&.Mui-disabled': {
+                            borderColor: 'rgba(209, 167, 102, 0.3)',
+                            color: 'rgba(209, 167, 102, 0.3)',
+                        }
+                    }}
+                >
+                    {boundingBox ? "Download Selection (GeoTIFF)" : enableSelection ? "Select region on map" : "Selection (GeoTIFF)"}
+                </Button>
+            </Box>
 
             {(enableSelection || boundingBox) && (
                 <Box
