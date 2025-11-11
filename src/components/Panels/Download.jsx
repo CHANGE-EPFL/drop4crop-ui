@@ -23,13 +23,13 @@ const DownloadPanel = ({ clearLayers }) => {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const inputRef = useRef(null);
 
-    const XYZTileLink = `${APIServerURL}/tiles/{z}/{x}/{y}?layer=${currentLayer}`;
+    const XYZTileLink = `${APIServerURL}/layers/xyz/{z}/{x}/{y}?layer=${currentLayer}`;
     const STACLink = `${APIServerURL}/stac`;
     const downloadTifLink = boundingBox
-        ? `${APIServerURL}/layers/${currentLayer}/download?minx=${boundingBox.minx}&miny=${boundingBox.miny}&maxx=${boundingBox.maxx}&maxy=${boundingBox.maxy}`
+        ? `${APIServerURL}/layers/cog/${currentLayer}.tif?minx=${boundingBox.minx}&miny=${boundingBox.miny}&maxx=${boundingBox.maxx}&maxy=${boundingBox.maxy}`
         : null;
 
-    const downloadEntireTifLink = `${APIServerURL}/layers/${currentLayer}/download`;
+    const downloadEntireTifLink = `${APIServerURL}/layers/cog/${currentLayer}.tif`;
 
     useEffect(() => {
         console.log("Bounding box: ", boundingBox);
