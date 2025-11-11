@@ -212,7 +212,56 @@ const dataProvider = (
         return httpClient(`${apiUrl}/layers/sync_styles`, {
             method: 'POST'
         }).then(({ json }) => ({ data: json }));
-    }
+    },
+    // Statistics endpoints
+    getStatsSummary: async () => {
+        return httpClient(`${apiUrl}/statistics/summary`).then(({ json }) => ({ data: json }));
+    },
+    getStatsLayers: async (params) => {
+        const query = {
+            start_date: params?.start_date,
+            end_date: params?.end_date,
+            limit: params?.limit || 100,
+            offset: params?.offset || 0,
+        };
+        const url = `${apiUrl}/statistics?${stringify(query)}`;
+        return httpClient(url).then(({ json }) => ({ data: json }));
+    },
+    getStatsLayer: async (layerId) => {
+        return httpClient(`${apiUrl}/statistics/${layerId}`).then(({ json }) => ({ data: json }));
+    },
+    getStatsTimeline: async (layerId) => {
+        return httpClient(`${apiUrl}/statistics/${layerId}/timeline`).then(({ json }) => ({ data: json }));
+    },
+    getLiveStats: async () => {
+        return httpClient(`${apiUrl}/statistics/live`).then(({ json }) => ({ data: json }));
+    },
+    // Cache endpoints
+    getCacheInfo: async () => {
+        return httpClient(`${apiUrl}/cache/info`).then(({ json }) => ({ data: json }));
+    },
+    getCacheKeys: async () => {
+        return httpClient(`${apiUrl}/cache/keys`).then(({ json }) => ({ data: json }));
+    },
+    clearAllCache: async () => {
+        return httpClient(`${apiUrl}/cache/clear`, {
+            method: 'POST'
+        }).then(({ json }) => ({ data: json }));
+    },
+    clearLayerCache: async (layerName) => {
+        return httpClient(`${apiUrl}/cache/layers/${layerName}`, {
+            method: 'DELETE'
+        }).then(({ json }) => ({ data: json }));
+    },
+    getCacheTtl: async () => {
+        return httpClient(`${apiUrl}/cache/ttl`).then(({ json }) => ({ data: json }));
+    },
+    updateCacheTtl: async (ttlSeconds) => {
+        return httpClient(`${apiUrl}/cache/ttl`, {
+            method: 'PATCH',
+            body: JSON.stringify({ ttl_seconds: ttlSeconds })
+        }).then(({ json }) => ({ data: json }));
+    },
 });
 
 

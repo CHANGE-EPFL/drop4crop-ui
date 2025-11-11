@@ -9,6 +9,8 @@ import { keycloakAuthProvider } from "./authProvider";
 import Layout from "./Layout";
 import styles from "./styles";
 import layers from "./layers";
+import statistics from "./statistics";
+import cache from "./cache";
 import axios from "axios";
 import { defaultTheme } from "react-admin";
 import Dashboard from "./Dashboard";
@@ -195,6 +197,8 @@ const App = () => {
                 <>
                   <Resource name="layers" {...layers} />
                   <Resource name="styles" {...styles} />
+                  <Resource name="statistics" {...statistics} />
+                  <Resource name="cache" {...cache} />
                 </>
               ) : null}
             </>

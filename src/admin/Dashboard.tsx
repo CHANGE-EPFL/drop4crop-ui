@@ -26,9 +26,14 @@ import {
     Warning as WarningIcon,
     Upload as UploadIcon,
     Visibility as VisibilityIcon,
-    Settings as SettingsIcon
+    Settings as SettingsIcon,
+    Storage as StorageIcon,
+    Timeline as TimelineIcon,
+    Speed as SpeedIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+
 // Stats Card Component
 const StatsCard = ({ title, value, subtitle, icon, color, progress, onClick }) => {
     return (
@@ -237,6 +242,32 @@ const Dashboard = () => {
     const { permissions } = usePermissions();
     const redirect = useRedirect();
     const navigate = useNavigate();
+    const dataProvider = useDataProvider();
+    const [statsSummary, setStatsSummary] = useState(null);
+    const [cacheInfo, setCacheInfo] = useState(null);
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    // Fetch statistics summary and cache info with auto-refresh
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const [stats, cache] = await Promise.all([
+                    dataProvider.getStatsSummary(),
+                    dataProvider.getCacheInfo()
+                ]);
+                setStatsSummary(stats.data);
+                setCacheInfo(cache.data);
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        fetchStats();
+        // Auto-refresh every 30 seconds
+        const interval = setInterval(fetchStats, 30000);
+        return () => clearInterval(interval);
+    }, [dataProvider]);
 
     // Fetch layers data
     const {
@@ -420,6 +451,53 @@ const Dashboard = () => {
                         icon={<WarningIcon />}
                         color="warning.main"
                         onClick={handleViewLayersWithoutStyles}
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Section Divider */}
+            <Divider sx={{ my: 4 }}>
+                <Chip label="Statistics & Cache" color="primary" />
+            </Divider>
+
+            {/* Statistics & Cache Row */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatsCard
+                        title="Requests Today"
+                        value={statsLoading ? '...' : (statsSummary?.total_requests_today || 0)}
+                        subtitle="All layer accesses"
+                        icon={<TimelineIcon />}
+                        color="secondary.main"
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatsCard
+                        title="Requests This Week"
+                        value={statsLoading ? '...' : (statsSummary?.total_requests_week || 0)}
+                        subtitle="Past 7 days"
+                        icon={<TrendingUpIcon />}
+                        color="success.main"
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatsCard
+                        title="Cache Size"
+                        value={statsLoading ? '...' : cacheInfo?.redis_connected ? `${cacheInfo.cache_size_mb.toFixed(1)} MB` : 'Offline'}
+                        subtitle={cacheInfo?.cached_layers_count ? `${cacheInfo.cached_layers_count} layers` : 'No data'}
+                        icon={<StorageIcon />}
+                        color={cacheInfo?.redis_connected ? "info.main" : "error.main"}
+                        onClick={() => navigate('/admin/cache')}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatsCard
+                        title="Active Layers (24h)"
+                        value={statsLoading ? '...' : (statsSummary?.active_layers_24h || 0)}
+                        subtitle="Recently accessed"
+                        icon={<SpeedIcon />}
+                        color="warning.main"
+                        onClick={() => navigate('/admin/statistics')}
                     />
                 </Grid>
             </Grid>
