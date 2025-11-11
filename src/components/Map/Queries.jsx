@@ -152,14 +152,23 @@ export const MapClickHandler = () => {
                         onClose={handleClosePopup}
                     />
                 );
-                L.popup({
-                    closeButton: true, // Enable the default close button
-                    autoClose: true,
-                    className: 'custom-leaflet-popup'
-                })
-                    .setLatLng(clickPosition)
-                    .setContent(container)
-                    .openOn(map);
+
+                // Use requestAnimationFrame to ensure DOM is ready before showing popup
+                requestAnimationFrame(() => {
+                    const popup = L.popup({
+                        closeButton: true,
+                        autoClose: true,
+                        className: 'custom-leaflet-popup'
+                    })
+                        .setLatLng(clickPosition)
+                        .setContent(container)
+                        .openOn(map);
+
+                    // Force Leaflet to recalculate popup position after content is rendered
+                    requestAnimationFrame(() => {
+                        popup.update();
+                    });
+                });
 
                 return;
             }
@@ -181,14 +190,22 @@ export const MapClickHandler = () => {
                     </div>
                 );
 
-                L.popup({
-                    closeButton: true, // Enable the default close button
-                    autoClose: true,
-                    className: 'custom-leaflet-popup'
-                })
-                    .setLatLng(clickPosition)
-                    .setContent(container)
-                    .openOn(map);
+                // Use requestAnimationFrame to ensure DOM is ready before showing popup
+                requestAnimationFrame(() => {
+                    const popup = L.popup({
+                        closeButton: true,
+                        autoClose: true,
+                        className: 'custom-leaflet-popup'
+                    })
+                        .setLatLng(clickPosition)
+                        .setContent(container)
+                        .openOn(map);
+
+                    // Force Leaflet to recalculate popup position after content is rendered
+                    requestAnimationFrame(() => {
+                        popup.update();
+                    });
+                });
 
             } catch (error) {
                 console.error('Error fetching pixel value:', error);

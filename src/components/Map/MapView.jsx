@@ -113,7 +113,7 @@ const MapView = forwardRef((props, ref) => {
         />
         {layerName && !loading && (
           <TileLayer
-            url={`/api/tiles/{z}/{x}/{y}?layer=${layerName}`}
+            url={`/api/layers/xyz/{z}/{x}/{y}?layer=${layerName}`}
             maxZoom={20}
             noWrap={true}
             eventHandlers={{
