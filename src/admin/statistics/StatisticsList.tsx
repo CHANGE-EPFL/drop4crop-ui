@@ -6,14 +6,7 @@ import {
     DateField,
     FunctionField,
     useDataProvider,
-    useNotify,
-    TopToolbar,
-    FilterButton,
-    CreateButton,
-    ExportButton,
-    SelectColumnsButton,
-    Button,
-    useRefresh,
+    useRedirect,
 } from 'react-admin';
 import {
     Card,
@@ -40,6 +33,16 @@ import {
 } from '@mui/icons-material';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    Legend,
+    ResponsiveContainer,
+} from 'recharts';
 
 const StatisticsFilters = [
     <MuiTextField label="Start Date" source="start_date" type="date" InputLabelProps={{ shrink: true }} />,
@@ -83,6 +86,153 @@ const CacheStatusField = () => {
                 );
             }}
         />
+    );
+};
+
+const ActivityByTypeChart = () => {
+    const dataProvider = useDataProvider();
+    const [dailyStats, setDailyStats] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDailyStats = async () => {
+            try {
+                // Fetch last 7 days of aggregated statistics
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 7);
+
+                const { data } = await dataProvider.getList('statistics', {
+                    filter: {},
+                    sort: { field: 'stat_date', order: 'ASC' },
+                    pagination: { page: 1, perPage: 1000 }
+                });
+
+                // Aggregate by date
+                const dateMap = new Map();
+                data.forEach(stat => {
+                    const date = stat.stat_date;
+                    if (!dateMap.has(date)) {
+                        dateMap.set(date, {
+                            date,
+                            'XYZ Tiles': 0,
+                            'COG Downloads': 0,
+                            'Pixel Queries': 0,
+                            'STAC Requests': 0,
+                            'Other': 0
+                        });
+                    }
+                    const entry = dateMap.get(date);
+                    entry['XYZ Tiles'] += stat.xyz_tile_count || 0;
+                    entry['COG Downloads'] += stat.cog_download_count || 0;
+                    entry['Pixel Queries'] += stat.pixel_query_count || 0;
+                    entry['STAC Requests'] += stat.stac_request_count || 0;
+                    entry['Other'] += stat.other_request_count || 0;
+                });
+
+                // Convert to array and sort by date, take last 7 days
+                const chartData = Array.from(dateMap.values())
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .slice(-7);
+
+                setDailyStats(chartData);
+            } catch (error) {
+                console.error('Error fetching daily stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDailyStats();
+    }, [dataProvider]);
+
+    const chartData = dailyStats;
+
+    return (
+        <Card sx={{ height: '100%' }}>
+            <CardContent>
+                <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <BarChartIcon sx={{ mr: 1, color: 'primary.main' }} />
+                        <Typography variant="h6">Daily Activity by Request Type</Typography>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                        Request breakdown by type over the last 7 days
+                    </Typography>
+                </Box>
+                <Box sx={{ height: 250, mt: 2 }}>
+                    {loading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis
+                                    dataKey="date"
+                                    tick={{ fontSize: 12, fill: '#666' }}
+                                    stroke="#ddd"
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 12, fill: '#666' }}
+                                    stroke="#ddd"
+                                    allowDecimals={false}
+                                />
+                                <RechartsTooltip
+                                    contentStyle={{
+                                        fontSize: 13,
+                                        borderRadius: 8,
+                                        border: '1px solid #ddd',
+                                        padding: '8px 12px'
+                                    }}
+                                />
+                                <Legend />
+                                <Line
+                                    type="monotone"
+                                    dataKey="XYZ Tiles"
+                                    stroke="#8884d8"
+                                    strokeWidth={2}
+                                    dot={{ r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="COG Downloads"
+                                    stroke="#82ca9d"
+                                    strokeWidth={2}
+                                    dot={{ r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="Pixel Queries"
+                                    stroke="#ffc658"
+                                    strokeWidth={2}
+                                    dot={{ r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="STAC Requests"
+                                    stroke="#ff7c7c"
+                                    strokeWidth={2}
+                                    dot={{ r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="Other"
+                                    stroke="#a28cff"
+                                    strokeWidth={2}
+                                    dot={{ r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    )}
+                </Box>
+            </CardContent>
+        </Card>
     );
 };
 
@@ -143,6 +293,7 @@ const LiveStatsCard = () => {
                         {liveStats.map((stat, index) => (
                             <Box
                                 key={index}
+                                onClick={() => stat.layer_id && navigate(`/admin/layers/${stat.layer_id}/show`)}
                                 sx={{
                                     p: 2,
                                     mb: 1,
@@ -151,6 +302,7 @@ const LiveStatsCard = () => {
                                     borderRadius: 1,
                                     backgroundColor: 'background.paper',
                                     transition: 'all 0.2s ease-in-out',
+                                    cursor: stat.layer_id ? 'pointer' : 'default',
                                     '&:hover': {
                                         borderColor: 'primary.main',
                                         boxShadow: 1,
@@ -175,7 +327,10 @@ const LiveStatsCard = () => {
                                             <Tooltip title="View Layer Details">
                                                 <IconButton
                                                     size="small"
-                                                    onClick={() => navigate(`/admin/layers/${stat.layer_id}/show`)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/admin/layers/${stat.layer_id}/show`);
+                                                    }}
                                                     sx={{ mr: 0.5 }}
                                                 >
                                                     <LayersIcon fontSize="small" />
@@ -249,20 +404,10 @@ const LiveStatsCard = () => {
     );
 };
 
-const ListActions = () => {
-    const refresh = useRefresh();
-    return (
-        <TopToolbar>
-            <FilterButton />
-            <Button label="Refresh" onClick={() => refresh()}>
-                <RefreshIcon />
-            </Button>
-        </TopToolbar>
-    );
-};
 
 export const StatisticsList = () => {
     const dataProvider = useDataProvider();
+    const redirect = useRedirect();
     const [cacheData, setCacheData] = useState([]);
     const [cacheLoading, setCacheLoading] = useState(true);
 
@@ -286,30 +431,23 @@ export const StatisticsList = () => {
     }, [dataProvider]);
 
     return (
-        <Box sx={{ p: 2 }}>
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12}>
-                    <LiveStatsCard />
-                </Grid>
-            </Grid>
+        <CacheDataContext.Provider value={cacheData}>
+            <Box sx={{ width: '100%' }}>
+                {/* Chart above the list */}
+                <Box sx={{ mb: 3, px: 2, pt: 2 }}>
+                    <ActivityByTypeChart />
+                </Box>
 
-            <Alert severity="info" sx={{ mb: 3 }}>
-                Statistics below are updated every 5 minutes. For real-time data, see the "Live Statistics (Today)" section above.
-            </Alert>
-
-            <CacheDataContext.Provider value={cacheData}>
+                {/* Use react-admin's List component like StyleList does */}
                 <List
-                    filters={StatisticsFilters}
-                    actions={<ListActions />}
                     resource="statistics"
-                    basePath="/statistics"
                     perPage={25}
                     sort={{ field: 'last_accessed_at', order: 'DESC' }}
-                    title="Layer Statistics"
+                    actions={false}
                 >
                     <Datagrid
                         rowClick={async (id, resource, record) => {
-                            // Find the layer by name and navigate to its show page with statistics tab
+                            // Find the layer by name and navigate to its show page
                             try {
                                 let layerData = await dataProvider.getList('layers', {
                                     filter: { layer_name: record.layer_name },
@@ -334,28 +472,23 @@ export const StatisticsList = () => {
                                 }
 
                                 if (layerData.data && layerData.data.length > 0) {
-                                    return `/admin/layers/${layerData.data[0].id}/show`;
+                                    redirect('show', 'layers', layerData.data[0].id);
                                 }
                             } catch (error) {
                                 console.error('Error finding layer:', error);
                             }
-                            return false; // Don't navigate if layer not found
+                            return false; // Prevent default navigation
                         }}
                         bulkActionButtons={false}
                     >
                         <TextField source="layer_name" label="Layer Name" />
                         <CacheStatusField />
                         <DateField source="stat_date" label="Date" />
-                        <NumberField source="xyz_tile_count" label="XYZ Tiles" />
-                        <NumberField source="cog_download_count" label="COG Downloads" />
-                        <NumberField source="pixel_query_count" label="Pixel Queries" />
-                        <NumberField source="stac_request_count" label="STAC Requests" />
-                        <NumberField source="other_request_count" label="Other" />
                         <NumberField source="total_requests" label="Total" />
                         <DateField source="last_accessed_at" label="Last Accessed" showTime />
                     </Datagrid>
                 </List>
-            </CacheDataContext.Provider>
-        </Box>
+            </Box>
+        </CacheDataContext.Provider>
     );
 };

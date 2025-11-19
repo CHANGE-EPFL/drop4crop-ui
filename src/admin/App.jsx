@@ -183,11 +183,10 @@ const App = () => {
     <Admin
       authProvider={authProvider.current}
       dataProvider={dataProvider.current}
-      title="CHANGE Drop4Crop Admin"
+      title="Drop4Crop: Admin"
       layout={Layout}
       theme={theme}
       dashboard={Dashboard}
-      basename="/admin"
     >
       {(permissions) => (
         <>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useDataProvider, useNotify, Title } from 'react-admin';
-import { useNavigate } from 'react-router-dom';
+import { useDataProvider, useNotify, Title, useRedirect } from 'react-admin';
 import {
     Card,
     CardContent,
@@ -22,7 +21,6 @@ import {
     DialogContent,
     DialogContentText,
     DialogActions,
-    LinearProgress,
     CircularProgress,
     Tooltip,
     Alert,
@@ -41,7 +39,7 @@ import {
 export const CacheManagement = () => {
     const dataProvider = useDataProvider();
     const notify = useNotify();
-    const navigate = useNavigate();
+    const redirect = useRedirect();
 
     const [cacheInfo, setCacheInfo] = useState(null);
     const [cacheKeys, setCacheKeys] = useState([]);
@@ -117,114 +115,44 @@ export const CacheManagement = () => {
         );
     }
 
-    const cacheUsagePercent = cacheInfo?.redis_connected
-        ? Math.min((cacheInfo.cache_size_mb / 1024) * 100, 100)
-        : 0;
-
     return (
         <Box sx={{ p: 3 }}>
             <Title title="Cache Management" />
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">
-                    Cache Management
-                </Typography>
-                <IconButton
-                    color="error"
-                    onClick={() => setClearAllDialogOpen(true)}
-                    disabled={!cacheInfo?.redis_connected || cacheInfo?.cached_layers_count === 0}
-                    title="Clear all cache"
-                    sx={{
-                        '&:hover': {
-                            backgroundColor: 'error.light',
-                            color: 'white'
-                        }
-                    }}
-                >
-                    <DeleteIcon />
-                </IconButton>
-            </Box>
-
-            {/* Status Cards */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={3}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                {cacheInfo?.redis_connected ? (
-                                    <CheckCircleIcon sx={{ color: 'success.main', mr: 1 }} />
-                                ) : (
-                                    <ErrorIcon sx={{ color: 'error.main', mr: 1 }} />
-                                )}
-                                <Typography variant="h6">
-                                    Redis Status
-                                </Typography>
-                            </Box>
-                            <Chip
-                                label={cacheInfo?.redis_connected ? 'Connected' : 'Disconnected'}
-                                color={cacheInfo?.redis_connected ? 'success' : 'error'}
-                            />
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <StorageIcon sx={{ color: 'primary.main', mr: 1 }} />
-                                <Typography variant="h6">Cache Size</Typography>
-                            </Box>
-                            <Typography variant="h4">
-                                {cacheInfo?.cache_size_mb?.toFixed(1) || '0'} MB
-                            </Typography>
-                            <LinearProgress
-                                variant="determinate"
-                                value={cacheUsagePercent}
-                                sx={{ mt: 2 }}
-                            />
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <SpeedIcon sx={{ color: 'info.main', mr: 1 }} />
-                                <Typography variant="h6">Cached Layers</Typography>
-                            </Box>
-                            <Typography variant="h4">
-                                {cacheInfo?.cached_layers_count || 0}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <TimerIcon sx={{ color: 'warning.main', mr: 1 }} />
-                                <Typography variant="h6">Current TTL</Typography>
-                            </Box>
-                            <Typography variant="h4">
-                                {(cacheInfo?.current_ttl_seconds / 3600).toFixed(0) || '0'} hrs
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
-
             {/* Cached Layers Table */}
             <Card>
                 <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                        Cached Layers
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6">
+                            Cached Layers
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <Chip
+                                icon={cacheInfo?.redis_connected ? <CheckCircleIcon /> : <ErrorIcon />}
+                                label={cacheInfo?.redis_connected ? 'Connected' : 'Disconnected'}
+                                color={cacheInfo?.redis_connected ? 'success' : 'error'}
+                                size="small"
+                            />
+                            <Typography variant="body2">
+                                <strong>{cacheInfo?.cache_size_mb?.toFixed(1) || '0'} MB</strong> cached
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {cacheInfo?.cached_layers_count || 0} layers
+                            </Typography>
+                            <IconButton
+                                color="error"
+                                size="small"
+                                onClick={() => setClearAllDialogOpen(true)}
+                                disabled={!cacheInfo?.redis_connected || cacheInfo?.cached_layers_count === 0}
+                                title="Clear all cache"
+                            >
+                                <DeleteIcon />
+                            </IconButton>
+                        </Box>
+                    </Box>
                     {cacheKeys.length > 0 ? (
                         <TableContainer component={Paper} sx={{ mt: 2 }}>
-                            <Table>
+                            <Table size="small">
                                 <TableHead>
                                     <TableRow>
                                         <TableCell><strong>Layer Name</strong></TableCell>
@@ -239,39 +167,12 @@ export const CacheManagement = () => {
                                         <TableRow
                                             key={index}
                                             hover
-                                            sx={{ cursor: 'pointer' }}
-                                            onClick={async () => {
-                                                try {
-                                                    let layerData = await dataProvider.getList('layers', {
-                                                        filter: { layer_name: item.layer_name },
-                                                        pagination: { page: 1, perPage: 1 },
-                                                        sort: { field: 'id', order: 'ASC' }
-                                                    });
-
-                                                    if ((!layerData.data || layerData.data.length === 0) && item.layer_name.endsWith('.tif')) {
-                                                        layerData = await dataProvider.getList('layers', {
-                                                            filter: { layer_name: item.layer_name.replace(/\.tif$/i, '') },
-                                                            pagination: { page: 1, perPage: 1 },
-                                                            sort: { field: 'id', order: 'ASC' }
-                                                        });
-                                                    }
-
-                                                    if ((!layerData.data || layerData.data.length === 0) && !item.layer_name.endsWith('.tif')) {
-                                                        layerData = await dataProvider.getList('layers', {
-                                                            filter: { layer_name: `${item.layer_name}.tif` },
-                                                            pagination: { page: 1, perPage: 1 },
-                                                            sort: { field: 'id', order: 'ASC' }
-                                                        });
-                                                    }
-
-                                                    if (layerData.data && layerData.data.length > 0) {
-                                                        navigate(`/admin/layers/${layerData.data[0].id}/show`);
-                                                    } else {
-                                                        notify(`Layer not found: ${item.layer_name}`, { type: 'warning' });
-                                                    }
-                                                } catch (error) {
-                                                    console.error('Error finding layer:', error);
-                                                    notify(`Error finding layer: ${error.message}`, { type: 'error' });
+                                            sx={{ cursor: item.layer_id ? 'pointer' : 'default' }}
+                                            onClick={() => {
+                                                if (item.layer_id) {
+                                                    redirect('show', 'layers', item.layer_id);
+                                                } else {
+                                                    notify(`Layer not found in database: ${item.layer_name}`, { type: 'warning' });
                                                 }
                                             }}
                                         >
@@ -314,49 +215,12 @@ export const CacheManagement = () => {
                                                 <Tooltip title="View Layer">
                                                     <IconButton
                                                         size="small"
-                                                        onClick={async () => {
-                                                            try {
-                                                                console.log('Looking for layer:', item.layer_name);
-
-                                                                // Try finding layer with exact name first
-                                                                let layerData = await dataProvider.getList('layers', {
-                                                                    filter: { layer_name: item.layer_name },
-                                                                    pagination: { page: 1, perPage: 1 },
-                                                                    sort: { field: 'id', order: 'ASC' }
-                                                                });
-
-                                                                // If not found and cache has .tif, try without it
-                                                                if ((!layerData.data || layerData.data.length === 0) && item.layer_name.endsWith('.tif')) {
-                                                                    const nameWithoutExt = item.layer_name.replace(/\.tif$/i, '');
-                                                                    console.log('Trying without extension:', nameWithoutExt);
-                                                                    layerData = await dataProvider.getList('layers', {
-                                                                        filter: { layer_name: nameWithoutExt },
-                                                                        pagination: { page: 1, perPage: 1 },
-                                                                        sort: { field: 'id', order: 'ASC' }
-                                                                    });
-                                                                }
-
-                                                                // If still not found and cache doesn't have .tif, try with it
-                                                                if ((!layerData.data || layerData.data.length === 0) && !item.layer_name.endsWith('.tif')) {
-                                                                    const nameWithExt = `${item.layer_name}.tif`;
-                                                                    console.log('Trying with .tif extension:', nameWithExt);
-                                                                    layerData = await dataProvider.getList('layers', {
-                                                                        filter: { layer_name: nameWithExt },
-                                                                        pagination: { page: 1, perPage: 1 },
-                                                                        sort: { field: 'id', order: 'ASC' }
-                                                                    });
-                                                                }
-
-                                                                console.log('Layers response:', layerData.data);
-                                                                if (layerData.data && layerData.data.length > 0) {
-                                                                    navigate(`/admin/layers/${layerData.data[0].id}/show`);
-                                                                } else {
-                                                                    console.error('No layers found for:', item.layer_name);
-                                                                    notify(`Layer not found in database: ${item.layer_name}`, { type: 'warning' });
-                                                                }
-                                                            } catch (error) {
-                                                                console.error('Error finding layer:', error, error.message);
-                                                                notify(`Error finding layer: ${error.message}`, { type: 'error' });
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (item.layer_id) {
+                                                                redirect('show', 'layers', item.layer_id);
+                                                            } else {
+                                                                notify(`Layer not found in database: ${item.layer_name}`, { type: 'warning' });
                                                             }
                                                         }}
                                                     >
@@ -366,20 +230,10 @@ export const CacheManagement = () => {
                                                 <Tooltip title="View Statistics">
                                                     <IconButton
                                                         size="small"
-                                                        onClick={async () => {
-                                                            try {
-                                                                const { data } = await dataProvider.getList('statistics', {
-                                                                    filter: { layer_name: item.layer_name },
-                                                                    sort: { field: 'stat_date', order: 'DESC' },
-                                                                    pagination: { page: 1, perPage: 1 }
-                                                                });
-                                                                if (data && data.length > 0) {
-                                                                    navigate(`/admin/statistics/${data[0].id}/show`);
-                                                                } else {
-                                                                    navigate(`/admin/statistics?filter=${encodeURIComponent(JSON.stringify({ layer_name: item.layer_name }))}`);
-                                                                }
-                                                            } catch (error) {
-                                                                console.error('Error finding statistics:', error);
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (item.layer_id) {
+                                                                redirect('show', 'layers', item.layer_id, {}, { tab: 1 });
                                                             }
                                                         }}
                                                     >
@@ -390,7 +244,10 @@ export const CacheManagement = () => {
                                                     <IconButton
                                                         color="error"
                                                         size="small"
-                                                        onClick={() => openClearLayerDialog(item.layer_name)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openClearLayerDialog(item.layer_name);
+                                                        }}
                                                     >
                                                         <DeleteIcon fontSize="small" />
                                                     </IconButton>

@@ -31,7 +31,7 @@ import {
 import { useState } from 'react';
 import { createStyleGradient } from '../../utils/styleUtils';
 import { FilterList, FilterListItem } from 'react-admin';
-import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/LocalOffer';
 import {
     globalWaterModelsItems,
@@ -56,6 +56,60 @@ import EditIcon from '@mui/icons-material/Edit';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MapIcon from '@mui/icons-material/Map';
+
+// Style name and color bar component
+const StyleDisplay = () => {
+    const record = useRecordContext();
+    const { data: styleData, loading } = useGetList('styles', {
+        filter: { id: record?.style_id },
+        pagination: { page: 1, perPage: 1 }
+    });
+
+    if (!record?.style_id) {
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    No style
+                </Typography>
+                <Box
+                    sx={{
+                        height: '8px',
+                        width: '60px',
+                        backgroundColor: '#e0e0e0',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd'
+                    }}
+                />
+            </Box>
+        );
+    }
+
+    if (loading) {
+        return <Typography variant="body2">Loading...</Typography>;
+    }
+
+    const style = styleData?.[0];
+    const gradient = style?.style ? createStyleGradient(style.style) : null;
+
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2">
+                {style?.name || 'Applied style'}
+            </Typography>
+            <Box
+                sx={{
+                    height: '8px',
+                    width: '60px',
+                    background: gradient || '#e0e0e0',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                }}
+            />
+        </Box>
+    );
+};
 
 export const ColorBar = () => {
     const record = useRecordContext();
@@ -174,6 +228,92 @@ const DropdownColorBar = ({ styleData, ...props }) => {
     );
 };
 
+// Custom Enable/Disable buttons that use individual updates
+const BulkEnableButton = () => {
+    const dataProvider = useDataProvider();
+    const { selectedIds } = useListContext();
+    const notify = useNotify();
+    const refresh = useRefresh();
+    const unselectAll = useUnselectAll('layers');
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    if (selectedIds.length === 0) return null;
+
+    const handleClick = async () => {
+        setIsUpdating(true);
+        try {
+            const updatePromises = selectedIds.map(layerId =>
+                dataProvider.update('layers', {
+                    id: layerId,
+                    data: { enabled: true },
+                    previousData: { id: layerId }
+                })
+            );
+            await Promise.all(updatePromises);
+            notify(`✅ Enabled ${selectedIds.length} layer(s)`, { type: 'success' });
+            refresh();
+            unselectAll();
+        } catch (error) {
+            console.error('Error enabling layers:', error);
+            notify('❌ Error enabling layers', { type: 'error' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    return (
+        <Button
+            label="Enable"
+            onClick={handleClick}
+            disabled={isUpdating}
+            startIcon={<CheckCircleIcon />}
+            sx={{ color: 'success.main' }}
+        />
+    );
+};
+
+const BulkDisableButton = () => {
+    const dataProvider = useDataProvider();
+    const { selectedIds } = useListContext();
+    const notify = useNotify();
+    const refresh = useRefresh();
+    const unselectAll = useUnselectAll('layers');
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    if (selectedIds.length === 0) return null;
+
+    const handleClick = async () => {
+        setIsUpdating(true);
+        try {
+            const updatePromises = selectedIds.map(layerId =>
+                dataProvider.update('layers', {
+                    id: layerId,
+                    data: { enabled: false },
+                    previousData: { id: layerId }
+                })
+            );
+            await Promise.all(updatePromises);
+            notify(`✅ Disabled ${selectedIds.length} layer(s)`, { type: 'success' });
+            refresh();
+            unselectAll();
+        } catch (error) {
+            console.error('Error disabling layers:', error);
+            notify('❌ Error disabling layers', { type: 'error' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    return (
+        <Button
+            label="Disable"
+            onClick={handleClick}
+            disabled={isUpdating}
+            sx={{ color: 'error.main' }}
+        />
+    );
+};
+
 const StyleSelectMenu = () => {
     const { data, loading } = useGetList('styles');
     const dataProvider = useDataProvider();
@@ -197,14 +337,19 @@ const StyleSelectMenu = () => {
             const updatePromises = selectedIds.map(layerId =>
                 dataProvider.update('layers', {
                     id: layerId,
-                    data: { style_id: newStyleId },
+                    data: { style_id: newStyleId === 'remove' ? null : newStyleId },
+                    previousData: { id: layerId }
                 })
             );
 
             await Promise.all(updatePromises);
 
-            const styleName = data.find(style => style.id === newStyleId)?.name || newStyleId;
-            notify(`✅ Applied style "${styleName}" to ${selectedIds.length} layer(s)`, { type: 'success' });
+            if (newStyleId === 'remove') {
+                notify(`✅ Removed style from ${selectedIds.length} layer(s)`, { type: 'success' });
+            } else {
+                const styleName = data.find(style => style.id === newStyleId)?.name || newStyleId;
+                notify(`✅ Applied style "${styleName}" to ${selectedIds.length} layer(s)`, { type: 'success' });
+            }
             refresh();
             unselectAll();
             setSelectedStyle('');
@@ -237,6 +382,14 @@ const StyleSelectMenu = () => {
                 <MenuItem disabled value="">
                     <em>🎨 Apply Style to {selectedIds.length} selected</em>
                 </MenuItem>
+                <MenuItem value="remove">
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <DeleteIcon sx={{ fontSize: '1rem', mr: 1, color: 'error.main' }} />
+                        <Typography variant="body2" sx={{ flex: 1, color: 'error.main' }}>
+                            Remove Style
+                        </Typography>
+                    </Box>
+                </MenuItem>
                 {data.map(style => {
                     return (
                         <MenuItem key={style.id} value={style.id}>
@@ -267,19 +420,8 @@ const BulkActionButtons = () => {
                 {selectedIds.length} selected
             </Typography>
             <Divider orientation="vertical" flexItem />
-            <BulkUpdateButton
-                label="Enable"
-                mutationMode="pessimistic"
-                data={{ enabled: true }}
-                icon={<CheckCircleIcon />}
-                color="success"
-            />
-            <BulkUpdateButton
-                label="Disable"
-                mutationMode="pessimistic"
-                data={{ enabled: false }}
-                color="error"
-            />
+            <BulkEnableButton />
+            <BulkDisableButton />
             <StyleSelectMenu />
             <BulkExportButton />
             <BulkDeleteButton
@@ -312,19 +454,8 @@ const ListActions = ({ setUploadDialogOpen }) => {
                             {selectedIds.length} selected
                         </Typography>
                         <Divider orientation="vertical" flexItem />
-                        <BulkUpdateButton
-                            label="Enable"
-                            mutationMode="pessimistic"
-                            data={{ enabled: true }}
-                            icon={<CheckCircleIcon />}
-                            color="success"
-                        />
-                        <BulkUpdateButton
-                            label="Disable"
-                            mutationMode="pessimistic"
-                            data={{ enabled: false }}
-                            color="error"
-                        />
+                        <BulkEnableButton />
+                        <BulkDisableButton />
                         <StyleSelectMenu />
                         <BulkExportButton />
                         <BulkDeleteButton
@@ -466,18 +597,25 @@ export const LayerList = () => {
             {/* Layers Table */}
             <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
                 <Datagrid
-                    size="medium"
+                    size="small"
                     rowSelect={true}
                     sx={{
                         '& .RaDatagrid-headerCell': {
                             fontWeight: 600,
                             backgroundColor: 'grey.50',
-                            py: 1
+                            py: 0.5,
+                            px: 1,
+                            fontSize: '0.8rem'
                         },
                         '& .RaDatagrid-row': {
                             '&:hover': {
                                 backgroundColor: 'action.hover'
                             }
+                        },
+                        '& .RaDatagrid-rowCell': {
+                            py: 0.5,
+                            px: 1,
+                            fontSize: '0.8rem'
                         },
                         '& .RaDatagrid-even': {
                             backgroundColor: 'grey.50'
@@ -498,20 +636,20 @@ export const LayerList = () => {
                     <TextField
                         source="crop"
                         label="Crop"
-                        sx={{ fontWeight: 500 }}
+                        sx={{ textTransform: 'capitalize' }}
                     />
-                    <FunctionField
-                        label="Model Configuration"
-                        render={record => (
-                            <Stack spacing={0.5}>
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                    {record.water_model}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {record.climate_model} • {record.scenario}
-                                </Typography>
-                            </Stack>
-                        )}
+                    <TextField
+                        source="water_model"
+                        label="Water Model"
+                    />
+                    <TextField
+                        source="climate_model"
+                        label="Climate Model"
+                    />
+                    <TextField
+                        source="scenario"
+                        label="Scenario"
+                        sx={{ textTransform: 'uppercase' }}
                     />
                     <TextField
                         source="variable"
@@ -536,53 +674,58 @@ export const LayerList = () => {
                     />
                     <FunctionField
                         label="Style"
-                        render={record => (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {record.style_id ? (
-                                    <Typography variant="body2">
-                                        {record.style?.length > 0 && record.style[0]?.name ?
-                                            record.style[0].name :
-                                            'Applied style'
-                                        }
-                                    </Typography>
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                        No style
-                                    </Typography>
-                                )}
-                                <ColorBar />
-                            </Box>
-                        )}
+                        render={() => <StyleDisplay />}
                     />
                     <FunctionField
                         label="Actions"
                         textAlign="center"
-                        render={record => (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
-                                <IconButton
-                                    size="small"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Navigate to show view
-                                        window.location.href = `#/layers/${record.id}`;
-                                    }}
-                                    title="View details"
-                                >
-                                    <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                    size="small"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Navigate to edit view
-                                        window.location.href = `#/layers/${record.id}`;
-                                    }}
-                                    title="Edit layer"
-                                >
-                                    <EditIcon fontSize="small" />
-                                </IconButton>
-                            </Box>
-                        )}
+                        render={record => {
+                            // Construct the frontend URL with layer parameters
+                            const params = new URLSearchParams({
+                                crop: record.crop,
+                                water_model: record.water_model,
+                                climate_model: record.climate_model,
+                                scenario: record.scenario,
+                                variable: record.variable,
+                                year: record.year
+                            });
+                            const mapUrl = `/?${params.toString()}`;
+
+                            return (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                                    <Tooltip title={record.enabled ? "Open in map" : "Layer is disabled"}>
+                                        <span>
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (record.enabled) {
+                                                        window.open(mapUrl, '_blank');
+                                                    }
+                                                }}
+                                                disabled={!record.enabled}
+                                                sx={{
+                                                    color: record.enabled ? 'primary.main' : 'action.disabled'
+                                                }}
+                                            >
+                                                <MapIcon fontSize="small" />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Navigate to edit view
+                                            window.location.href = `#/layers/${record.id}`;
+                                        }}
+                                        title="Edit layer"
+                                    >
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            );
+                        }}
                     />
                 </Datagrid>
             </Card>

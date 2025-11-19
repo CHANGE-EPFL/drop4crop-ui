@@ -94,10 +94,16 @@ const dataProvider = (
         });
     },
 
-    getOne: (resource, params) =>
-        httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
+    getOne: (resource, params) => {
+        // For layers resource, use the /details endpoint which includes cache and stats metadata
+        const endpoint = resource === 'layers'
+            ? `${apiUrl}/${resource}/${params.id}/details`
+            : `${apiUrl}/${resource}/${params.id}`;
+
+        return httpClient(endpoint).then(({ json }) => ({
             data: json,
-        })),
+        }));
+    },
 
     getMany: (resource, params) => {
         const query = {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AppContext } from './AppContext';
+import { useSearchParams } from 'react-router-dom';
 import {
     cropItems,
     globalWaterModelsItems,
@@ -17,6 +18,7 @@ export const useLayerManager = () => {
 };
 
 export const LayerManagerProvider = ({ children }) => {
+    const [searchParams] = useSearchParams();
     const {
         setCrops,
         setGlobalWaterModels,
@@ -186,7 +188,9 @@ export const LayerManagerProvider = ({ children }) => {
                 const validYears = year.filter(y => y !== null).sort((a, b) => a - b);
                 setAvailableYears(validYears);
 
-                if (validYears.length > 0) {
+                // Only set default year if no year specified in URL
+                const urlYear = searchParams.get('year');
+                if (validYears.length > 0 && !urlYear) {
                     setSelectedTime(validYears[0]);
                 }
                 setLoadingGroups(false);

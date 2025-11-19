@@ -3,6 +3,7 @@ import Snackbar from '@mui/material/Snackbar';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ShareIcon from '@mui/icons-material/Share';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -17,6 +18,12 @@ const DownloadPanel = ({ clearLayers }) => {
         setBoundingBox,
         APIServerURL,
         layerName: currentLayer,
+        selectedCrop,
+        selectedGlobalWaterModel,
+        selectedClimateModel,
+        selectedScenario,
+        selectedVariable,
+        selectedTime,
     } = useContext(AppContext); // Access state from context
 
     const [open, setOpen] = useState(false);
@@ -30,6 +37,20 @@ const DownloadPanel = ({ clearLayers }) => {
         : null;
 
     const downloadEntireTifLink = `${APIServerURL}/layers/cog/${currentLayer}.tif`;
+
+    // Build shareable link with current layer parameters
+    const buildShareLink = () => {
+        const params = new URLSearchParams();
+        if (selectedCrop?.id) params.set('crop', selectedCrop.id);
+        if (selectedGlobalWaterModel?.id) params.set('water_model', selectedGlobalWaterModel.id);
+        if (selectedClimateModel?.id) params.set('climate_model', selectedClimateModel.id);
+        if (selectedScenario?.id) params.set('scenario', selectedScenario.id);
+        if (selectedVariable?.id) params.set('variable', selectedVariable.id);
+        if (selectedTime) params.set('year', selectedTime.toString());
+
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/?${params.toString()}`;
+    };
 
     useEffect(() => {
         console.log("Bounding box: ", boundingBox);
@@ -111,6 +132,37 @@ const DownloadPanel = ({ clearLayers }) => {
                 >
                     <ContentCopyIcon sx={{ fontSize: '1rem', mr: 1 }} />
                     Copy STAC Server Link
+                </Button>
+            </Box>
+
+            <div style={{ borderTop: "1px solid #d1a766", marginBottom: '15px' }} />
+
+            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#d1a766' }}>
+                Share Current Layer
+            </Typography>
+
+            <Box sx={{ mb: 2 }}>
+                <Button
+                    variant="text"
+                    fullWidth
+                    onClick={() => handleCopyLink(buildShareLink(), "Shareable link copied to clipboard")}
+                    disabled={!currentLayer}
+                    sx={{
+                        color: '#d1a766',
+                        justifyContent: 'flex-start',
+                        textTransform: 'none',
+                        padding: '4px 8px',
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
+                        },
+                        '&.Mui-disabled': {
+                            color: 'rgba(209, 167, 102, 0.3)',
+                        }
+                    }}
+                >
+                    <ShareIcon sx={{ fontSize: '1rem', mr: 1 }} />
+                    Copy Shareable Link
                 </Button>
             </Box>
 

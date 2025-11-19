@@ -12,6 +12,8 @@ import {
     ListButton,
     useDataProvider,
     Loading,
+    useGetOne,
+    useRefresh,
 } from "react-admin";
 import {
     Typography,
@@ -33,6 +35,9 @@ import {
     TableRow,
     Paper,
     CircularProgress,
+    Tooltip,
+    Switch,
+    FormControlLabel,
 } from '@mui/material';
 import { createStyleGradient } from '../../utils/styleUtils';
 import EditIcon from '@mui/icons-material/Edit';
@@ -43,8 +48,12 @@ import StorageIcon from '@mui/icons-material/Storage';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import MapIcon from '@mui/icons-material/Map';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ShareIcon from '@mui/icons-material/Share';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useNotify } from 'react-admin';
 import {
     LineChart,
     Line,
@@ -61,8 +70,38 @@ import {
     Cell,
 } from 'recharts';
 
-export const ColorBar = ({ record }) => {
-    if (!record || !record.style || record.style.length == 0) {
+// Style name display component - uses separate API call
+const StyleNameDisplay = ({ styleId }) => {
+    const { data: style, isLoading } = useGetOne('styles', { id: styleId }, { enabled: !!styleId });
+
+    if (isLoading) {
+        return <CircularProgress size={20} />;
+    }
+
+    if (!style) {
+        return (
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                No style applied
+            </Typography>
+        );
+    }
+
+    return (
+        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+            {style.name || 'Unnamed style'}
+        </Typography>
+    );
+};
+
+// ColorBar component that fetches style data
+const ColorBarWithData = ({ styleId }) => {
+    const { data: style, isLoading } = useGetOne('styles', { id: styleId }, { enabled: !!styleId });
+
+    if (isLoading) {
+        return <CircularProgress size={20} />;
+    }
+
+    if (!style || !style.style || style.style.length === 0) {
         return (
             <Box
                 sx={{
@@ -77,7 +116,7 @@ export const ColorBar = ({ record }) => {
         );
     }
 
-    const gradient = createStyleGradient(record.style);
+    const gradient = createStyleGradient(style.style);
 
     return (
         <Box
@@ -108,137 +147,156 @@ const LayerShowContent = () => {
     const record = useRecordContext();
     const dataProvider = useDataProvider();
     const navigate = useNavigate();
-    const [cacheStatus, setCacheStatus] = useState(null);
-    const [statsData, setStatsData] = useState(null);
+    const notify = useNotify();
+    const refresh = useRefresh();
     const [activeTab, setActiveTab] = useState(0);
     const [timelineData, setTimelineData] = useState([]);
     const [timelineLoading, setTimelineLoading] = useState(true);
-    const [allCacheKeys, setAllCacheKeys] = useState([]);
 
-    useEffect(() => {
-        if (record?.layer_name) {
-            const fetchCacheStatus = async () => {
-                try {
-                    const { data } = await dataProvider.getCacheKeys();
-                    // Try exact match first, then try with .tif extension
-                    let cached = data.find(item => item.layer_name === record.layer_name);
-                    if (!cached) {
-                        cached = data.find(item => item.layer_name === `${record.layer_name}.tif`);
-                    }
-                    // Also try matching without extension in case layer_name has extension but cache doesn't
-                    if (!cached) {
-                        const layerNameWithoutExt = record.layer_name.replace(/\.(tif|tiff)$/i, '');
-                        cached = data.find(item => item.layer_name.replace(/\.(tif|tiff)$/i, '') === layerNameWithoutExt);
-                    }
-                    setCacheStatus(cached);
-                } catch (error) {
-                    console.error('Error fetching cache status:', error);
-                }
-            };
-            fetchCacheStatus();
-        }
-    }, [record, dataProvider]);
+    // Cache and stats are now included in the record from the backend
+    const cacheStatus = record?.cache_status;
+    const statsData = record?.stats;
 
+    // Fetch timeline when stats tab is opened
     useEffect(() => {
-        if (record?.layer_name) {
-            const fetchStats = async () => {
+        if (activeTab === 1 && record?.id && statsData) {
+            const fetchTimeline = async () => {
+                setTimelineLoading(true);
                 try {
-                    console.log('Fetching stats for layer_name:', record.layer_name);
-                    // Fetch ALL statistics for this layer to calculate totals
+                    // Get all stats for this layer by layer_name
                     const { data } = await dataProvider.getList('statistics', {
                         filter: { layer_name: record.layer_name },
-                        sort: { field: 'stat_date', order: 'DESC' },
-                        pagination: { page: 1, perPage: 1000 } // Get all records
+                        sort: { field: 'stat_date', order: 'ASC' },
+                        pagination: { page: 1, perPage: 1000 }
                     });
 
-                    console.log('Statistics data received:', data);
-                    console.log('Number of stats records:', data?.length);
+                    // Format for the chart
+                    const chartData = data.map(stat => ({
+                        stat_date: stat.stat_date,
+                        xyz_tile_count: stat.xyz_tile_count || 0,
+                        cog_download_count: stat.cog_download_count || 0,
+                        pixel_query_count: stat.pixel_query_count || 0,
+                        stac_request_count: stat.stac_request_count || 0,
+                        total_requests: (stat.xyz_tile_count || 0) +
+                                      (stat.cog_download_count || 0) +
+                                      (stat.pixel_query_count || 0) +
+                                      (stat.stac_request_count || 0) +
+                                      (stat.other_request_count || 0)
+                    }));
 
-                    if (data && data.length > 0) {
-                        // Calculate total across all dates
-                        const totalStats = data.reduce((acc, stat) => ({
-                            xyz_tile_count: (acc.xyz_tile_count || 0) + (stat.xyz_tile_count || 0),
-                            cog_download_count: (acc.cog_download_count || 0) + (stat.cog_download_count || 0),
-                            pixel_query_count: (acc.pixel_query_count || 0) + (stat.pixel_query_count || 0),
-                            stac_request_count: (acc.stac_request_count || 0) + (stat.stac_request_count || 0),
-                            other_request_count: (acc.other_request_count || 0) + (stat.other_request_count || 0),
-                        }), {});
-
-                        totalStats.total_requests =
-                            totalStats.xyz_tile_count +
-                            totalStats.cog_download_count +
-                            totalStats.pixel_query_count +
-                            totalStats.stac_request_count +
-                            totalStats.other_request_count;
-
-                        // Use the most recent stat for date and last accessed
-                        totalStats.stat_date = data[0].stat_date;
-                        totalStats.last_accessed_at = data[0].last_accessed_at;
-                        totalStats.layer_name = data[0].layer_name;
-                        totalStats.id = data[0].id;
-
-                        setStatsData(totalStats);
-                        // Fetch timeline for this statistic
-                        fetchTimeline(data[0].id);
-                    }
+                    setTimelineData(chartData);
                 } catch (error) {
-                    console.error('Error fetching statistics:', error);
+                    console.error('Error fetching timeline:', error);
+                } finally {
+                    setTimelineLoading(false);
                 }
             };
-            fetchStats();
+            fetchTimeline();
         }
-    }, [record, dataProvider]);
-
-    const fetchTimeline = async (statId) => {
-        if (!statId) {
-            setTimelineLoading(false);
-            return;
-        }
-        try {
-            const { data } = await dataProvider.getStatsTimeline(statId);
-            setTimelineData(data);
-        } catch (error) {
-            console.error('Error fetching timeline:', error);
-        } finally {
-            setTimelineLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        const fetchAllCacheKeys = async () => {
-            try {
-                const { data } = await dataProvider.getCacheKeys();
-                setAllCacheKeys(data || []);
-            } catch (error) {
-                console.error('Error fetching all cache keys:', error);
-            }
-        };
-        fetchAllCacheKeys();
-    }, [dataProvider]);
+    }, [activeTab, record, dataProvider]);
 
     if (!record) {
         return <div>No data available</div>;
     }
+
+    // Helper function to build the layer URL
+    const buildLayerUrl = () => {
+        const params = new URLSearchParams();
+        if (record.crop) params.set('crop', record.crop);
+        if (record.water_model) params.set('water_model', record.water_model);
+        if (record.climate_model) params.set('climate_model', record.climate_model);
+        if (record.scenario) params.set('scenario', record.scenario);
+        if (record.variable) params.set('variable', record.variable);
+        if (record.year) params.set('year', record.year.toString());
+
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/?${params.toString()}`;
+    };
+
+    const handleCopyLink = async () => {
+        try {
+            const url = buildLayerUrl();
+            await navigator.clipboard.writeText(url);
+            notify('Link copied to clipboard!', { type: 'success' });
+        } catch (error) {
+            notify('Failed to copy link', { type: 'error' });
+        }
+    };
 
     return (
         <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
             <CardContent sx={{ p: 3 }}>
                 {/* Header Section */}
                 <Box sx={{ mb: 3 }}>
-                    <Typography variant="h4" component="h1" gutterBottom>
-                        Layer Details
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Typography variant="h4" component="h1">
+                            Layer Details
+                        </Typography>
+                        <Stack direction="row" spacing={2}>
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                startIcon={<ShareIcon />}
+                                onClick={handleCopyLink}
+                            >
+                                Copy Link
+                            </Button>
+                            <Tooltip title={record.enabled ? "" : "Layer is disabled"}>
+                                <span>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        startIcon={<MapIcon />}
+                                        endIcon={<OpenInNewIcon />}
+                                        onClick={() => {
+                                            if (record.enabled) {
+                                                const url = buildLayerUrl();
+                                                window.open(url, '_blank');
+                                            }
+                                        }}
+                                        disabled={!record.enabled}
+                                    >
+                                        View on Map
+                                    </Button>
+                                </span>
+                            </Tooltip>
+                        </Stack>
+                    </Box>
                     <Stack direction="row" spacing={2} alignItems="center">
                         <Chip
                             color="primary"
                             label={record.crop || 'Unknown Crop'}
                             size="medium"
                         />
-                        <Chip
-                            color={record.enabled ? 'success' : 'default'}
-                            label={record.enabled ? 'Enabled' : 'Disabled'}
-                            variant={record.enabled ? 'filled' : 'outlined'}
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                                color={record.enabled ? 'success' : 'default'}
+                                label={record.enabled ? 'Enabled' : 'Disabled'}
+                                variant={record.enabled ? 'filled' : 'outlined'}
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={record.enabled}
+                                        onChange={async (e) => {
+                                            try {
+                                                await dataProvider.update('layers', {
+                                                    id: record.id,
+                                                    data: { enabled: e.target.checked },
+                                                    previousData: record
+                                                });
+                                                notify(`Layer ${e.target.checked ? 'enabled' : 'disabled'}`, { type: 'success' });
+                                                refresh();
+                                            } catch (error) {
+                                                notify('Error updating layer status', { type: 'error' });
+                                            }
+                                        }}
+                                        color="success"
+                                    />
+                                }
+                                label=""
+                            />
+                        </Box>
                         <Chip
                             color={record.is_crop_specific ? 'secondary' : 'default'}
                             label={record.is_crop_specific ? 'Crop Specific' : 'General'}
@@ -273,13 +331,13 @@ const LayerShowContent = () => {
                             iconPosition="start"
                         />
                         <Tab
-                            icon={cacheStatus ? <CheckCircleIcon sx={{ color: 'success.main' }} /> : <CancelIcon sx={{ color: 'error.main' }} />}
+                            icon={(cacheStatus && cacheStatus.cached) ? <CheckCircleIcon sx={{ color: 'success.main' }} /> : <CancelIcon sx={{ color: 'error.main' }} />}
                             label={
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     Cache
-                                    {cacheStatus && (
+                                    {(cacheStatus && cacheStatus.cached && cacheStatus.size_mb) && (
                                         <Chip
-                                            label={`${cacheStatus.size_mb?.toFixed(1)} MB`}
+                                            label={`${cacheStatus.size_mb.toFixed(1)} MB`}
                                             size="small"
                                             color="success"
                                             sx={{ height: 20, fontSize: '0.75rem' }}
@@ -416,30 +474,17 @@ const LayerShowContent = () => {
                             Style Configuration
                         </Typography>
                         <Stack spacing={2}>
-                            {record.style_id ? (
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Applied Style
-                                    </Typography>
-                                    <ReferenceField source="style_id" reference="styles" link="show">
-                                        <TextField source="name" />
-                                    </ReferenceField>
-                                </Box>
-                            ) : (
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Applied Style
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                                        No style applied
-                                    </Typography>
-                                </Box>
-                            )}
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Applied Style
+                                </Typography>
+                                <StyleNameDisplay styleId={record.style_id} />
+                            </Box>
                             <Box>
                                 <Typography variant="body2" color="text.secondary">
                                     Style Preview
                                 </Typography>
-                                <ColorBar record={record} />
+                                <ColorBarWithData styleId={record.style_id} />
                             </Box>
                         </Stack>
                     </Box>
@@ -451,11 +496,13 @@ const LayerShowContent = () => {
                     <Stack spacing={3}>
                         {statsData ? (
                             <>
-                                {/* Latest Statistics Summary */}
+                                {/* Statistics Summary */}
                                 <Alert severity="info">
-                                    <strong>Latest Statistics ({statsData.stat_date}):</strong>{' '}
-                                    {statsData.total_requests} total requests •{' '}
-                                    Last accessed: {new Date(statsData.last_accessed_at).toLocaleString()}
+                                    <strong>Total Statistics:</strong>{' '}
+                                    {statsData.total_requests.toLocaleString()} total requests
+                                    {statsData.last_accessed_at && (
+                                        <>{' '}• Last accessed: {new Date(statsData.last_accessed_at).toLocaleString()}</>
+                                    )}
                                 </Alert>
 
                                 {/* Request Type Breakdown */}
@@ -556,89 +603,79 @@ const LayerShowContent = () => {
 
                 {/* Cache Tab */}
                 {activeTab === 2 && (
-                    <Stack spacing={3}>
-                        {cacheStatus ? (
+                    <Stack spacing={2}>
+                        {cacheStatus && cacheStatus.cached ? (
                             <>
-                                {/* Cache Status Summary */}
-                                <Alert severity="success">
-                                    <strong>Cached:</strong> {cacheStatus.size_mb?.toFixed(2)} MB •
-                                    TTL: {cacheStatus.ttl_hours?.toFixed(1)} hours remaining
-                                </Alert>
-
-                                {/* Cache Details */}
-                                <Box>
-                                    <Typography variant="h6" gutterBottom color="primary">
-                                        Cache Information
-                                    </Typography>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                        <Box>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Cache Size
-                                            </Typography>
-                                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                                {cacheStatus.size_mb?.toFixed(2) || '0'} MB
-                                            </Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" color="text.secondary">
-                                                TTL Remaining
-                                            </Typography>
-                                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                                {cacheStatus.ttl_hours?.toFixed(1) || '0'} hours
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ gridColumn: '1 / -1' }}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Cache Key
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                                {cacheStatus.cache_key}
-                                            </Typography>
-                                        </Box>
+                                {/* Cache Information - Compact Layout */}
+                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            Cache Size
+                                        </Typography>
+                                        <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                                            {cacheStatus.size_mb?.toFixed(2)} MB
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            TTL Remaining
+                                        </Typography>
+                                        <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                                            {cacheStatus.ttl_hours?.toFixed(1)} hours
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Button
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            startIcon={<DeleteIcon />}
+                                            onClick={async () => {
+                                                if (window.confirm(`Clear cache for "${record.layer_name}"?`)) {
+                                                    try {
+                                                        await dataProvider.clearLayerCache(record.layer_name);
+                                                        notify('Cache cleared', { type: 'success' });
+                                                        refresh(); // Use React Admin refresh to reload the layer data
+                                                    } catch (error) {
+                                                        notify('Failed to clear cache', { type: 'error' });
+                                                    }
+                                                }
+                                            }}
+                                            sx={{ mt: 2.5 }}
+                                        >
+                                            Clear Cache
+                                        </Button>
                                     </Box>
                                 </Box>
 
-                                {/* All Cached Layers */}
+                                {/* Cache Key */}
                                 <Box>
-                                    <Typography variant="h6" gutterBottom color="primary">
-                                        All Cached Layers
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                        Cache Key
                                     </Typography>
-                                    <TableContainer component={Paper}>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell><strong>Layer Name</strong></TableCell>
-                                                    <TableCell><strong>Size</strong></TableCell>
-                                                    <TableCell><strong>TTL</strong></TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {allCacheKeys.map((item, index) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.layer_name}</TableCell>
-                                                        <TableCell>
-                                                            {item.size_mb !== null && item.size_mb !== undefined ?
-                                                                `${item.size_mb.toFixed(2)} MB` :
-                                                                'N/A'
-                                                            }
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {item.ttl_hours !== null && item.ttl_hours !== undefined ?
-                                                                `${item.ttl_hours.toFixed(1)} hrs` :
-                                                                'No expiry'
-                                                            }
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
+                                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem', color: 'text.primary' }}>
+                                        {cacheStatus.cache_key}
+                                    </Typography>
                                 </Box>
+
+                                <Divider sx={{ my: 1 }} />
+
+                                {/* Compact Info Alert */}
+                                <Alert severity="info" sx={{ py: 1 }}>
+                                    <Typography variant="body2">
+                                        Cached GeoTIFF loads faster • TTL resets on each access • Popular layers stay cached longer • Clearing forces S3 re-download
+                                    </Typography>
+                                </Alert>
                             </>
                         ) : (
-                            <Alert severity="info">
-                                This layer is not currently cached
-                            </Alert>
+                            <>
+                                <Alert severity="info" sx={{ py: 1 }}>
+                                    This layer is not cached. It will be cached automatically on first access.
+                                </Alert>
+                                <Typography variant="body2" color="text.secondary">
+                                    Caching stores the entire GeoTIFF in Redis for faster access. TTL resets on each access, so frequently used layers stay cached.
+                                </Typography>
+                            </>
                         )}
                     </Stack>
                 )}
