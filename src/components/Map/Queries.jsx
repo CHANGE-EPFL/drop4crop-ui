@@ -118,9 +118,7 @@ export const MapClickHandler = () => {
     };
 
     useMapEvent('click', (e) => {
-        console.log("CLICK!")
         if (enableSelection) {
-            console.log("Click during polygon selection")
             setEnableSelection(false);
             return;
         }

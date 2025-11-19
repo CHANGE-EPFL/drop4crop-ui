@@ -154,19 +154,9 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
       headers: headers,
       limit: 50, // Increased concurrent uploads from 25 to 50
       timeout: 15 * 60 * 1000, // 15 minutes timeout
-      onBeforeRequest: (request) => {
-        console.log("Uppy: Starting upload request", request);
-      },
       onAfterResponse: (response) => {
-        console.log("Uppy: Upload response received", {
-          status: response.status,
-          responseText: response.response,
-          headers: response.headers,
-        });
-
         // Track actual HTTP completion
         if (response.status === 200 || response.status === 201) {
-          console.log("Uppy: Upload HTTP success");
           refresh();
 
           // Update state to track actual HTTP completion
@@ -177,19 +167,14 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
               successfulFiles: prev.successfulFiles + 1
             };
 
-            console.log("Uppy: HTTP completion - Updated state", newState);
-
             // Check if all files are actually complete
             if (newState.completedFiles === newState.totalFiles && newState.totalFiles > 0) {
-              console.log("Uppy: All HTTP requests complete, showing summary");
               setTimeout(() => showSummaryNotification(newState), 500); // Small delay to ensure all processing is done
             }
 
             return newState;
           });
         } else {
-          console.error("Uppy: Upload HTTP failed");
-
           // Track HTTP failure
           setUploadState(prev => {
             const newState = {
@@ -198,11 +183,8 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
               failedFiles: prev.failedFiles + 1
             };
 
-            console.log("Uppy: HTTP failure - Updated state", newState);
-
             // Check if all files are complete (including failures)
             if (newState.completedFiles === newState.totalFiles && newState.totalFiles > 0) {
-              console.log("Uppy: All HTTP requests complete (with failures), showing summary");
               setTimeout(() => showSummaryNotification(newState), 500);
             }
 
@@ -210,44 +192,14 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
           });
         }
       },
-      onProgress: (progress) => {
-        console.log("Uppy: Upload progress", progress);
-      },
-      onUploadError: (error) => {
-        console.error("Uppy: Upload error", error);
-        // Individual error notifications removed - will be handled in summary
-      },
     })
   );
-
-  // Add Uppy event listeners for debugging
-  uppy.on("file-added", (file) => {
-    console.log("Uppy: File added", file);
-  });
-
-  uppy.on("upload-started", (data) => {
-    console.log("Uppy: Upload started", data);
-  });
-
-  uppy.on("upload-success", (file, response) => {
-    console.log("Uppy: Upload success", file, response);
-  });
-
-  uppy.on("upload-error", (file, error, response) => {
-    console.error("Uppy: Upload error", file, error, response);
-    // Individual error notifications removed - will be handled in summary
-  });
-
-  uppy.on("error", (error) => {
-    console.error("Uppy: General error", error);
-  });
 
   // Track upload progress for summary notification
   uppy.on("upload", (data) => {
     // Upload is starting - initialize tracking
     const fileIDs = data?.fileIDs || uppy.getFiles().map(f => f.id);
     const fileCount = fileIDs.length;
-    console.log("Uppy: Upload starting for", fileCount, "files", { fileIDs, data });
     setUploadState({
       totalFiles: fileCount,
       completedFiles: 0,
@@ -255,16 +207,6 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
       failedFiles: 0,
       isUploading: true
     });
-  });
-
-  uppy.on("upload-success", (file, response) => {
-    console.log("Uppy: File uploaded successfully (Uppy level)", file.name);
-    // Don't update state here - wait for HTTP completion in onAfterResponse
-  });
-
-  uppy.on("upload-error", (file, error, response) => {
-    console.log("Uppy: File upload failed (Uppy level)", file.name, error.message);
-    // Don't update state here - wait for HTTP completion in onAfterResponse
   });
 
   

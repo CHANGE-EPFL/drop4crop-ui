@@ -53,7 +53,6 @@ const DownloadPanel = ({ clearLayers }) => {
     };
 
     useEffect(() => {
-        console.log("Bounding box: ", boundingBox);
         if (!boundingBox) {
             setEnableSelection(false);
         }

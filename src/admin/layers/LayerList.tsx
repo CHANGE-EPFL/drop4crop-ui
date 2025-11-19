@@ -146,9 +146,6 @@ export const ColorBar = () => {
 
 // ColorBar wrapper for dropdown use
 const DropdownColorBar = ({ styleData, ...props }) => {
-    // Debug: Log the data structure
-    console.log('DropdownColorBar received:', styleData);
-
     let processedStyleData = [];
 
     if (!styleData) {
@@ -170,12 +167,10 @@ const DropdownColorBar = ({ styleData, ...props }) => {
     // If styleData is the complete style object with nested style array
     if (styleData.style && Array.isArray(styleData.style)) {
         processedStyleData = styleData.style;
-        console.log('Using styleData.style:', processedStyleData);
     }
     // If styleData is an array of StyleItem objects
     else if (Array.isArray(styleData) && styleData.length > 0 && styleData[0].red !== undefined) {
         processedStyleData = styleData;
-        console.log('Using direct StyleItem array:', processedStyleData);
     }
     // If styleData is an array of style records (CRUD response)
     else if (Array.isArray(styleData)) {
@@ -184,12 +179,10 @@ const DropdownColorBar = ({ styleData, ...props }) => {
                 processedStyleData = processedStyleData.concat(styleRecord.style);
             }
         });
-        console.log('Using concatenated style records:', processedStyleData);
     }
 
     // If no valid data, show grey bar
     if (processedStyleData.length === 0) {
-        console.log('No valid style data found, showing grey bar');
         return (
             <Box
                 sx={{
@@ -204,11 +197,8 @@ const DropdownColorBar = ({ styleData, ...props }) => {
         );
     }
 
-    console.log('Final processed style data:', processedStyleData);
-
     // Create gradient
     const gradient = createStyleGradient(processedStyleData);
-    console.log('Generated gradient:', gradient);
 
     return (
         <Box
@@ -229,7 +219,7 @@ const DropdownColorBar = ({ styleData, ...props }) => {
 };
 
 // Custom Enable/Disable buttons that use individual updates
-const BulkEnableButton = () => {
+const BulkToggleEnabledButton = ({ enabled }: { enabled: boolean }) => {
     const dataProvider = useDataProvider();
     const { selectedIds } = useListContext();
     const notify = useNotify();
@@ -241,21 +231,22 @@ const BulkEnableButton = () => {
 
     const handleClick = async () => {
         setIsUpdating(true);
+        const action = enabled ? 'Enabled' : 'Disabled';
         try {
             const updatePromises = selectedIds.map(layerId =>
                 dataProvider.update('layers', {
                     id: layerId,
-                    data: { enabled: true },
+                    data: { enabled },
                     previousData: { id: layerId }
                 })
             );
             await Promise.all(updatePromises);
-            notify(`✅ Enabled ${selectedIds.length} layer(s)`, { type: 'success' });
+            notify(`✅ ${action} ${selectedIds.length} layer(s)`, { type: 'success' });
             refresh();
             unselectAll();
         } catch (error) {
-            console.error('Error enabling layers:', error);
-            notify('❌ Error enabling layers', { type: 'error' });
+            console.error(`Error ${action.toLowerCase()} layers:`, error);
+            notify(`❌ Error ${action.toLowerCase()} layers`, { type: 'error' });
         } finally {
             setIsUpdating(false);
         }
@@ -263,56 +254,17 @@ const BulkEnableButton = () => {
 
     return (
         <Button
-            label="Enable"
+            label={enabled ? "Enable" : "Disable"}
             onClick={handleClick}
             disabled={isUpdating}
-            startIcon={<CheckCircleIcon />}
-            sx={{ color: 'success.main' }}
+            startIcon={enabled ? <CheckCircleIcon /> : undefined}
+            sx={{ color: enabled ? 'success.main' : 'error.main' }}
         />
     );
 };
 
-const BulkDisableButton = () => {
-    const dataProvider = useDataProvider();
-    const { selectedIds } = useListContext();
-    const notify = useNotify();
-    const refresh = useRefresh();
-    const unselectAll = useUnselectAll('layers');
-    const [isUpdating, setIsUpdating] = useState(false);
-
-    if (selectedIds.length === 0) return null;
-
-    const handleClick = async () => {
-        setIsUpdating(true);
-        try {
-            const updatePromises = selectedIds.map(layerId =>
-                dataProvider.update('layers', {
-                    id: layerId,
-                    data: { enabled: false },
-                    previousData: { id: layerId }
-                })
-            );
-            await Promise.all(updatePromises);
-            notify(`✅ Disabled ${selectedIds.length} layer(s)`, { type: 'success' });
-            refresh();
-            unselectAll();
-        } catch (error) {
-            console.error('Error disabling layers:', error);
-            notify('❌ Error disabling layers', { type: 'error' });
-        } finally {
-            setIsUpdating(false);
-        }
-    };
-
-    return (
-        <Button
-            label="Disable"
-            onClick={handleClick}
-            disabled={isUpdating}
-            sx={{ color: 'error.main' }}
-        />
-    );
-};
+const BulkEnableButton = () => <BulkToggleEnabledButton enabled={true} />;
+const BulkDisableButton = () => <BulkToggleEnabledButton enabled={false} />;
 
 const StyleSelectMenu = () => {
     const { data, loading } = useGetList('styles');

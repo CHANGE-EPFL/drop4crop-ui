@@ -124,20 +124,6 @@ const MapView = forwardRef((props, ref) => {
                   layerName,
                   timestamp: new Date().toISOString()
                 });
-              },
-              tileload: (tile) => {
-                console.log('Tile loaded successfully:', {
-                  tile: tile.src,
-                  layerName,
-                  timestamp: new Date().toISOString()
-                });
-              },
-              tileloadstart: (tile) => {
-                console.log('Tile load started:', {
-                  tile: tile.src,
-                  layerName,
-                  timestamp: new Date().toISOString()
-                });
               }
             }}
           />
