@@ -51,7 +51,6 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import MapIcon from '@mui/icons-material/Map';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ShareIcon from '@mui/icons-material/Share';
-import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useNotify } from 'react-admin';
 import {
@@ -146,7 +145,6 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 const LayerShowContent = () => {
     const record = useRecordContext();
     const dataProvider = useDataProvider();
-    const navigate = useNavigate();
     const notify = useNotify();
     const refresh = useRefresh();
     const [activeTab, setActiveTab] = useState(0);

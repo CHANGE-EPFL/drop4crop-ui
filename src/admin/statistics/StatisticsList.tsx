@@ -32,7 +32,6 @@ import {
     Storage as StorageIcon,
 } from '@mui/icons-material';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     LineChart,
     Line,
@@ -238,7 +237,7 @@ const ActivityByTypeChart = () => {
 
 const LiveStatsCard = () => {
     const dataProvider = useDataProvider();
-    const navigate = useNavigate();
+    const redirect = useRedirect();
     const [liveStats, setLiveStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
@@ -293,7 +292,7 @@ const LiveStatsCard = () => {
                         {liveStats.map((stat, index) => (
                             <Box
                                 key={index}
-                                onClick={() => stat.layer_id && navigate(`/admin/layers/${stat.layer_id}/show`)}
+                                onClick={() => stat.layer_id && redirect('show', 'layers', stat.layer_id)}
                                 sx={{
                                     p: 2,
                                     mb: 1,
@@ -318,7 +317,7 @@ const LiveStatsCard = () => {
                                             cursor: stat.layer_id ? 'pointer' : 'default',
                                             '&:hover': stat.layer_id ? { textDecoration: 'underline' } : {}
                                         }}
-                                        onClick={() => stat.layer_id && navigate(`/admin/layers/${stat.layer_id}/show`)}
+                                        onClick={() => stat.layer_id && redirect('show', 'layers', stat.layer_id)}
                                     >
                                         {stat.layer_name}
                                     </Typography>
@@ -329,7 +328,7 @@ const LiveStatsCard = () => {
                                                     size="small"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        navigate(`/admin/layers/${stat.layer_id}/show`);
+                                                        redirect('show', 'layers', stat.layer_id);
                                                     }}
                                                     sx={{ mr: 0.5 }}
                                                 >
@@ -349,17 +348,15 @@ const LiveStatsCard = () => {
                                                                 pagination: { page: 1, perPage: 1 }
                                                             });
                                                             if (data && data.length > 0) {
-                                                                navigate(`/admin/statistics/${data[0].id}/show`);
+                                                                redirect('show', 'statistics', data[0].id);
                                                             } else {
                                                                 // If no statistics found, navigate to filtered list
-                                                                const filter = { layer_name: stat.layer_name };
-                                                                navigate(`/admin/statistics?filter=${encodeURIComponent(JSON.stringify(filter))}`);
+                                                                redirect('list', 'statistics');
                                                             }
                                                         } catch (error) {
                                                             console.error('Error fetching statistics:', error);
                                                             // Fallback to filtered list
-                                                            const filter = { layer_name: stat.layer_name };
-                                                            navigate(`/admin/statistics?filter=${encodeURIComponent(JSON.stringify(filter))}`);
+                                                            redirect('list', 'statistics');
                                                         }
                                                     }}
                                                 >
