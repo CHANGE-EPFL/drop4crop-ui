@@ -27,6 +27,9 @@ import {
     SelectInput,
     useDataProvider,
     Button,
+    useListFilterContext,
+    ReferenceInput,
+    AutocompleteInput,
 } from "react-admin";
 import { useState } from 'react';
 import { createStyleGradient } from '../../utils/styleUtils';
@@ -39,7 +42,8 @@ import {
     cropItems,
     scenariosItems,
     variablesItems,
-    yearItems
+    yearItems,
+    cropTypeItems
 } from '../options';
 import { Fragment } from 'react';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -54,9 +58,168 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MapIcon from '@mui/icons-material/Map';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
+import WarningIcon from '@mui/icons-material/Warning';
+
+// Style filter input component
+const StyleFilterInput = (props) => {
+    const { data: styles, isLoading } = useGetList('styles', {
+        pagination: { page: 1, perPage: 100 },
+        sort: { field: 'name', order: 'ASC' }
+    });
+
+    const choices = [
+        { id: '__null__', name: 'No style' },
+        ...(styles || []).map(style => ({ id: style.id, name: style.name }))
+    ];
+
+    return (
+        <SelectInput
+            choices={choices}
+            isLoading={isLoading}
+            emptyValue=""
+            resettable
+            {...props}
+        />
+    );
+};
+
+// Style field component with click-to-filter icon
+const StyleFilterableField = ({ record }) => {
+    const { filterValues, setFilters } = useListContext();
+
+    const handleFilterClick = (e) => {
+        e.stopPropagation();
+        // Use __null__ marker for null style_id
+        setFilters({ ...filterValues, style_id: record.style_id || '__null__' }, {});
+    };
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                '&:hover .filter-icon': {
+                    opacity: 1,
+                }
+            }}
+        >
+            <StyleDisplay />
+            <IconButton
+                size="small"
+                onClick={handleFilterClick}
+                className="filter-icon"
+                sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    p: 0.25,
+                    '&:hover': {
+                        backgroundColor: 'primary.light',
+                        color: 'primary.main',
+                    }
+                }}
+                title={`Filter by ${record.style_id ? 'this style' : 'no style'}`}
+            >
+                <FilterListIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+        </Box>
+    );
+};
+
+// Crop Specific field component with click-to-filter icon
+const CropSpecificFilterableField = ({ record }) => {
+    const { filterValues, setFilters } = useListContext();
+
+    const handleFilterClick = (e) => {
+        e.stopPropagation();
+        setFilters({ ...filterValues, is_crop_specific: record.is_crop_specific }, {});
+    };
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                justifyContent: 'center',
+                '&:hover .filter-icon': {
+                    opacity: 1,
+                }
+            }}
+        >
+            <BooleanField source="is_crop_specific" looseValue />
+            <IconButton
+                size="small"
+                onClick={handleFilterClick}
+                className="filter-icon"
+                sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    p: 0.25,
+                    '&:hover': {
+                        backgroundColor: 'primary.light',
+                        color: 'primary.main',
+                    }
+                }}
+                title={`Filter by ${record.is_crop_specific ? 'crop-specific' : 'climate'} layers`}
+            >
+                <FilterListIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+        </Box>
+    );
+};
+
+// Filterable field component with click-to-filter icon
+const FilterableField = ({ source, value, transform }) => {
+    const { filterValues, setFilters } = useListContext();
+
+    const handleFilterClick = (e) => {
+        e.stopPropagation();
+        setFilters({ ...filterValues, [source]: value }, {});
+    };
+
+    if (!value && value !== 0) {
+        return <Typography variant="body2">-</Typography>;
+    }
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                '&:hover .filter-icon': {
+                    opacity: 1,
+                }
+            }}
+        >
+            <Typography variant="body2" sx={{ textTransform: transform || 'none' }}>
+                {value}
+            </Typography>
+            <IconButton
+                size="small"
+                onClick={handleFilterClick}
+                className="filter-icon"
+                sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    p: 0.25,
+                    '&:hover': {
+                        backgroundColor: 'primary.light',
+                        color: 'primary.main',
+                    }
+                }}
+                title={`Filter by ${value}`}
+            >
+                <FilterListIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+        </Box>
+    );
+};
 
 // Style name and color bar component
 const StyleDisplay = () => {
@@ -69,16 +232,20 @@ const StyleDisplay = () => {
     if (!record?.style_id) {
         return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                <Tooltip title="This layer will be styled in grayscale until a style is chosen">
+                    <WarningIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                </Tooltip>
+                <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 500 }}>
                     No style
                 </Typography>
                 <Box
                     sx={{
                         height: '8px',
                         width: '60px',
-                        backgroundColor: '#e0e0e0',
+                        background: 'linear-gradient(to right, #000000, #404040, #808080, #c0c0c0, #ffffff)',
                         borderRadius: '4px',
-                        border: '1px solid #ddd'
+                        border: '1px solid #ddd',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                     }}
                 />
             </Box>
@@ -241,12 +408,12 @@ const BulkToggleEnabledButton = ({ enabled }: { enabled: boolean }) => {
                 })
             );
             await Promise.all(updatePromises);
-            notify(`✅ ${action} ${selectedIds.length} layer(s)`, { type: 'success' });
+            notify(`${action} ${selectedIds.length} layer(s)`, { type: 'success' });
             refresh();
             unselectAll();
         } catch (error) {
             console.error(`Error ${action.toLowerCase()} layers:`, error);
-            notify(`❌ Error ${action.toLowerCase()} layers`, { type: 'error' });
+            notify(`Error ${action.toLowerCase()} layers`, { type: 'error' });
         } finally {
             setIsUpdating(false);
         }
@@ -254,11 +421,10 @@ const BulkToggleEnabledButton = ({ enabled }: { enabled: boolean }) => {
 
     return (
         <Button
+            size="small"
             label={enabled ? "Enable" : "Disable"}
             onClick={handleClick}
             disabled={isUpdating}
-            startIcon={enabled ? <CheckCircleIcon /> : undefined}
-            sx={{ color: enabled ? 'success.main' : 'error.main' }}
         />
     );
 };
@@ -276,7 +442,7 @@ const StyleSelectMenu = () => {
     const [selectedStyle, setSelectedStyle] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
-    if (loading) return <Loading small />;
+    if (loading) return <Loading />;
     if (!data || selectedIds.length === 0) return null;
 
     const handleChange = async (event) => {
@@ -297,65 +463,66 @@ const StyleSelectMenu = () => {
             await Promise.all(updatePromises);
 
             if (newStyleId === 'remove') {
-                notify(`✅ Removed style from ${selectedIds.length} layer(s)`, { type: 'success' });
+                notify(`Removed style from ${selectedIds.length} layer(s)`, { type: 'success' });
             } else {
                 const styleName = data.find(style => style.id === newStyleId)?.name || newStyleId;
-                notify(`✅ Applied style "${styleName}" to ${selectedIds.length} layer(s)`, { type: 'success' });
+                notify(`Applied style "${styleName}" to ${selectedIds.length} layer(s)`, { type: 'success' });
             }
             refresh();
             unselectAll();
             setSelectedStyle('');
         } catch (error) {
             console.error('Error updating layer styles:', error);
-            notify('❌ Error updating layer style', { type: 'error' });
+            notify('Error updating layer style', { type: 'error' });
         } finally {
             setIsUpdating(false);
         }
     };
 
     return (
-        <Box sx={{ minWidth: 250 }}>
-            <Select
-                size="small"
-                value={selectedStyle}
-                onChange={handleChange}
-                displayEmpty
-                placeholder="Apply Style"
-                disabled={isUpdating}
-                sx={{
-                    height: '36px',
-                    minWidth: 250,
-                    '& .MuiSelect-select': {
-                        display: 'flex',
-                        alignItems: 'center'
-                    }
-                }}
-            >
-                <MenuItem disabled value="">
-                    <em>🎨 Apply Style to {selectedIds.length} selected</em>
-                </MenuItem>
-                <MenuItem value="remove">
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <DeleteIcon sx={{ fontSize: '1rem', mr: 1, color: 'error.main' }} />
-                        <Typography variant="body2" sx={{ flex: 1, color: 'error.main' }}>
-                            Remove Style
-                        </Typography>
-                    </Box>
-                </MenuItem>
-                {data.map(style => {
-                    return (
-                        <MenuItem key={style.id} value={style.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" sx={{ flex: 1 }}>
-                                    🎨 {style.name}
-                                </Typography>
-                                <Box sx={{ width: 60, height: 8, borderRadius: '4px', border: '1px solid #ddd', backgroundImage: createStyleGradient(style.style), backgroundColor: '#e0e0e0', backgroundSize: '100% 100%' }} />
-                            </Box>
-                        </MenuItem>
-                    );
-                })}
-            </Select>
-        </Box>
+        <Select
+            size="small"
+            value={selectedStyle}
+            onChange={handleChange}
+            displayEmpty
+            disabled={isUpdating}
+            sx={{
+                minWidth: 150
+            }}
+        >
+            <MenuItem disabled value="">
+                <em>Apply style</em>
+            </MenuItem>
+            <MenuItem value="remove">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DeleteIcon sx={{ fontSize: '1rem', color: 'error.main' }} />
+                    <Typography variant="body2" sx={{ color: 'error.main' }}>
+                        Remove Style
+                    </Typography>
+                </Box>
+            </MenuItem>
+            {data.map(style => {
+                const gradient = style.style ? createStyleGradient(style.style) : '#e0e0e0';
+                return (
+                    <MenuItem key={style.id} value={style.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: 2 }}>
+                            <Typography variant="body2">
+                                {style.name}
+                            </Typography>
+                            <Box sx={{
+                                width: 60,
+                                height: 8,
+                                borderRadius: '4px',
+                                border: '1px solid #ddd',
+                                backgroundImage: gradient,
+                                backgroundColor: '#e0e0e0',
+                                backgroundSize: '100% 100%'
+                            }} />
+                        </Box>
+                    </MenuItem>
+                );
+            })}
+        </Select>
     );
 };
 
@@ -390,26 +557,44 @@ const BulkActionButtons = () => {
 
 
 const ListActions = ({ setUploadDialogOpen }) => {
-    const { selectedIds } = useListContext();
+    const { selectedIds, filterValues, setFilters } = useListContext();
+    const hasFilters = Object.keys(filterValues).filter(key => key !== 'q').length > 0;
+
+    const handleClearFilters = () => {
+        // Keep the search query (q) but clear all other filters
+        setFilters({ q: filterValues.q || '' }, {});
+    };
 
     return (
-        <TopToolbar sx={{ justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6" component="h2" sx={{ mr: 2 }}>
-                    Layers
-                </Typography>
+        <TopToolbar sx={{ justifyContent: 'space-between', alignItems: 'center', minHeight: 48 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <FilterButton />
+                {hasFilters && (
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleClearFilters}
+                        sx={{ textTransform: 'none' }}
+                    >
+                        Clear Filters
+                    </Button>
+                )}
                 {selectedIds.length > 0 && (
                     <>
-                        <Divider orientation="vertical" flexItem />
-                        <Typography variant="body2" color="text.secondary">
-                            {selectedIds.length} selected
-                        </Typography>
-                        <Divider orientation="vertical" flexItem />
+                        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+                        <Chip
+                            label={`${selectedIds.length} selected`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                        />
                         <BulkEnableButton />
                         <BulkDisableButton />
                         <StyleSelectMenu />
-                        <BulkExportButton />
+                        <BulkExportButton
+                            label="Export"
+                            sx={{ textTransform: 'none' }}
+                        />
                         <BulkDeleteButton
                             mutationMode="pessimistic"
                             confirmColor="error"
@@ -417,26 +602,26 @@ const ListActions = ({ setUploadDialogOpen }) => {
                             confirmTitle="Confirm Bulk Delete"
                             label="Delete"
                             icon={<DeleteIcon />}
+                            sx={{ textTransform: 'none' }}
                         />
                     </>
                 )}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <IconButton
-                    size="small"
-                    onClick={() => window.location.reload()}
-                    title="Refresh"
-                >
-                    <RefreshIcon />
-                </IconButton>
-                <ExportButton />
-                <Button
-                    variant="contained"
                     color="primary"
-                    startIcon={<CloudUploadIcon />}
                     onClick={() => setUploadDialogOpen(true)}
-                    label="UPLOAD"
-                />
+                    sx={{
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        borderRadius: 1,
+                        '&:hover': {
+                            backgroundColor: 'primary.dark',
+                        }
+                    }}
+                >
+                    <CloudUploadIcon />
+                </IconButton>
             </Box>
         </TopToolbar>
     );
@@ -533,24 +718,32 @@ export const LayerList = () => {
                 actions={<ListActions setUploadDialogOpen={setUploadDialogOpen} />}
                 sort={{ field: 'uploaded_at', order: 'DESC' }}
                 empty={false}
-                sx={{ '& .RaList-content': { mt: 2 } }}
                 filters={[
                     <SearchInput source="q" alwaysOn />,
-                    <BooleanInput source="enabled" />,
-                    <BooleanInput source="is_crop_specific" />,
-                    <SelectInput source="crop" choices={cropItems} />,
-                    <SelectInput source="water_model" choices={globalWaterModelsItems} />,
-                    <SelectInput source="climate_model" choices={climateModelsItems} />,
-                    <SelectInput source="scenario" choices={scenariosItems} />,
-                    <SelectInput source="variable" choices={variablesItems} />,
-                    <SelectInput source="year" choices={yearItems} />,
+                    <BooleanInput source="enabled" label="Enabled" />,
+                    <BooleanInput source="is_crop_specific" label="Crop Specific" />,
+                    <SelectInput source="crop" label="Crop" choices={cropItems} />,
+                    <SelectInput source="water_model" label="Water Model" choices={globalWaterModelsItems} />,
+                    <SelectInput source="climate_model" label="Climate Model" choices={climateModelsItems} />,
+                    <SelectInput source="scenario" label="Scenario" choices={scenariosItems} />,
+                    <SelectInput source="variable" label="Variable" choices={variablesItems} />,
+                    <SelectInput source="year" label="Year" choices={yearItems} />,
+                    <StyleFilterInput source="style_id" label="Style" />,
                 ]}
             >
             {/* Layers Table */}
             <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
                 <Datagrid
                     size="small"
-                    rowSelect={true}
+                    rowStyle={(record) => ({
+                        backgroundColor: record.enabled
+                            ? 'inherit'
+                            : 'rgba(0, 0, 0, 0.04)',
+                        opacity: record.enabled ? 1 : 0.6,
+                        borderLeft: record.enabled
+                            ? '6px solid #4caf50'
+                            : '6px solid #f44336',
+                    })}
                     sx={{
                         '& .RaDatagrid-headerCell': {
                             fontWeight: 600,
@@ -560,8 +753,10 @@ export const LayerList = () => {
                             fontSize: '0.8rem'
                         },
                         '& .RaDatagrid-row': {
+                            transition: 'all 0.2s ease',
                             '&:hover': {
-                                backgroundColor: 'action.hover'
+                                backgroundColor: 'action.hover',
+                                opacity: '1 !important'
                             }
                         },
                         '& .RaDatagrid-rowCell': {
@@ -570,77 +765,73 @@ export const LayerList = () => {
                             fontSize: '0.8rem'
                         },
                         '& .RaDatagrid-even': {
-                            backgroundColor: 'grey.50'
+                            backgroundColor: 'transparent'
                         }
                     }}
                 >
                     <FunctionField
-                        label="Status"
-                        render={record => (
-                            <Chip
-                                size="small"
-                                color={record.enabled ? 'success' : 'default'}
-                                label={record.enabled ? 'Enabled' : 'Disabled'}
-                                variant={record.enabled ? 'filled' : 'outlined'}
-                            />
-                        )}
-                    />
-                    <TextField
-                        source="crop"
                         label="Crop"
-                        sx={{ textTransform: 'capitalize' }}
-                    />
-                    <TextField
-                        source="water_model"
-                        label="Water Model"
-                    />
-                    <TextField
-                        source="climate_model"
-                        label="Climate Model"
-                    />
-                    <TextField
-                        source="scenario"
-                        label="Scenario"
-                        sx={{ textTransform: 'uppercase' }}
-                    />
-                    <TextField
-                        source="variable"
-                        label="Variable"
-                        sx={{ textTransform: 'capitalize' }}
-                    />
-                    <TextField
-                        source="year"
-                        label="Year"
-                        align="center"
+                        render={record => (
+                            <FilterableField source="crop" value={record.crop} transform="capitalize" />
+                        )}
                     />
                     <FunctionField
-                        label="Type"
+                        label="Water Model"
                         render={record => (
-                            <Chip
-                                size="small"
-                                color={record.is_crop_specific ? 'primary' : 'secondary'}
-                                label={record.is_crop_specific ? 'Crop Specific' : 'General'}
-                                variant="outlined"
-                            />
+                            <FilterableField source="water_model" value={record.water_model} />
                         )}
+                    />
+                    <FunctionField
+                        label="Climate Model"
+                        render={record => (
+                            <FilterableField source="climate_model" value={record.climate_model} />
+                        )}
+                    />
+                    <FunctionField
+                        label="Scenario"
+                        render={record => (
+                            <FilterableField source="scenario" value={record.scenario} transform="uppercase" />
+                        )}
+                    />
+                    <FunctionField
+                        label="Variable"
+                        render={record => (
+                            <FilterableField source="variable" value={record.variable} transform="capitalize" />
+                        )}
+                    />
+                    <FunctionField
+                        label="Year"
+                        render={record => (
+                            <FilterableField source="year" value={record.year} />
+                        )}
+                    />
+                    <FunctionField
+                        label="Crop Specific"
+                        render={record => <CropSpecificFilterableField record={record} />}
                     />
                     <FunctionField
                         label="Style"
-                        render={() => <StyleDisplay />}
+                        render={record => <StyleFilterableField record={record} />}
                     />
                     <FunctionField
                         label="Actions"
                         textAlign="center"
                         render={record => {
                             // Construct the frontend URL with layer parameters
-                            const params = new URLSearchParams({
-                                crop: record.crop,
-                                water_model: record.water_model,
-                                climate_model: record.climate_model,
-                                scenario: record.scenario,
-                                variable: record.variable,
-                                year: record.year
-                            });
+                            const params = new URLSearchParams();
+                            if (record.crop) params.set('crop', record.crop);
+
+                            if (record.is_crop_specific) {
+                                // For crop-specific layers, use crop_variable parameter
+                                if (record.variable) params.set('crop_variable', record.variable);
+                            } else {
+                                // For climate layers, use all the model parameters
+                                if (record.water_model) params.set('water_model', record.water_model);
+                                if (record.climate_model) params.set('climate_model', record.climate_model);
+                                if (record.scenario) params.set('scenario', record.scenario);
+                                if (record.variable) params.set('variable', record.variable);
+                                if (record.year) params.set('year', record.year.toString());
+                            }
                             const mapUrl = `/?${params.toString()}`;
 
                             return (

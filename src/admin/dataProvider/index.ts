@@ -47,6 +47,21 @@ const handleBinaryUpload = async (resource, params) => {
     return params;
 };
 
+// Helper function to convert string boolean values to actual booleans and handle null markers
+const convertBooleanStrings = (filter: any) => {
+    const converted = { ...filter };
+    Object.keys(converted).forEach(key => {
+        if (converted[key] === 'true') {
+            converted[key] = true;
+        } else if (converted[key] === 'false') {
+            converted[key] = false;
+        } else if (converted[key] === '__null__') {
+            converted[key] = null;
+        }
+    });
+    return converted;
+};
+
 const dataProvider = (
     apiUrl: string,
     httpClient = fetchUtils.fetchJson,
@@ -59,10 +74,13 @@ const dataProvider = (
         const rangeStart = (page - 1) * perPage;
         const rangeEnd = page * perPage - 1;
 
+        // Convert boolean string values to actual booleans
+        const processedFilter = convertBooleanStrings(params.filter);
+
         const query = {
             sort: JSON.stringify([field, order]),
             range: JSON.stringify([rangeStart, rangeEnd]),
-            filter: JSON.stringify(params.filter),
+            filter: JSON.stringify(processedFilter),
         };
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
         const options =
@@ -95,12 +113,7 @@ const dataProvider = (
     },
 
     getOne: (resource, params) => {
-        // For layers resource, use the /details endpoint which includes cache and stats metadata
-        const endpoint = resource === 'layers'
-            ? `${apiUrl}/${resource}/${params.id}/details`
-            : `${apiUrl}/${resource}/${params.id}`;
-
-        return httpClient(endpoint).then(({ json }) => ({
+        return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
             data: json,
         }));
     },
@@ -120,13 +133,16 @@ const dataProvider = (
         const rangeStart = (page - 1) * perPage;
         const rangeEnd = page * perPage - 1;
 
+        // Convert boolean string values to actual booleans
+        const processedFilter = convertBooleanStrings({
+            ...params.filter,
+            [params.target]: params.id,
+        });
+
         const query = {
             sort: JSON.stringify([field, order]),
             range: JSON.stringify([(page - 1) * perPage, page * perPage - 1]),
-            filter: JSON.stringify({
-                ...params.filter,
-                [params.target]: params.id,
-            }),
+            filter: JSON.stringify(processedFilter),
         };
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
         const options =

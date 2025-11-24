@@ -54,6 +54,7 @@ services:
       - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
       - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
       - ../drop4crop-api/bacon.toml:/app/bacon.toml # Mount bacon config
+      - ../crudcrate:/crudcrate
     labels:
       - "traefik.http.routers.drop4crop-api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.drop4crop-api.priority=100"
@@ -163,7 +164,72 @@ services:
       retries: 20
       start_period: 30s
 
+  drop4crop-test-db:
+    image: postgis/postgis:17-3.5
+    container_name: drop4crop-test-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=psql
+      - POSTGRES_DB=drop4crop_test
+    ports:
+      - "5444:5432"
+    volumes:
+      - drop4crop-test-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  drop4crop-test-watcher:
+    build:
+      context: ../drop4crop-api
+      dockerfile: Dockerfile.dev
+    container_name: drop4crop-test-watcher
+    environment:
+      - TEST_DATABASE_URL=postgresql://postgres:psql@drop4crop-test-db:5432/drop4crop_test
+      - DB_USER=postgres
+      - DB_PASSWORD=psql
+      - DB_HOST=drop4crop-test-db
+      - DB_PORT=5432
+      - DB_NAME=drop4crop_test
+      - TILE_CACHE_URI=redis://:defaultpassword@tile-cache:6379/0
+      - TILE_CACHE_TTL=86400
+      - KEYCLOAK_CLIENT_ID=test-client
+      - KEYCLOAK_URL=
+      - KEYCLOAK_REALM=test-realm
+      - S3_BUCKET_ID=drop4crop
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_REGION=us-east-1
+      - S3_ENDPOINT=http://drop4crop-s3:9000
+      - S3_PREFIX=test
+      - ADMIN_ROLE=admin
+      - APP_NAME=drop4crop-test
+      - DEPLOYMENT=test
+      - OVERWRITE_DUPLICATE_LAYERS=true
+      - CROP_VARIABLES=yield,production
+      - TESTS_RUNNING=true
+      - RATE_LIMIT_PER_IP=0
+      - RATE_LIMIT_GLOBAL=0
+    depends_on:
+      drop4crop-test-db:
+        condition: service_healthy
+    volumes:
+      - ../drop4crop-api/src:/app/src
+      - ../drop4crop-api/tests:/app/tests
+      - ../drop4crop-api/migration:/app/migration
+      - drop4crop-test-rust-data:/app/target
+      - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
+      - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
+      - ../drop4crop-api/bacon.toml:/app/bacon.toml
+      - ../crudcrate:/crudcrate
+    entrypoint: []
+    command: ["bacon", "--headless", "test-integration"]
+
 volumes:
   drop4crop-db-data:
   drop4crop-api-rust-data:
   drop4crop-s3-data:
+  drop4crop-test-db-data:
+  drop4crop-test-rust-data:

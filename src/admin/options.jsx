@@ -67,3 +67,8 @@ export const yearItems = [
     { id: 2080, name: '2080' },
     { id: 2090, name: '2090' },
 ];
+
+export const cropTypeItems = [
+    { id: 'true', name: 'Crop Specific' },
+    { id: 'false', name: 'General' },
+];

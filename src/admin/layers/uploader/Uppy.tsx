@@ -1,10 +1,11 @@
 import React, { useRef, useState, useContext } from "react";
 import { useNotify, useRefresh, AuthContext } from "react-admin";
-import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton } from "@mui/material";
+import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton, Tooltip } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import CancelIcon from "@mui/icons-material/Cancel";
+import InfoIcon from "@mui/icons-material/Info";
 
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
@@ -367,13 +368,58 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
 
       {/* Instructions below */}
       <Box sx={{ mt: 2, textAlign: "center" }}>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ lineHeight: 1.3 }}
-        >
-          <strong>Filename format:</strong> {instructionText}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ lineHeight: 1.3 }}
+          >
+            <strong>Filename format:</strong> {instructionText}
+          </Typography>
+          <Tooltip
+            title={
+              <Box sx={{ p: 1 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                  Filename Examples:
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
+                  <strong>Crop-Specific Layers (2 parts):</strong>
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • maize_yield.tif
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • wheat_production.tif
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • rice_mirca_area_irrigated.tif
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 1.5 }}>
+                  • soy_mirca_area_total.tif
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  <strong>General/Climate Layers (6-7 parts):</strong>
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • barley_pcr-globwb_hadgem2-es_rcp26_vwc_2080.tif
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • wheat_lpjml_gfdl-esm4_historical_yield_2020.tif
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • rice_lpjml_gfdl-esm4_historical_yield_perc_2020.tif
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', mt: 1.5, fontStyle: 'italic' }}>
+                  Format: {'{crop}_{variable}.tif'} OR {'{crop}_{water_model}_{climate_model}_{scenario}_{variable}_{year}.tif'}
+                </Typography>
+              </Box>
+            }
+            arrow
+            placement="right"
+          >
+            <InfoIcon sx={{ fontSize: 18, color: 'info.main', cursor: 'help' }} />
+          </Tooltip>
+        </Box>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
           Existing files with the same name will be replaced
         </Typography>

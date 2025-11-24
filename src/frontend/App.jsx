@@ -12,6 +12,7 @@ import {
   climateModelsItems,
   scenariosItems,
   variablesItems,
+  cropVariablesItems,
 } from '../variables';
 
 
@@ -35,6 +36,7 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     setSelectedClimateModel,
     setSelectedScenario,
     setSelectedVariable,
+    setSelectedCropVariable,
     setSelectedTime,
     loadingGroups,
   } = useContext(AppContext);
@@ -52,9 +54,10 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     const climateModel = searchParams.get('climate_model');
     const scenario = searchParams.get('scenario');
     const variable = searchParams.get('variable');
+    const cropVariable = searchParams.get('crop_variable');
     const year = searchParams.get('year');
 
-    if (crop || waterModel || climateModel || scenario || variable || year) {
+    if (crop || waterModel || climateModel || scenario || variable || cropVariable || year) {
       // Look up the full objects from the variables file
       if (crop) {
         const cropObj = cropItems.find(c => c.id === crop);
@@ -62,40 +65,57 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
           setSelectedCrop({ ...cropObj, enabled: true });
         }
       }
-      if (waterModel) {
-        const waterModelObj = globalWaterModelsItems.find(w => w.id === waterModel);
-        if (waterModelObj) {
-          setSelectedGlobalWaterModel({ ...waterModelObj, enabled: true });
+
+      // Handle crop-specific variable
+      if (cropVariable) {
+        const cropVariableObj = cropVariablesItems.find(v => v.id === cropVariable);
+        if (cropVariableObj) {
+          setSelectedCropVariable({ ...cropVariableObj, enabled: true });
         }
-      }
-      if (climateModel) {
-        const climateModelObj = climateModelsItems.find(c => c.id === climateModel);
-        if (climateModelObj) {
-          setSelectedClimateModel({ ...climateModelObj, enabled: true });
+        // Clear climate layer parameters when loading crop-specific layer
+        setSelectedGlobalWaterModel(null);
+        setSelectedClimateModel(null);
+        setSelectedScenario(null);
+        setSelectedVariable(null);
+        setSelectedTime(null);
+      } else {
+        // Only set climate layer parameters if NOT a crop-specific layer
+        // Clear crop-specific variable
+        setSelectedCropVariable(null);
+
+        if (waterModel) {
+          const waterModelObj = globalWaterModelsItems.find(w => w.id === waterModel);
+          if (waterModelObj) {
+            setSelectedGlobalWaterModel({ ...waterModelObj, enabled: true });
+          }
         }
-      }
-      if (scenario) {
-        const scenarioObj = scenariosItems.find(s => s.id === scenario);
-        if (scenarioObj) {
-          setSelectedScenario({ ...scenarioObj, enabled: true });
+        if (climateModel) {
+          const climateModelObj = climateModelsItems.find(c => c.id === climateModel);
+          if (climateModelObj) {
+            setSelectedClimateModel({ ...climateModelObj, enabled: true });
+          }
         }
-      }
-      if (variable) {
-        const variableObj = variablesItems.find(v => v.id === variable);
-        if (variableObj) {
-          setSelectedVariable({ ...variableObj, enabled: true });
+        if (scenario) {
+          const scenarioObj = scenariosItems.find(s => s.id === scenario);
+          if (scenarioObj) {
+            setSelectedScenario({ ...scenarioObj, enabled: true });
+          }
         }
-      }
-      if (year) {
-        setSelectedTime(parseInt(year, 10));
+        if (variable) {
+          const variableObj = variablesItems.find(v => v.id === variable);
+          if (variableObj) {
+            setSelectedVariable({ ...variableObj, enabled: true });
+          }
+        }
+        if (year) {
+          setSelectedTime(parseInt(year, 10));
+        }
       }
 
       // Mark that we've applied URL params
-      if (crop || waterModel || climateModel || scenario || variable || year) {
-        setUrlParamsApplied(true);
-      }
+      setUrlParamsApplied(true);
     }
-  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedTime]);
+  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime]);
 
   return (
       <div style={{

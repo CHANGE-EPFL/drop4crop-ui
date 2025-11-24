@@ -23,6 +23,7 @@ const DownloadPanel = ({ clearLayers }) => {
         selectedClimateModel,
         selectedScenario,
         selectedVariable,
+        selectedCropVariable,
         selectedTime,
     } = useContext(AppContext); // Access state from context
 
@@ -42,11 +43,19 @@ const DownloadPanel = ({ clearLayers }) => {
     const buildShareLink = () => {
         const params = new URLSearchParams();
         if (selectedCrop?.id) params.set('crop', selectedCrop.id);
-        if (selectedGlobalWaterModel?.id) params.set('water_model', selectedGlobalWaterModel.id);
-        if (selectedClimateModel?.id) params.set('climate_model', selectedClimateModel.id);
-        if (selectedScenario?.id) params.set('scenario', selectedScenario.id);
-        if (selectedVariable?.id) params.set('variable', selectedVariable.id);
-        if (selectedTime) params.set('year', selectedTime.toString());
+
+        // Check if this is a crop-specific layer
+        if (selectedCropVariable?.id) {
+            // For crop-specific layers, only include crop and crop_variable
+            params.set('crop_variable', selectedCropVariable.id);
+        } else {
+            // For climate layers, include all model parameters
+            if (selectedGlobalWaterModel?.id) params.set('water_model', selectedGlobalWaterModel.id);
+            if (selectedClimateModel?.id) params.set('climate_model', selectedClimateModel.id);
+            if (selectedScenario?.id) params.set('scenario', selectedScenario.id);
+            if (selectedVariable?.id) params.set('variable', selectedVariable.id);
+            if (selectedTime) params.set('year', selectedTime.toString());
+        }
 
         const baseUrl = window.location.origin;
         return `${baseUrl}/?${params.toString()}`;

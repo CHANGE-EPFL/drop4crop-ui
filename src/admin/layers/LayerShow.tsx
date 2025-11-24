@@ -14,6 +14,7 @@ import {
     Loading,
     useGetOne,
     useRefresh,
+    useGetList,
 } from "react-admin";
 import {
     Typography,
@@ -38,8 +39,15 @@ import {
     Tooltip,
     Switch,
     FormControlLabel,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    IconButton,
+    Menu,
 } from '@mui/material';
 import { createStyleGradient } from '../../utils/styleUtils';
+import { StyleSelector } from './StyleSelector';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ListIcon from '@mui/icons-material/List';
@@ -51,6 +59,9 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import MapIcon from '@mui/icons-material/Map';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ShareIcon from '@mui/icons-material/Share';
+import GrassIcon from '@mui/icons-material/Grass';
+import PaletteIcon from '@mui/icons-material/Palette';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useState, useEffect } from 'react';
 import { useNotify } from 'react-admin';
 import {
@@ -79,9 +90,14 @@ const StyleNameDisplay = ({ styleId }) => {
 
     if (!style) {
         return (
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                No style applied
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Tooltip title="This layer will be styled in grayscale until a style is chosen">
+                    <WarningIcon sx={{ fontSize: 18, color: 'error.main' }} />
+                </Tooltip>
+                <Typography variant="body1" sx={{ fontWeight: 500, color: 'error.main' }}>
+                    No style applied
+                </Typography>
+            </Box>
         );
     }
 
@@ -107,9 +123,10 @@ const ColorBarWithData = ({ styleId }) => {
                     height: '12px',
                     width: '100%',
                     maxWidth: '200px',
-                    backgroundColor: '#e0e0e0',
+                    background: 'linear-gradient(to right, #000000, #404040, #808080, #c0c0c0, #ffffff)',
                     borderRadius: '6px',
-                    border: '1px solid #ddd'
+                    border: '1px solid #ddd',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                 }}
             />
         );
@@ -201,11 +218,18 @@ const LayerShowContent = () => {
     const buildLayerUrl = () => {
         const params = new URLSearchParams();
         if (record.crop) params.set('crop', record.crop);
-        if (record.water_model) params.set('water_model', record.water_model);
-        if (record.climate_model) params.set('climate_model', record.climate_model);
-        if (record.scenario) params.set('scenario', record.scenario);
-        if (record.variable) params.set('variable', record.variable);
-        if (record.year) params.set('year', record.year.toString());
+
+        if (record.is_crop_specific) {
+            // For crop-specific layers, use crop_variable parameter
+            if (record.variable) params.set('crop_variable', record.variable);
+        } else {
+            // For climate layers, use all the model parameters
+            if (record.water_model) params.set('water_model', record.water_model);
+            if (record.climate_model) params.set('climate_model', record.climate_model);
+            if (record.scenario) params.set('scenario', record.scenario);
+            if (record.variable) params.set('variable', record.variable);
+            if (record.year) params.set('year', record.year.toString());
+        }
 
         const baseUrl = window.location.origin;
         return `${baseUrl}/?${params.toString()}`;
@@ -266,12 +290,25 @@ const LayerShowContent = () => {
                             label={record.crop || 'Unknown Crop'}
                             size="medium"
                         />
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                                color={record.enabled ? 'success' : 'default'}
-                                label={record.enabled ? 'Enabled' : 'Disabled'}
-                                variant={record.enabled ? 'filled' : 'outlined'}
-                            />
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: 1,
+                            borderLeft: record.enabled ? '6px solid #4caf50' : '6px solid #f44336',
+                            backgroundColor: record.enabled ? 'rgba(76, 175, 80, 0.08)' : 'rgba(244, 67, 54, 0.08)',
+                        }}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: record.enabled ? '#4caf50' : '#f44336'
+                                }}
+                            >
+                                {record.enabled ? 'Enabled' : 'Disabled'}
+                            </Typography>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -295,11 +332,15 @@ const LayerShowContent = () => {
                                 label=""
                             />
                         </Box>
-                        <Chip
-                            color={record.is_crop_specific ? 'secondary' : 'default'}
-                            label={record.is_crop_specific ? 'Crop Specific' : 'General'}
-                            variant="outlined"
-                        />
+                        {record.is_crop_specific && (
+                            <Chip
+                                icon={<GrassIcon />}
+                                label="Crop-Specific Data Layer"
+                                color="secondary"
+                                variant="outlined"
+                                size="medium"
+                            />
+                        )}
                     </Stack>
                 </Box>
 
@@ -407,62 +448,96 @@ const LayerShowContent = () => {
 
                     <Divider />
 
-                    {/* Model Configuration */}
-                    <Box>
-                        <Typography variant="h6" gutterBottom color="primary">
-                            Model Configuration
-                        </Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Water Model
-                                </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                    {record.water_model}
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Climate Model
-                                </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                    {record.climate_model}
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Scenario
-                                </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                    {record.scenario}
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Variable
-                                </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
-                                    {record.variable}
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    Year
-                                </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                    {record.year}
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    ID
-                                </Typography>
-                                <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                    {record.id}
-                                </Typography>
+                    {/* Model Configuration - Only for non-crop-specific layers */}
+                    {!record.is_crop_specific ? (
+                        <Box>
+                            <Typography variant="h6" gutterBottom color="primary">
+                                Model Configuration
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Water Model
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.water_model}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Climate Model
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.climate_model}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Scenario
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.scenario}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Variable
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
+                                        {record.variable}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Year
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {record.year}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        ID
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                        {record.id}
+                                    </Typography>
+                                </Box>
                             </Box>
                         </Box>
-                    </Box>
+                    ) : (
+                        <Box>
+                            <Typography variant="h6" gutterBottom color="primary">
+                                Crop Data
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Variable
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>
+                                        {record.variable}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Layer Type
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        Crop-Specific Baseline Data
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        ID
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                        {record.id}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    )}
 
                     <Divider />
 
@@ -476,7 +551,14 @@ const LayerShowContent = () => {
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                     Applied Style
                                 </Typography>
-                                <StyleNameDisplay styleId={record.style_id} />
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <StyleNameDisplay styleId={record.style_id} />
+                                    <StyleSelector
+                                        layerId={record.id}
+                                        currentStyleId={record.style_id}
+                                        variant="icon"
+                                    />
+                                </Box>
                             </Box>
                             <Box>
                                 <Typography variant="body2" color="text.secondary">
