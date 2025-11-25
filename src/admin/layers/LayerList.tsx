@@ -4,7 +4,6 @@ import {
     BooleanField,
     BulkDeleteButton,
     Datagrid,
-    BulkExportButton,
     BulkUpdateButton,
     useGetList,
     Loading,
@@ -31,8 +30,11 @@ import {
     ReferenceInput,
     AutocompleteInput,
 } from "react-admin";
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { createStyleGradient } from '../../utils/styleUtils';
+
+// Context to share preloaded styles data across components
+const StylesContext = createContext<{ styles: any[], stylesMap: Map<string, any> }>({ styles: [], stylesMap: new Map() });
 import { FilterList, FilterListItem } from 'react-admin';
 import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/LocalOffer';
@@ -221,13 +223,10 @@ const FilterableField = ({ source, value, transform }) => {
     );
 };
 
-// Style name and color bar component
+// Style name and color bar component - uses context to avoid per-row queries
 const StyleDisplay = () => {
     const record = useRecordContext();
-    const { data: styleData, loading } = useGetList('styles', {
-        filter: { id: record?.style_id },
-        pagination: { page: 1, perPage: 1 }
-    });
+    const { stylesMap } = useContext(StylesContext);
 
     if (!record?.style_id) {
         return (
@@ -252,11 +251,8 @@ const StyleDisplay = () => {
         );
     }
 
-    if (loading) {
-        return <Typography variant="body2">Loading...</Typography>;
-    }
-
-    const style = styleData?.[0];
+    // Look up the style from the preloaded context
+    const style = stylesMap.get(record.style_id);
     const gradient = style?.style ? createStyleGradient(style.style) : null;
 
     return (
@@ -542,7 +538,6 @@ const BulkActionButtons = () => {
             <BulkEnableButton />
             <BulkDisableButton />
             <StyleSelectMenu />
-            <BulkExportButton />
             <BulkDeleteButton
                 mutationMode="pessimistic"
                 confirmColor="error"
@@ -591,10 +586,6 @@ const ListActions = ({ setUploadDialogOpen }) => {
                         <BulkEnableButton />
                         <BulkDisableButton />
                         <StyleSelectMenu />
-                        <BulkExportButton
-                            label="Export"
-                            sx={{ textTransform: 'none' }}
-                        />
                         <BulkDeleteButton
                             mutationMode="pessimistic"
                             confirmColor="error"
@@ -701,15 +692,26 @@ const UploadDialog = ({ open, onClose }) => {
 export const LayerList = () => {
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
+    // Preload all styles once for the entire list - this data is shared via context
+    // and refreshes with the list, ensuring style changes are immediately visible
+    const { data: stylesData, isLoading: stylesLoading } = useGetList('styles', {
+        pagination: { page: 1, perPage: 1000 },
+        sort: { field: 'name', order: 'ASC' }
+    });
+
+    // Create a Map for O(1) lookups by style ID
+    const stylesMap = new Map((stylesData || []).map(style => [style.id, style]));
+    const stylesContextValue = { styles: stylesData || [], stylesMap };
+
     const PostPagination = props => (
         <Pagination
-            rowsPerPageOptions={[10, 25, 50, 100, 250, 500, 1000]}
+            rowsPerPageOptions={[10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]}
             {...props}
         />
     );
 
     return (
-        <>
+        <StylesContext.Provider value={stylesContextValue}>
             <List
                 queryOptions={{ refetchInterval: 5000 }}
                 storeKey={false}
@@ -874,12 +876,12 @@ export const LayerList = () => {
             </Card>
         </List>
 
-        {/* Upload Dialog */}
-        <UploadDialog
-            open={uploadDialogOpen}
-            onClose={() => setUploadDialogOpen(false)}
-        />
-        </>
+            {/* Upload Dialog */}
+            <UploadDialog
+                open={uploadDialogOpen}
+                onClose={() => setUploadDialogOpen(false)}
+            />
+        </StylesContext.Provider>
     );
 };
 
