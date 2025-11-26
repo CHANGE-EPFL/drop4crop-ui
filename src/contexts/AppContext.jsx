@@ -31,13 +31,17 @@ export const AppProvider = ({ children }) => {
     const [cropVariables, setCropVariables] = useState([]);
     const [availableYears, setAvailableYears] = useState([]);
     const [activePanel, setActivePanel] = useState('info');
-    const [selectedCrop, setSelectedCrop] = useState({ id: "maize", name: "Maize", enabled: true });
-    const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState({ id: "cwatm", name: "CWatM", enabled: true });
-    const [selectedClimateModel, setSelectedClimateModel] = useState({ id: "gfdl-esm2m", name: "GFDL-ESM2M", enabled: true });
-    const [selectedScenario, setSelectedScenario] = useState({ id: "rcp26", name: "RCP 2.6", enabled: true });
-    const [selectedVariable, setSelectedVariable] = useState({ id: "etg", name: "Green", abbreviation: "ETg", unit: "mm", enabled: true });
+    // Showcase mode state - starts in showcase mode
+    const [showcaseMode, setShowcaseMode] = useState(true);
+    const [showcaseIndex, setShowcaseIndex] = useState(0);
+    // Initially null - will be set when user exits showcase mode or via URL params
+    const [selectedCrop, setSelectedCrop] = useState(null);
+    const [selectedGlobalWaterModel, setSelectedGlobalWaterModel] = useState(null);
+    const [selectedClimateModel, setSelectedClimateModel] = useState(null);
+    const [selectedScenario, setSelectedScenario] = useState(null);
+    const [selectedVariable, setSelectedVariable] = useState(null);
     const [selectedCropVariable, setSelectedCropVariable] = useState(null);
-    const [selectedTime, setSelectedTime] = useState(2010);
+    const [selectedTime, setSelectedTime] = useState(null);
     const [variableForLegend, setVariableForLegend] = useState(undefined);
     const [countryPolygons, setCountryPolygons] = useState(null);
 
@@ -84,6 +88,10 @@ export const AppProvider = ({ children }) => {
         setAvailableYears,
         activePanel,
         setActivePanel,
+        showcaseMode,
+        setShowcaseMode,
+        showcaseIndex,
+        setShowcaseIndex,
         selectedCrop,
         setSelectedCrop,
         selectedGlobalWaterModel,
@@ -108,6 +116,7 @@ export const AppProvider = ({ children }) => {
         selectedLayer, boundingBox, enableSelection, countryAverages,
         crops, globalWaterModels, climateModels, scenarios,
         variables, cropVariables, availableYears, activePanel,
+        showcaseMode, showcaseIndex,
         selectedCrop, selectedGlobalWaterModel, selectedClimateModel,
         selectedScenario, selectedVariable, selectedCropVariable,
         selectedTime, variableForLegend, countryPolygons

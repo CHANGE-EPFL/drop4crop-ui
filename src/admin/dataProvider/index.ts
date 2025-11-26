@@ -284,6 +284,21 @@ const dataProvider = (
             body: JSON.stringify({ ttl_seconds: ttlSeconds })
         }).then(({ json }) => ({ data: json }));
     },
+    warmLayerCache: async (layerName) => {
+        return httpClient(`${apiUrl}/cache/layers/${layerName}/warm`, {
+            method: 'POST'
+        }).then(({ json }) => ({ data: json }));
+    },
+    persistLayerCache: async (layerName) => {
+        return httpClient(`${apiUrl}/cache/layers/${layerName}/persist`, {
+            method: 'POST'
+        }).then(({ json }) => ({ data: json }));
+    },
+    unpersistLayerCache: async (layerName) => {
+        return httpClient(`${apiUrl}/cache/layers/${layerName}/persist`, {
+            method: 'DELETE'
+        }).then(({ json }) => ({ data: json }));
+    },
 });
 
 

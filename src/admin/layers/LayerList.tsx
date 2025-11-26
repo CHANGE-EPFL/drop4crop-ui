@@ -35,6 +35,7 @@ import { createStyleGradient } from '../../utils/styleUtils';
 
 // Context to share preloaded styles data across components
 const StylesContext = createContext<{ styles: any[], stylesMap: Map<string, any> }>({ styles: [], stylesMap: new Map() });
+
 import { FilterList, FilterListItem } from 'react-admin';
 import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/LocalOffer';
@@ -814,6 +815,22 @@ export const LayerList = () => {
                     <FunctionField
                         label="Style"
                         render={record => <StyleFilterableField record={record} />}
+                    />
+                    <FunctionField
+                        label="Views"
+                        source="total_views"
+                        sortable={true}
+                        textAlign="center"
+                        render={record => (
+                            <Chip
+                                size="small"
+                                icon={<VisibilityIcon sx={{ fontSize: '0.85rem !important' }} />}
+                                label={(record.total_views || 0).toLocaleString()}
+                                color="secondary"
+                                variant="filled"
+                                sx={{ fontSize: '0.75rem', fontWeight: 600, height: '24px' }}
+                            />
+                        )}
                     />
                     <FunctionField
                         label="Actions"

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useCallback, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -38,7 +38,7 @@ const SidePanel = ({ clearLayers }) => {
     selectedGlobalWaterModel, setSelectedGlobalWaterModel,
     selectedClimateModel, setSelectedClimateModel,
     selectedScenario, setSelectedScenario,
-    setSelectedLayer, layerName,
+    layerName,
   } = useContext(AppContext);
 
   const getNextUnselected = () => {
@@ -51,28 +51,8 @@ const SidePanel = ({ clearLayers }) => {
     return null;
   };
 
-  const handleLayerSelect = useCallback((layerProps) => {
-    setSelectedLayer(layerProps);
-  }, [setSelectedLayer]);
-
-  useEffect(() => {
-    const layerProps = {
-      crop: selectedCrop?.id,
-      water_model: selectedGlobalWaterModel?.id,
-      climate_model: selectedClimateModel?.id,
-      scenario: selectedScenario?.id,
-      variable: selectedVariable?.id,
-      crop_variable: selectedCropVariable?.id,
-    };
-    handleLayerSelect(layerProps);
-  }, [
-    selectedCrop,
-    selectedGlobalWaterModel,
-    selectedClimateModel,
-    selectedScenario,
-    selectedVariable,
-    selectedCropVariable,
-  ]);
+  // Note: selectedLayer update logic has been moved to FrontendAppContent
+  // to ensure it runs even when SidePanel is hidden (showcase mode)
 
   const handlePanelClick = (panel) => {
     setActivePanel(activePanel === panel ? null : panel);

@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useContext, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useContext, useState } from 'react';
 import { AppContext, AppProvider } from '../contexts/AppContext';
 import { LayerManagerProvider } from '../contexts/LayerManagerContext';
 import MapView from '../components/Map/MapView';
 import SidePanel from '../components/SidePanel';
 import BottomBar from '../components/BottomBar';
+import ShowcaseOverlay from '../components/ShowcaseOverlay';
 import './App.css';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -31,6 +32,7 @@ const FrontendApp = () => {
 const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
   const {
     selectedLayer,
+    setSelectedLayer,
     setSelectedCrop,
     setSelectedGlobalWaterModel,
     setSelectedClimateModel,
@@ -38,10 +40,40 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     setSelectedVariable,
     setSelectedCropVariable,
     setSelectedTime,
+    selectedCrop,
+    selectedGlobalWaterModel,
+    selectedClimateModel,
+    selectedScenario,
+    selectedVariable,
+    selectedCropVariable,
     loadingGroups,
+    showcaseMode,
+    setShowcaseMode,
   } = useContext(AppContext);
   const [searchParams] = useSearchParams();
   const [urlParamsApplied, setUrlParamsApplied] = useState(false);
+
+  // Update selectedLayer whenever individual selections change
+  // This needs to run even when SidePanel is hidden (showcase mode)
+  useEffect(() => {
+    const layerProps = {
+      crop: selectedCrop?.id,
+      water_model: selectedGlobalWaterModel?.id,
+      climate_model: selectedClimateModel?.id,
+      scenario: selectedScenario?.id,
+      variable: selectedVariable?.id,
+      crop_variable: selectedCropVariable?.id,
+    };
+    setSelectedLayer(layerProps);
+  }, [
+    selectedCrop,
+    selectedGlobalWaterModel,
+    selectedClimateModel,
+    selectedScenario,
+    selectedVariable,
+    selectedCropVariable,
+    setSelectedLayer,
+  ]);
 
   // Load layer from URL parameters after groups are loaded
   useEffect(() => {
@@ -58,6 +90,9 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     const year = searchParams.get('year');
 
     if (crop || waterModel || climateModel || scenario || variable || cropVariable || year) {
+      // Disable showcase mode when URL params are present
+      setShowcaseMode(false);
+
       // Look up the full objects from the variables file
       if (crop) {
         const cropObj = cropItems.find(c => c.id === crop);
@@ -115,7 +150,7 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
       // Mark that we've applied URL params
       setUrlParamsApplied(true);
     }
-  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime]);
+  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime, setShowcaseMode]);
 
   return (
       <div style={{
@@ -124,13 +159,16 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
         flexDirection: 'column',
       }}>
         <div style={{ display: 'flex', flex: 1 }}>
-          <SidePanel
-            clearLayers={() => boundingBoxSelectionRef.current.clearLayers()}
-          />
+          {/* Hide SidePanel in showcase mode */}
+          {!showcaseMode && (
+            <SidePanel
+              clearLayers={() => boundingBoxSelectionRef.current?.clearLayers()}
+            />
+          )}
           <MapView ref={boundingBoxSelectionRef} />
 
-
-          {(
+          {/* Show BottomBar only when not in showcase mode and layer is configured */}
+          {!showcaseMode && (
             selectedLayer.crop
             && selectedLayer.water_model
             && selectedLayer.climate_model
@@ -141,6 +179,9 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
               {/* <CountryPolygonSwitch /> */}
             </>
           ) : null}
+
+          {/* Showcase overlay */}
+          <ShowcaseOverlay />
         </div>
       </div>
   );

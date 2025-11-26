@@ -701,10 +701,45 @@ const LayerShowContent = () => {
                                             TTL Remaining
                                         </Typography>
                                         <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                            {cacheStatus.ttl_hours?.toFixed(1)} hours
+                                            {cacheStatus.ttl_hours != null ? `${cacheStatus.ttl_hours.toFixed(1)} hours` : 'Permanent'}
                                         </Typography>
                                     </Box>
-                                    <Box>
+                                    <Box sx={{ display: 'flex', gap: 1, mt: 2.5 }}>
+                                        {cacheStatus.ttl_hours != null ? (
+                                            <Button
+                                                variant="outlined"
+                                                color="success"
+                                                size="small"
+                                                onClick={async () => {
+                                                    try {
+                                                        await dataProvider.persistLayerCache(record.layer_name);
+                                                        notify('Cache is now permanent (will not expire)', { type: 'success' });
+                                                        refresh();
+                                                    } catch (error) {
+                                                        notify('Failed to make cache permanent', { type: 'error' });
+                                                    }
+                                                }}
+                                            >
+                                                Make Permanent
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                variant="outlined"
+                                                color="warning"
+                                                size="small"
+                                                onClick={async () => {
+                                                    try {
+                                                        await dataProvider.unpersistLayerCache(record.layer_name);
+                                                        notify('Cache will now expire after the default TTL', { type: 'success' });
+                                                        refresh();
+                                                    } catch (error) {
+                                                        notify('Failed to restore expiry', { type: 'error' });
+                                                    }
+                                                }}
+                                            >
+                                                Restore Expiry
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="outlined"
                                             color="error"
@@ -715,13 +750,12 @@ const LayerShowContent = () => {
                                                     try {
                                                         await dataProvider.clearLayerCache(record.layer_name);
                                                         notify('Cache cleared', { type: 'success' });
-                                                        refresh(); // Use React Admin refresh to reload the layer data
+                                                        refresh();
                                                     } catch (error) {
                                                         notify('Failed to clear cache', { type: 'error' });
                                                     }
                                                 }
                                             }}
-                                            sx={{ mt: 2.5 }}
                                         >
                                             Clear Cache
                                         </Button>

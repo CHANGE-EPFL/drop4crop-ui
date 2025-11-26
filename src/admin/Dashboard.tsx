@@ -29,7 +29,8 @@ import {
     Settings as SettingsIcon,
     Storage as StorageIcon,
     Timeline as TimelineIcon,
-    Speed as SpeedIcon
+    Speed as SpeedIcon,
+    Map as MapIcon
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -116,30 +117,21 @@ const StatsCard = ({ title, value, subtitle, icon, color, progress, onClick }) =
 const ActivityChart = ({ statsSummary, loading, redirect, totalLayers, totalEnabledLayers, totalLayersWithoutStyles, cacheInfo }) => {
     // Generate last 7 days data from real statistics
     const generateChartData = () => {
-        if (!statsSummary) return [];
+        if (!statsSummary || !statsSummary.daily_requests) return [];
 
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const data = [];
-        const now = new Date();
 
-        // Create last 7 days array (including today)
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
+        // Use the daily_requests from the API response
+        // Use Math.max(1, requests) because log scale can't handle 0
+        return statsSummary.daily_requests.map((item: { date: string; requests: number }) => {
+            const date = new Date(item.date + 'T00:00:00');
             const dayIndex = date.getDay();
-
-            // For today, use the real total count
-            // For other days, we don't have historical daily data, so show 0
-            const requests = i === 0 ? (statsSummary.total_requests_today || 0) : 0;
-
-            data.push({
+            return {
                 day: days[dayIndex],
-                requests: requests,
-                date: date.toISOString().split('T')[0]
-            });
-        }
-
-        return data;
+                requests: Math.max(1, item.requests),
+                date: item.date
+            };
+        });
     };
 
     const chartData = generateChartData();
@@ -278,10 +270,14 @@ const ActivityChart = ({ statsSummary, loading, redirect, totalLayers, totalEnab
                                     tickLine={false}
                                 />
                                 <YAxis
+                                    scale="log"
+                                    domain={[1, 'auto']}
                                     tick={{ fontSize: 12, fill: '#666' }}
                                     stroke="#ddd"
                                     tickLine={false}
                                     allowDecimals={false}
+                                    allowDataOverflow
+                                    label={{ value: 'log', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#999' }}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -309,53 +305,193 @@ const ActivityChart = ({ statsSummary, loading, redirect, totalLayers, totalEnab
     );
 };
 
-// Recent Layers Component
-const RecentLayersCard = ({ recentLayers, loading, redirect }) => {
+// Most Visited Layers Component
+const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
     const dataProvider = useDataProvider();
-    const [layerStats, setLayerStats] = useState({});
+    const notify = useNotify();
+    const [sortedLayers, setSortedLayers] = useState<any[]>([]);
+    const [layerStats, setLayerStats] = useState<Record<string, any>>({});
+    const [cachedLayerIds, setCachedLayerIds] = useState<Set<string>>(new Set());
+    const [persistedLayerIds, setPersistedLayerIds] = useState<Set<string>>(new Set());
+    const [cacheData, setCacheData] = useState<Record<string, any>>({});
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchStats = async () => {
-            if (!recentLayers || recentLayers.length === 0) return;
+            if (!layers || layers.length === 0) {
+                setStatsLoading(false);
+                return;
+            }
 
             try {
-                const statsPromises = recentLayers.slice(0, 10).map(async (layer) => {
-                    try {
-                        const { data } = await dataProvider.getList('statistics', {
-                            filter: { layer_name: layer.layer_name },
-                            sort: { field: 'last_accessed_at', order: 'DESC' },
-                            pagination: { page: 1, perPage: 1 }
-                        });
-                        return { layerId: layer.id, stats: data[0] };
-                    } catch (error) {
-                        return { layerId: layer.id, stats: null };
+                // Fetch stats and cache keys in parallel
+                const [statsResults, cacheData] = await Promise.all([
+                    // Fetch stats for all layers
+                    Promise.all(layers.map(async (layer: any) => {
+                        try {
+                            const { data } = await dataProvider.getList('statistics', {
+                                filter: { layer_name: layer.layer_name },
+                                sort: { field: 'total_requests', order: 'DESC' },
+                                pagination: { page: 1, perPage: 100 }
+                            });
+                            // Sum up total requests across all stat records for this layer
+                            const totalRequests = data.reduce((sum: number, stat: any) => sum + (stat.total_requests || 0), 0);
+                            return { layer, totalRequests, stats: data[0] };
+                        } catch (error) {
+                            return { layer, totalRequests: 0, stats: null };
+                        }
+                    })),
+                    // Fetch cache keys
+                    dataProvider.getCacheKeys().catch(() => ({ data: [] }))
+                ]);
+
+                // Build set of cached layer IDs and persisted layer IDs
+                const cachedIds = new Set<string>();
+                const persistedIds = new Set<string>();
+                const cacheMap: Record<string, any> = {};
+                (cacheData.data || []).forEach((cached: any) => {
+                    if (cached.layer_id) {
+                        cachedIds.add(cached.layer_id);
+                        cacheMap[cached.layer_id] = cached;
+                        // If ttl_seconds is null/undefined, it's persisted (no expiry)
+                        if (cached.ttl_seconds === null || cached.ttl_seconds === undefined) {
+                            persistedIds.add(cached.layer_id);
+                        }
                     }
                 });
+                setCachedLayerIds(cachedIds);
+                setPersistedLayerIds(persistedIds);
+                setCacheData(cacheMap);
 
-                const results = await Promise.all(statsPromises);
-                const statsMap = {};
-                results.forEach(({ layerId, stats }) => {
-                    statsMap[layerId] = stats;
+                // Sort by total requests descending
+                statsResults.sort((a, b) => b.totalRequests - a.totalRequests);
+
+                // Build stats map and sorted layers
+                const statsMap: Record<string, any> = {};
+                const sorted: any[] = [];
+                statsResults.forEach(({ layer, totalRequests, stats }) => {
+                    statsMap[layer.id] = { ...stats, total_requests: totalRequests };
+                    sorted.push(layer);
                 });
+
                 setLayerStats(statsMap);
+                setSortedLayers(sorted);
             } catch (error) {
                 console.error('Error fetching layer stats:', error);
+                setSortedLayers(layers);
+            } finally {
+                setStatsLoading(false);
             }
         };
 
         fetchStats();
-    }, [recentLayers, dataProvider]);
+    }, [layers, dataProvider]);
 
-    const handleLayerClick = (layerId) => {
+    const handleLayerClick = (layerId: string) => {
         redirect(`/layers/${layerId}/show`);
     };
 
-    if (loading) {
+    const handleWarmCache = async (e: React.MouseEvent, layer: any) => {
+        e.stopPropagation();
+        setActionLoading(layer.id);
+        try {
+            await dataProvider.warmLayerCache(layer.layer_name);
+            notify('Layer cached successfully', { type: 'success', autoHideDuration: 3000 });
+            // Refresh cache data
+            const cacheResult = await dataProvider.getCacheKeys();
+            const cachedIds = new Set<string>();
+            const persistedIds = new Set<string>();
+            const cacheMap: Record<string, any> = {};
+            (cacheResult.data || []).forEach((cached: any) => {
+                if (cached.layer_id) {
+                    cachedIds.add(cached.layer_id);
+                    cacheMap[cached.layer_id] = cached;
+                    if (cached.ttl_seconds === null || cached.ttl_seconds === undefined) {
+                        persistedIds.add(cached.layer_id);
+                    }
+                }
+            });
+            setCachedLayerIds(cachedIds);
+            setPersistedLayerIds(persistedIds);
+            setCacheData(cacheMap);
+        } catch (error) {
+            notify('Failed to cache layer', { type: 'error', autoHideDuration: 3000 });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handlePersistCache = async (e: React.MouseEvent, layer: any) => {
+        e.stopPropagation();
+        setActionLoading(layer.id);
+        try {
+            const result = await dataProvider.persistLayerCache(layer.layer_name);
+            if (result.data.persisted) {
+                notify('Cache is now permanent (will not expire)', { type: 'success', autoHideDuration: 3000 });
+                // Refresh cache data to update UI
+                const cacheResult = await dataProvider.getCacheKeys();
+                const cachedIds = new Set<string>();
+                const persistedIds = new Set<string>();
+                const cacheMap: Record<string, any> = {};
+                (cacheResult.data || []).forEach((cached: any) => {
+                    if (cached.layer_id) {
+                        cachedIds.add(cached.layer_id);
+                        cacheMap[cached.layer_id] = cached;
+                        if (cached.ttl_seconds === null || cached.ttl_seconds === undefined) {
+                            persistedIds.add(cached.layer_id);
+                        }
+                    }
+                });
+                setCachedLayerIds(cachedIds);
+                setPersistedLayerIds(persistedIds);
+                setCacheData(cacheMap);
+            } else {
+                notify(result.data.message, { type: 'warning', autoHideDuration: 3000 });
+            }
+        } catch (error) {
+            notify('Failed to make cache permanent', { type: 'error', autoHideDuration: 3000 });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleUnpersistCache = async (e: React.MouseEvent, layer: any) => {
+        e.stopPropagation();
+        setActionLoading(layer.id);
+        try {
+            const result = await dataProvider.unpersistLayerCache(layer.layer_name);
+            notify(`Cache will expire in ${(result.data.ttl_seconds / 3600).toFixed(1)} hours`, { type: 'success', autoHideDuration: 3000 });
+            // Refresh cache data to get updated TTL
+            const cacheResult = await dataProvider.getCacheKeys();
+            const cachedIds = new Set<string>();
+            const persistedIds = new Set<string>();
+            const cacheMap: Record<string, any> = {};
+            (cacheResult.data || []).forEach((cached: any) => {
+                if (cached.layer_id) {
+                    cachedIds.add(cached.layer_id);
+                    cacheMap[cached.layer_id] = cached;
+                    if (cached.ttl_seconds === null || cached.ttl_seconds === undefined) {
+                        persistedIds.add(cached.layer_id);
+                    }
+                }
+            });
+            setCachedLayerIds(cachedIds);
+            setPersistedLayerIds(persistedIds);
+            setCacheData(cacheMap);
+        } catch (error) {
+            notify('Failed to restore cache expiry', { type: 'error', autoHideDuration: 3000 });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    if (loading || statsLoading) {
         return (
             <Card sx={{ height: '100%' }}>
                 <CardContent>
                     <Typography variant="h6" gutterBottom>
-                        Recent Layers
+                        Most Visited Layers
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                         <CircularProgress />
@@ -365,17 +501,19 @@ const RecentLayersCard = ({ recentLayers, loading, redirect }) => {
         );
     }
 
+    const displayLayers = sortedLayers.length > 0 ? sortedLayers : layers;
+
     return (
         <Card sx={{ height: '100%' }}>
             <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <UploadIcon sx={{ mr: 1, color: 'primary.main' }} />
+                        <TrendingUpIcon sx={{ mr: 1, color: 'primary.main' }} />
                         <Typography variant="h6">
-                            Recent Layers
+                            Most Visited Layers
                         </Typography>
                     </Box>
-                    {recentLayers && recentLayers.length > 0 && (
+                    {displayLayers && displayLayers.length > 0 && (
                         <Button
                             variant="outlined"
                             size="small"
@@ -385,92 +523,133 @@ const RecentLayersCard = ({ recentLayers, loading, redirect }) => {
                         </Button>
                     )}
                 </Box>
-                {recentLayers && recentLayers.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        {recentLayers.slice(0, 10).map((layer) => (
-                            <Box
-                                key={layer.id}
-                                onClick={() => handleLayerClick(layer.id)}
-                                sx={{
-                                    p: 1.5,
-                                    py: 1,
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    borderRadius: 2,
-                                    backgroundColor: 'background.paper',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease-in-out',
-                                    minHeight: 'auto',
-                                    '&:hover': {
-                                        backgroundColor: 'action.hover',
-                                        borderColor: 'primary.main',
-                                        boxShadow: 1
-                                    }
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Box sx={{ flex: 1, mr: 3 }}>
-                                        <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.25, color: 'primary.main', fontSize: '0.95rem' }}>
-                                            {layer.layer_name || layer.filename}
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', mb: 0.25 }}>
-                                            <Chip
-                                                size="small"
-                                                label={layer.crop}
-                                                color="primary"
-                                                variant="outlined"
-                                                sx={{ fontSize: '0.7rem', height: '20px' }}
-                                            />
-                                            <Chip
-                                                size="small"
-                                                label={layer.variable}
-                                                color="secondary"
-                                                variant="outlined"
-                                                sx={{ fontSize: '0.7rem', height: '20px' }}
-                                            />
-                                            <Chip
-                                                size="small"
-                                                label={layer.year?.toString()}
-                                                variant="outlined"
-                                                sx={{ fontSize: '0.7rem', height: '20px' }}
-                                            />
-                                            <Chip
-                                                size="small"
-                                                label={layer.scenario}
-                                                color="info"
-                                                variant="outlined"
-                                                sx={{ fontSize: '0.7rem', height: '20px' }}
-                                            />
-                                            <Typography variant="caption" color="textSecondary" sx={{ ml: 1, fontSize: '0.7rem' }}>
-                                                {layer.water_model} • {layer.climate_model}
+                {displayLayers && displayLayers.length > 0 ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        {displayLayers.slice(0, 10).map((layer: any) => {
+                            // Build map URL
+                            const params = new URLSearchParams();
+                            if (layer.crop) params.set('crop', layer.crop);
+                            if (layer.water_model) params.set('water_model', layer.water_model);
+                            if (layer.climate_model) params.set('climate_model', layer.climate_model);
+                            if (layer.scenario) params.set('scenario', layer.scenario);
+                            if (layer.variable) params.set('variable', layer.variable);
+                            if (layer.year) params.set('year', layer.year.toString());
+                            const mapUrl = `/?${params.toString()}`;
+
+                            return (
+                                <Box
+                                    key={layer.id}
+                                    onClick={() => handleLayerClick(layer.id)}
+                                    sx={{
+                                        px: 1.5,
+                                        py: 0.75,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                        backgroundColor: 'background.paper',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease-in-out',
+                                        '&:hover': {
+                                            backgroundColor: 'action.hover',
+                                            borderColor: 'primary.main'
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        {/* Left side: Name and metadata chips */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    color: 'primary.main',
+                                                    fontSize: '0.85rem',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    maxWidth: '280px'
+                                                }}
+                                            >
+                                                {layer.layer_name || layer.filename}
                                             </Typography>
+                                            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexShrink: 0 }}>
+                                                {layer.crop && (
+                                                    <Chip size="small" label={layer.crop} color="primary" variant="outlined" sx={{ fontSize: '0.65rem', height: '18px' }} />
+                                                )}
+                                                {layer.variable && (
+                                                    <Chip size="small" label={layer.variable} color="secondary" variant="outlined" sx={{ fontSize: '0.65rem', height: '18px' }} />
+                                                )}
+                                                {layer.year && (
+                                                    <Chip size="small" label={layer.year.toString()} variant="outlined" sx={{ fontSize: '0.65rem', height: '18px' }} />
+                                                )}
+                                                {layer.scenario && (
+                                                    <Chip size="small" label={layer.scenario} color="info" variant="outlined" sx={{ fontSize: '0.65rem', height: '18px' }} />
+                                                )}
+                                            </Box>
+                                        </Box>
+                                        {/* Right side: Stats, cache, status, and map button */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+                                            {/* View count */}
+                                            <Chip
+                                                size="small"
+                                                icon={<VisibilityIcon sx={{ fontSize: '0.8rem !important' }} />}
+                                                label={layerStats[layer.id]?.total_requests?.toLocaleString() || '0'}
+                                                color="secondary"
+                                                variant="filled"
+                                                sx={{ fontSize: '0.7rem', fontWeight: 600, height: '22px', minWidth: '65px' }}
+                                            />
+                                            {/* Cache status */}
+                                            {cachedLayerIds.has(layer.id) ? (
+                                                <Chip
+                                                    size="small"
+                                                    icon={<StorageIcon sx={{ fontSize: '0.8rem !important' }} />}
+                                                    label={persistedLayerIds.has(layer.id) ? 'Pinned' : `${cacheData[layer.id]?.ttl_hours?.toFixed(1) || '?'}h`}
+                                                    color={persistedLayerIds.has(layer.id) ? 'success' : 'info'}
+                                                    variant="filled"
+                                                    onClick={(e) => persistedLayerIds.has(layer.id) ? handleUnpersistCache(e, layer) : handlePersistCache(e, layer)}
+                                                    disabled={actionLoading === layer.id}
+                                                    sx={{ fontSize: '0.65rem', height: '22px', minWidth: '65px', cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+                                                />
+                                            ) : (
+                                                <Chip
+                                                    size="small"
+                                                    icon={actionLoading === layer.id ? <CircularProgress size={10} color="inherit" /> : <StorageIcon sx={{ fontSize: '0.8rem !important' }} />}
+                                                    label="Cache"
+                                                    color="default"
+                                                    variant="outlined"
+                                                    onClick={(e) => handleWarmCache(e, layer)}
+                                                    disabled={actionLoading === layer.id}
+                                                    sx={{ fontSize: '0.65rem', height: '22px', minWidth: '65px', cursor: 'pointer', '&:hover': { backgroundColor: 'action.hover' } }}
+                                                />
+                                            )}
+                                            {/* Enabled status */}
+                                            <Chip
+                                                size="small"
+                                                color={layer.enabled ? 'success' : 'default'}
+                                                label={layer.enabled ? 'Enabled' : 'Disabled'}
+                                                variant={layer.enabled ? 'filled' : 'outlined'}
+                                                sx={{ fontSize: '0.65rem', height: '22px', minWidth: '60px' }}
+                                            />
+                                            {/* Map button */}
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (layer.enabled) {
+                                                        window.open(mapUrl, '_blank');
+                                                    }
+                                                }}
+                                                disabled={!layer.enabled}
+                                                sx={{ p: 0.5, color: layer.enabled ? 'primary.main' : 'action.disabled' }}
+                                            >
+                                                <MapIcon sx={{ fontSize: '1.1rem' }} />
+                                            </IconButton>
                                         </Box>
                                     </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        {layerStats[layer.id] && (
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', mr: 1 }}>
-                                                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-                                                    {layerStats[layer.id].total_requests?.toLocaleString()} hits
-                                                </Typography>
-                                                <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.65rem' }}>
-                                                    {layerStats[layer.id].last_accessed_at
-                                                        ? new Date(layerStats[layer.id].last_accessed_at).toLocaleString()
-                                                        : 'Never accessed'}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                        <Chip
-                                            size="small"
-                                            color={layer.enabled ? 'success' : 'default'}
-                                            label={layer.enabled ? 'Enabled' : 'Disabled'}
-                                            variant={layer.enabled ? 'filled' : 'outlined'}
-                                            sx={{ fontSize: '0.7rem', height: '20px' }}
-                                        />
-                                    </Box>
                                 </Box>
-                            </Box>
-                        ))}
-                        {recentLayers.length > 10 && (
+                            );
+                        })}
+                        {displayLayers.length > 10 && (
                             <Box sx={{ textAlign: 'center', mt: 2 }}>
                                 <Button
                                     variant="text"
@@ -478,14 +657,14 @@ const RecentLayersCard = ({ recentLayers, loading, redirect }) => {
                                     onClick={() => redirect('/layers')}
                                     sx={{ textTransform: 'none' }}
                                 >
-                                    View all {recentLayers.length} layers →
+                                    View all {displayLayers.length} layers →
                                 </Button>
                             </Box>
                         )}
                     </Box>
                 ) : (
                     <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
-                        No recent layers found
+                        No layer statistics found
                     </Typography>
                 )}
             </CardContent>
@@ -677,10 +856,10 @@ const Dashboard = () => {
                 />
             </Box>
 
-            {/* Recent Layers - Full Width Row */}
+            {/* Most Visited Layers - Full Width Row */}
             <Box>
-                <RecentLayersCard
-                    recentLayers={layers}
+                <MostVisitedLayersCard
+                    layers={layers}
                     loading={layersPending}
                     redirect={redirect}
                 />
