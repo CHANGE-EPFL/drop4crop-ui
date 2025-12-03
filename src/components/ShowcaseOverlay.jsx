@@ -225,7 +225,10 @@ const ShowcaseOverlay = () => {
 
   // Exit showcase mode
   const handleStartBrowsing = useCallback(() => {
-    // Clear all selections and layer when starting to browse
+    // Clear the map layer first, before clearing selections
+    setLayerName(null);
+
+    // Then clear all selections
     setSelectedCrop(null);
     setSelectedVariable(null);
     setSelectedGlobalWaterModel(null);
@@ -233,9 +236,9 @@ const ShowcaseOverlay = () => {
     setSelectedScenario(null);
     setSelectedTime(null);
     setSelectedCropVariable(null);
-    setLayerName(null); // Clear the map layer immediately
+
     setShowcaseMode(false);
-    setActivePanel('info'); // Open the info panel after exiting showcase mode
+    setActivePanel('info');
   }, [setShowcaseMode, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable, setLayerName, setActivePanel]);
 
   if (!showcaseMode) return null;

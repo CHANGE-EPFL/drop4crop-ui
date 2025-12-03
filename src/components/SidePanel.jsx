@@ -49,6 +49,7 @@ const SidePanel = ({ clearLayers }) => {
     selectedClimateModel, setSelectedClimateModel,
     selectedScenario, setSelectedScenario,
     layerName,
+    setLayerName,
   } = useContext(AppContext);
 
   const getNextUnselected = () => {
@@ -278,6 +279,7 @@ const SidePanel = ({ clearLayers }) => {
           setActivePanel={setActivePanel}
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
+          setLayerName={setLayerName}
         />
       )}
 
@@ -291,6 +293,7 @@ const SidePanel = ({ clearLayers }) => {
           setSelectedClimateModel={setSelectedClimateModel}
           setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
           setSelectedScenario={setSelectedScenario}
+          setLayerName={setLayerName}
         />
       )}
 

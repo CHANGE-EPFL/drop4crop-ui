@@ -101,6 +101,10 @@ export const LayerManagerProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        // Track whether this effect instance is still current
+        // This prevents stale API responses from updating state
+        let isCancelled = false;
+
         const fetchLayerData = async () => {
             setloadingLayer(true);
 
@@ -135,6 +139,11 @@ export const LayerManagerProvider = ({ children }) => {
                 year: selectedTime
             });
 
+            // Check if this effect was cancelled while we were waiting for the API
+            if (isCancelled) {
+                return;
+            }
+
             if (response === null) {
                 setLayerName(null);
                 setCountryAverageValues(null);
@@ -165,6 +174,11 @@ export const LayerManagerProvider = ({ children }) => {
         };
 
         fetchLayerData();
+
+        // Cleanup function - marks this effect instance as cancelled
+        return () => {
+            isCancelled = true;
+        };
     }, [
         selectedLayer.crop,
         selectedLayer.water_model,

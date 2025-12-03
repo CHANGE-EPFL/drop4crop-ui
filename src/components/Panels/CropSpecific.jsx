@@ -12,6 +12,7 @@ const CropSpecificPanel = ({
     setSelectedClimateModel,
     setSelectedGlobalWaterModel,
     setSelectedScenario,
+    setLayerName,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -21,6 +22,10 @@ const CropSpecificPanel = ({
         if (selectedCropVariable && selectedCropVariable.id === cropVariable.id) {
             setSelectedCropVariable(undefined);  // Deselect if the same variable is clicked
         } else {
+            // Clear the layer immediately when switching to crop-specific
+            // This prevents the old layer from persisting during the transition
+            setLayerName(null);
+
             // Deselect the other variables as they don't apply to the crop-specific variables
             setSelectedClimateModel(undefined);
             setSelectedGlobalWaterModel(undefined);

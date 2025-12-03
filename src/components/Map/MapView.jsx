@@ -47,7 +47,7 @@ const MapView = forwardRef((props, ref) => {
     labelDisplayMode,
     labelCount,
     selectedVariable,
-    loading,
+    loadingLayer,
   } = useContext(AppContext);
 
   // Ref for container measurements
@@ -106,7 +106,7 @@ const MapView = forwardRef((props, ref) => {
           resetView={resetView}
           onResetDone={() => setResetView(false)}
         />
-        <MapOverlay layerName={layerName} loading={loading} />
+        <MapOverlay layerName={layerName} loading={loadingLayer} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
           attribution="© Data and content by: F. Bassani, Q. Sun, S. Bonetti | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors | &copy; <a href='https://carto.com/attributions'>CARTO</a>"
@@ -114,22 +114,12 @@ const MapView = forwardRef((props, ref) => {
           maxZoom={20}
           noWrap={true}
         />
-        {layerName && !loading && (
+        {layerName && !loadingLayer && (
           <TileLayer
-            key={layerName} // Force remount when layer changes to clear old tiles
+            key={layerName}
             url={`/api/layers/xyz/{z}/{x}/{y}?layer=${layerName}`}
             maxZoom={20}
             noWrap={true}
-            eventHandlers={{
-              tileerror: (error, tile) => {
-                console.error('Tile loading error:', {
-                  error,
-                  tile: tile.src,
-                  layerName,
-                  timestamp: new Date().toISOString()
-                });
-              }
-            }}
           />
         )}
         {countryAverages && (

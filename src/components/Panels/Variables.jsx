@@ -27,6 +27,7 @@ const VariablePanel = ({
     setActivePanel,
     selectedCropVariable,
     setSelectedCropVariable,
+    setLayerName,
 }) => {
     const [showCropSpecific, setShowCropSpecific] = useState(false);
 
@@ -38,7 +39,10 @@ const VariablePanel = ({
         if (selectedVariable && selectedVariable.id === variable.id) {
             setSelectedVariable(undefined);  // Deselect if the same variable is clicked
         } else {
+            // Clear the layer immediately when switching from crop-specific to time-based variable
+            // This prevents the old layer from persisting during the transition
             if (selectedCropVariable) {
+                setLayerName(null);  // Clear map layer immediately
                 setSelectedCropVariable(undefined);  // Deselect the Crop variable, as we cannot have both at the same time
             }
             setSelectedVariable(variable);  // Select the variable
