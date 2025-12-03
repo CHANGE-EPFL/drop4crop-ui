@@ -37,7 +37,7 @@ import { createStyleGradient } from '../../utils/styleUtils';
 const StylesContext = createContext<{ styles: any[], stylesMap: Map<string, any> }>({ styles: [], stylesMap: new Map() });
 
 import { FilterList, FilterListItem } from 'react-admin';
-import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Button as MuiButton } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/LocalOffer';
 import {
     globalWaterModelsItems,
@@ -667,7 +667,7 @@ const BulkActionButtons = () => {
 };
 
 
-// Bulk recalculate stats button - works on selected layers
+// Bulk recalculate stats button - works on selected layers (single request)
 const BulkRecalculateStatsButton = () => {
     const dataProvider = useDataProvider();
     const notify = useNotify();
@@ -680,26 +680,18 @@ const BulkRecalculateStatsButton = () => {
         if (selectedIds.length === 0) return;
 
         setIsRecalculating(true);
-        let successCount = 0;
-        let errorCount = 0;
 
         try {
-            // Process each selected layer
-            for (const layerId of selectedIds) {
-                try {
-                    await dataProvider.recalculateLayerStats(layerId);
-                    successCount++;
-                } catch (error) {
-                    errorCount++;
-                }
-            }
+            // Single request with all IDs
+            const result = await dataProvider.recalculateStatsByIds(selectedIds);
+            const { success_count, error_count } = result.data;
 
-            if (successCount > 0) {
-                notify(`Recalculated stats for ${successCount} layer(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`, {
-                    type: errorCount > 0 ? 'warning' : 'success'
+            if (success_count > 0) {
+                notify(`Recalculated stats for ${success_count} layer(s)${error_count > 0 ? `, ${error_count} failed` : ''}`, {
+                    type: error_count > 0 ? 'warning' : 'success'
                 });
             } else {
-                notify(`Failed to recalculate stats for all ${errorCount} layer(s)`, { type: 'error' });
+                notify(`Failed to recalculate stats for all ${error_count} layer(s)`, { type: 'error' });
             }
             refresh();
             unselectAll();
@@ -719,6 +711,90 @@ const BulkRecalculateStatsButton = () => {
             onClick={handleRecalculate}
             disabled={isRecalculating}
         />
+    );
+};
+
+// Recalculate ALL layers button with confirmation dialog
+const RecalculateAllButton = () => {
+    const dataProvider = useDataProvider();
+    const notify = useNotify();
+    const refresh = useRefresh();
+    const [isRecalculating, setIsRecalculating] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [progress, setProgress] = useState<{ current: number; total: number; errors: number } | null>(null);
+
+    const handleRecalculateAll = async () => {
+        setConfirmOpen(false);
+        setIsRecalculating(true);
+        setProgress({ current: 0, total: 0, errors: 0 });
+
+        try {
+            // Call the endpoint without limit to process all layers
+            const result = await dataProvider.recalculateAllLayerStats({});
+            const { success_count, error_count, errors } = result.data;
+
+            setProgress({ current: success_count + error_count, total: success_count + error_count, errors: error_count });
+
+            if (success_count > 0) {
+                notify(`Recalculated stats for ${success_count} layer(s)${error_count > 0 ? `, ${error_count} failed` : ''}`, {
+                    type: error_count > 0 ? 'warning' : 'success',
+                    autoHideDuration: 10000
+                });
+                if (error_count > 0 && errors?.length > 0) {
+                    console.error('Recalculation errors:', errors);
+                }
+            } else if (error_count > 0) {
+                notify(`Failed to recalculate stats for all ${error_count} layer(s)`, { type: 'error' });
+            } else {
+                notify('No layers to recalculate', { type: 'info' });
+            }
+            refresh();
+        } catch (error: any) {
+            notify(`Failed to recalculate statistics: ${error.message || error}`, { type: 'error' });
+        } finally {
+            setIsRecalculating(false);
+            // Keep progress visible for a moment then clear
+            setTimeout(() => setProgress(null), 3000);
+        }
+    };
+
+    return (
+        <>
+            <Button
+                size="small"
+                label={isRecalculating ? 'Recalculating All...' : 'Recalc All'}
+                onClick={() => setConfirmOpen(true)}
+                disabled={isRecalculating}
+                color="warning"
+            />
+            {progress && (
+                <Chip
+                    size="small"
+                    label={`${progress.current}/${progress.total}${progress.errors > 0 ? ` (${progress.errors} errors)` : ''}`}
+                    color={progress.errors > 0 ? 'error' : 'success'}
+                    variant="outlined"
+                    sx={{ ml: 1 }}
+                />
+            )}
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+                <DialogTitle>Recalculate All Layer Statistics?</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        This will recalculate min/max/average statistics for <strong>all layers</strong> in the database.
+                        This operation fetches each layer from S3 and may take several minutes depending on the number of layers.
+                    </Typography>
+                    <Typography sx={{ mt: 2, color: 'warning.main' }}>
+                        Files are fetched directly from S3 (bypassing cache) to avoid filling up Redis.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <MuiButton onClick={() => setConfirmOpen(false)}>Cancel</MuiButton>
+                    <MuiButton onClick={handleRecalculateAll} color="warning" variant="contained">
+                        Recalculate All
+                    </MuiButton>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };
 
@@ -771,6 +847,7 @@ const ListActions = ({ setUploadDialogOpen }) => {
                 )}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <RecalculateAllButton />
                 <IconButton
                     color="primary"
                     onClick={() => setUploadDialogOpen(true)}
@@ -903,6 +980,12 @@ export const LayerList = () => {
                     <SelectInput source="variable" label="Variable" choices={variablesItems} />,
                     <SelectInput source="year" label="Year" choices={yearItems} />,
                     <StyleFilterInput source="style_id" label="Style" />,
+                    <SelectInput source="stats_status_value" label="Stats Status" choices={[
+                        { id: 'success', name: 'Success' },
+                        { id: 'error', name: 'Error' },
+                        { id: 'pending', name: 'Pending' },
+                        { id: '__null__', name: 'Not Calculated' },
+                    ]} />,
                 ]}
             >
             {/* Layers Table */}

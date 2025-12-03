@@ -320,6 +320,13 @@ const dataProvider = (
             method: 'POST'
         }).then(({ json }) => ({ data: json }));
     },
+    // Bulk recalculate stats by specific IDs (single request)
+    recalculateStatsByIds: async (ids: string[]) => {
+        return httpClient(`${apiUrl}/layers/recalculate-stats-by-ids`, {
+            method: 'POST',
+            body: JSON.stringify({ ids })
+        }).then(({ json }) => ({ data: json }));
+    },
 });
 
 
