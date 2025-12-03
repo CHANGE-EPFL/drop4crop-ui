@@ -299,6 +299,27 @@ const dataProvider = (
             method: 'DELETE'
         }).then(({ json }) => ({ data: json }));
     },
+    // Layer statistics recalculation endpoints
+    recalculateLayerStats: async (layerId) => {
+        return httpClient(`${apiUrl}/layers/${layerId}/recalculate-stats`, {
+            method: 'POST'
+        }).then(({ json }) => ({ data: json }));
+    },
+    recalculateAllLayerStats: async (params?: {
+        crop?: string,
+        variable?: string,
+        water_model?: string,
+        climate_model?: string,
+        scenario?: string,
+        year?: number,
+        only_null_stats?: boolean,
+        limit?: number
+    }) => {
+        const query = params ? stringify(params) : '';
+        return httpClient(`${apiUrl}/layers/recalculate-stats${query ? '?' + query : ''}`, {
+            method: 'POST'
+        }).then(({ json }) => ({ data: json }));
+    },
 });
 
 

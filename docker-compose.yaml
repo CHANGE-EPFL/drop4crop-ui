@@ -54,7 +54,6 @@ services:
       - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
       - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
       - ../drop4crop-api/bacon.toml:/app/bacon.toml # Mount bacon config
-      - ../crudcrate:/crudcrate
     labels:
       - "traefik.http.routers.drop4crop-api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.drop4crop-api.priority=100"
@@ -223,7 +222,6 @@ services:
       - ../drop4crop-api/Cargo.toml:/app/Cargo.toml
       - ../drop4crop-api/Cargo.lock:/app/Cargo.lock
       - ../drop4crop-api/bacon.toml:/app/bacon.toml
-      - ../crudcrate:/crudcrate
     entrypoint: []
     command: ["bacon", "--headless", "test-integration"]
 

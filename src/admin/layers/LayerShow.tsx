@@ -62,6 +62,8 @@ import ShareIcon from '@mui/icons-material/Share';
 import GrassIcon from '@mui/icons-material/Grass';
 import PaletteIcon from '@mui/icons-material/Palette';
 import WarningIcon from '@mui/icons-material/Warning';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import CalculateIcon from '@mui/icons-material/Calculate';
 import { useState, useEffect } from 'react';
 import { useNotify } from 'react-admin';
 import {
@@ -79,6 +81,109 @@ import {
     Pie,
     Cell,
 } from 'recharts';
+
+// Format file size in human readable format
+const formatFileSize = (bytes: number | null | undefined) => {
+    if (bytes == null) return 'Unknown';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
+// Recalculate statistics button component
+const RecalculateStatsButton = ({ layerId }) => {
+    const dataProvider = useDataProvider();
+    const notify = useNotify();
+    const refresh = useRefresh();
+    const [isRecalculating, setIsRecalculating] = useState(false);
+
+    const handleRecalculate = async () => {
+        setIsRecalculating(true);
+        try {
+            const { data } = await dataProvider.recalculateLayerStats(layerId);
+            const changes: string[] = [];
+            if (data.previous_min_value !== data.min_value) {
+                changes.push(`min: ${data.previous_min_value?.toFixed(2) || 'N/A'} → ${data.min_value?.toFixed(2)}`);
+            }
+            if (data.previous_max_value !== data.max_value) {
+                changes.push(`max: ${data.previous_max_value?.toFixed(2) || 'N/A'} → ${data.max_value?.toFixed(2)}`);
+            }
+            if (data.previous_global_average !== data.global_average) {
+                changes.push(`avg: ${data.previous_global_average?.toFixed(2) || 'N/A'} → ${data.global_average?.toFixed(2)}`);
+            }
+
+            if (changes.length > 0) {
+                notify(`Statistics updated: ${changes.join(', ')}`, { type: 'success' });
+            } else {
+                notify('Statistics unchanged', { type: 'info' });
+            }
+            refresh();
+        } catch (error: any) {
+            notify(`Failed to recalculate statistics: ${error.message || error}`, { type: 'error' });
+        } finally {
+            setIsRecalculating(false);
+        }
+    };
+
+    return (
+        <Button
+            variant="outlined"
+            color="primary"
+            startIcon={isRecalculating ? <CircularProgress size={16} /> : <RefreshIcon />}
+            onClick={handleRecalculate}
+            disabled={isRecalculating}
+        >
+            {isRecalculating ? 'Recalculating...' : 'Recalculate Stats'}
+        </Button>
+    );
+};
+
+// Helper to check if layer values fall outside style range
+const getStyleRangeWarning = (layer: any, style: any) => {
+    if (!style?.style || style.style.length === 0) return null;
+    if (layer.min_value === null && layer.max_value === null) return null;
+
+    const styleValues = style.style.map((s: any) => s.value);
+    const styleMin = Math.min(...styleValues);
+    const styleMax = Math.max(...styleValues);
+
+    const warnings: string[] = [];
+
+    if (layer.min_value !== null && layer.min_value < styleMin) {
+        warnings.push(`Layer min (${layer.min_value.toFixed(2)}) is below style min (${styleMin})`);
+    }
+    if (layer.max_value !== null && layer.max_value > styleMax) {
+        warnings.push(`Layer max (${layer.max_value.toFixed(2)}) exceeds style max (${styleMax})`);
+    }
+
+    if (warnings.length === 0) return null;
+
+    return warnings;
+};
+
+// Style range warning component
+const StyleRangeWarning = ({ styleId, layer }) => {
+    const { data: style, isLoading } = useGetOne('styles', { id: styleId }, { enabled: !!styleId });
+
+    if (isLoading || !style) return null;
+
+    const warnings = getStyleRangeWarning(layer, style);
+    if (!warnings) return null;
+
+    return (
+        <Alert severity="warning" sx={{ mt: 1 }}>
+            <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    Layer values fall outside style range
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    {warnings.join('. ')}. Values outside the range will be clamped to the nearest color.
+                </Typography>
+            </Box>
+        </Alert>
+    );
+};
 
 // Style name display component - uses separate API call, clickable to go to style page
 const StyleNameDisplay = ({ styleId }) => {
@@ -301,6 +406,7 @@ const LayerShowContent = () => {
                             Layer Details
                         </Typography>
                         <Stack direction="row" spacing={2}>
+                            <RecalculateStatsButton layerId={record.id} />
                             <Button
                                 variant="outlined"
                                 color="primary"
@@ -441,11 +547,13 @@ const LayerShowContent = () => {
 
                     {/* Basic Information */}
                     <Box>
-                        <Typography variant="h6" gutterBottom color="primary">
-                            Basic Information
-                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="h6" color="primary">
+                                Basic Information
+                            </Typography>
+                        </Box>
                         <Stack spacing={2}>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
                                 <Box>
                                     <Typography variant="body2" color="text.secondary">
                                         Layer Name
@@ -458,8 +566,16 @@ const LayerShowContent = () => {
                                     <Typography variant="body2" color="text.secondary">
                                         Filename
                                     </Typography>
-                                    <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                                    <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
                                         {record.filename}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        File Size
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {formatFileSize(record.file_size)}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -489,6 +605,30 @@ const LayerShowContent = () => {
                                     </Typography>
                                 </Box>
                             </Box>
+                            {/* Stats Status */}
+                            {record.stats_status && (
+                                <Box sx={{
+                                    p: 1.5,
+                                    borderRadius: 1,
+                                    bgcolor: record.stats_status.status === 'error' ? 'error.light' : 'success.light',
+                                    border: 1,
+                                    borderColor: record.stats_status.status === 'error' ? 'error.main' : 'success.main'
+                                }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500, color: record.stats_status.status === 'error' ? 'error.dark' : 'success.dark' }}>
+                                        Stats Status: {record.stats_status.status === 'error' ? 'Error' : 'Success'}
+                                    </Typography>
+                                    {record.stats_status.last_run && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            Last calculated: {new Date(record.stats_status.last_run).toLocaleString()}
+                                        </Typography>
+                                    )}
+                                    {record.stats_status.error && (
+                                        <Typography variant="body2" color="error.dark" sx={{ mt: 0.5 }}>
+                                            Error: {record.stats_status.error}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
                         </Stack>
                     </Box>
 
@@ -612,6 +752,9 @@ const LayerShowContent = () => {
                                 </Typography>
                                 <ColorBarWithData styleId={record.style_id} />
                             </Box>
+                            {record.style_id && (
+                                <StyleRangeWarning styleId={record.style_id} layer={record} />
+                            )}
                         </Stack>
                     </Box>
                 </Stack>

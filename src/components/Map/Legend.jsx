@@ -131,25 +131,38 @@ const createLinearLegendContent = (legendContent, colorMap, labelDisplayMode = '
       }
     });
   } else {
-    // Auto mode: Generate evenly-spaced labels based on labelCount
+    // Auto mode: Pick evenly-spaced stops from the actual colorMap and use their labels
     legendLabels.style.display = "flex";
     legendLabels.style.flexDirection = "column";
     legendLabels.style.justifyContent = "space-between";
     legendLabels.style.height = `${barHeight}px`;
 
     // Ensure at least 2 labels (min and max)
-    const numLabels = Math.max(2, labelCount);
-    const interval = range / (numLabels - 1);
-    const labelValues = [];
+    const numLabels = Math.min(Math.max(2, labelCount), sortedColorMap.length);
 
-    for (let i = 0; i < numLabels; i++) {
-      labelValues.push(maxValue - (interval * i));
+    // Pick evenly-spaced indices from the sorted color map
+    const selectedIndices = [];
+    if (sortedColorMap.length <= numLabels) {
+      // If we have fewer stops than requested labels, use all stops
+      for (let i = 0; i < sortedColorMap.length; i++) {
+        selectedIndices.push(i);
+      }
+    } else {
+      // Pick evenly-spaced indices
+      const step = (sortedColorMap.length - 1) / (numLabels - 1);
+      for (let i = 0; i < numLabels; i++) {
+        selectedIndices.push(Math.round(i * step));
+      }
     }
 
-    labelValues.forEach((value) => {
+    selectedIndices.forEach((index) => {
+      const stop = sortedColorMap[index];
       const label = L.DomUtil.create("div", "legend-label", legendLabels);
-      const formattedValue = Math.abs(value) < 10 ? value.toFixed(1) : Math.round(value);
-      label.textContent = formattedValue;
+      // Use the stop's label if available, otherwise format the value
+      const displayValue = stop.label !== undefined && stop.label !== null
+        ? stop.label
+        : (Math.abs(stop.value) < 10 ? stop.value.toFixed(1) : Math.round(stop.value));
+      label.textContent = displayValue;
       label.style.color = "#fff";
       label.style.fontSize = "11px";
     });

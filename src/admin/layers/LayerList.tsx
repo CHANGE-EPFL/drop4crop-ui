@@ -66,6 +66,54 @@ import MapIcon from '@mui/icons-material/Map';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import WarningIcon from '@mui/icons-material/Warning';
+import CalculateIcon from '@mui/icons-material/Calculate';
+import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+
+// Format file size in human readable format
+const formatFileSize = (bytes: number | null | undefined) => {
+    if (bytes == null) return '-';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
+// Stats status indicator component
+const StatsStatusIndicator = ({ statsStatus }: { statsStatus: any }) => {
+    if (!statsStatus) {
+        return (
+            <Tooltip title="Statistics not yet calculated">
+                <HelpOutlineIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+            </Tooltip>
+        );
+    }
+
+    const status = statsStatus.status;
+    const lastRun = statsStatus.last_run ? new Date(statsStatus.last_run).toLocaleString() : 'Unknown';
+    const error = statsStatus.error;
+
+    if (status === 'success') {
+        return (
+            <Tooltip title={`Last calculated: ${lastRun}`}>
+                <CheckCircleOutlineIcon sx={{ fontSize: 16, color: 'success.main' }} />
+            </Tooltip>
+        );
+    } else if (status === 'error') {
+        return (
+            <Tooltip title={`Error: ${error}\nLast attempt: ${lastRun}`}>
+                <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
+            </Tooltip>
+        );
+    }
+
+    return (
+        <Tooltip title="Unknown status">
+            <HelpOutlineIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+        </Tooltip>
+    );
+};
 
 // Style filter input component
 const StyleFilterInput = (props) => {
@@ -284,6 +332,33 @@ const StylePreviewBox = ({ style, height = 8, width = 60 }) => {
     );
 };
 
+// Helper to check if layer values fall outside style range
+const getStyleRangeWarning = (layer: any, style: any) => {
+    if (!style?.style || style.style.length === 0) return null;
+    if (layer.min_value === null && layer.max_value === null) return null;
+
+    const styleValues = style.style.map((s: any) => s.value);
+    const styleMin = Math.min(...styleValues);
+    const styleMax = Math.max(...styleValues);
+
+    const warnings: string[] = [];
+
+    if (layer.min_value !== null && layer.min_value < styleMin) {
+        warnings.push(`Layer min (${layer.min_value.toFixed(2)}) < style min (${styleMin})`);
+    }
+    if (layer.max_value !== null && layer.max_value > styleMax) {
+        warnings.push(`Layer max (${layer.max_value.toFixed(2)}) > style max (${styleMax})`);
+    }
+
+    if (warnings.length === 0) return null;
+
+    return {
+        message: warnings.join('; '),
+        hasMinWarning: layer.min_value !== null && layer.min_value < styleMin,
+        hasMaxWarning: layer.max_value !== null && layer.max_value > styleMax,
+    };
+};
+
 // Style name and color bar component - uses context to avoid per-row queries
 const StyleDisplay = () => {
     const record = useRecordContext();
@@ -291,21 +366,17 @@ const StyleDisplay = () => {
 
     if (!record?.style_id) {
         return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Tooltip title="This layer will be styled in grayscale until a style is chosen">
-                    <WarningIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                    <WarningIcon sx={{ fontSize: 14, color: 'error.main' }} />
                 </Tooltip>
-                <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 500 }}>
-                    No style
-                </Typography>
                 <Box
                     sx={{
-                        height: '8px',
-                        width: '60px',
-                        background: 'linear-gradient(to right, #000000, #404040, #808080, #c0c0c0, #ffffff)',
-                        borderRadius: '4px',
+                        height: '6px',
+                        width: '40px',
+                        background: 'linear-gradient(to right, #000, #fff)',
+                        borderRadius: '3px',
                         border: '1px solid #ddd',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                     }}
                 />
             </Box>
@@ -314,13 +385,20 @@ const StyleDisplay = () => {
 
     // Look up the style from the preloaded context
     const style = stylesMap.get(record.style_id);
+    const rangeWarning = getStyleRangeWarning(record, style);
 
     return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2">
-                {style?.name || 'Applied style'}
-            </Typography>
-            <StylePreviewBox style={style} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {rangeWarning && (
+                <Tooltip title={`Values outside style range: ${rangeWarning.message}. These values will be clamped to the nearest color.`}>
+                    <WarningIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                </Tooltip>
+            )}
+            <Tooltip title={style?.name || 'Applied style'}>
+                <Box>
+                    <StylePreviewBox style={style} height={6} width={40} />
+                </Box>
+            </Tooltip>
         </Box>
     );
 };
@@ -591,6 +669,61 @@ const BulkActionButtons = () => {
 };
 
 
+// Bulk recalculate stats button - works on selected layers
+const BulkRecalculateStatsButton = () => {
+    const dataProvider = useDataProvider();
+    const notify = useNotify();
+    const refresh = useRefresh();
+    const unselectAll = useUnselectAll('layers');
+    const { selectedIds } = useListContext();
+    const [isRecalculating, setIsRecalculating] = useState(false);
+
+    const handleRecalculate = async () => {
+        if (selectedIds.length === 0) return;
+
+        setIsRecalculating(true);
+        let successCount = 0;
+        let errorCount = 0;
+
+        try {
+            // Process each selected layer
+            for (const layerId of selectedIds) {
+                try {
+                    await dataProvider.recalculateLayerStats(layerId);
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                notify(`Recalculated stats for ${successCount} layer(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}`, {
+                    type: errorCount > 0 ? 'warning' : 'success'
+                });
+            } else {
+                notify(`Failed to recalculate stats for all ${errorCount} layer(s)`, { type: 'error' });
+            }
+            refresh();
+            unselectAll();
+        } catch (error: any) {
+            notify(`Failed to recalculate statistics: ${error.message || error}`, { type: 'error' });
+        } finally {
+            setIsRecalculating(false);
+        }
+    };
+
+    if (selectedIds.length === 0) return null;
+
+    return (
+        <Button
+            size="small"
+            label={isRecalculating ? 'Recalculating...' : 'Recalc Stats'}
+            onClick={handleRecalculate}
+            disabled={isRecalculating}
+        />
+    );
+};
+
 const ListActions = ({ setUploadDialogOpen }) => {
     const { selectedIds, filterValues, setFilters } = useListContext();
     const hasFilters = Object.keys(filterValues).filter(key => key !== 'q').length > 0;
@@ -625,6 +758,7 @@ const ListActions = ({ setUploadDialogOpen }) => {
                         />
                         <BulkEnableButton />
                         <BulkDisableButton />
+                        <BulkRecalculateStatsButton />
                         <StyleSelectMenu />
                         <BulkDeleteButton
                             mutationMode="pessimistic"
@@ -846,6 +980,34 @@ export const LayerList = () => {
                         render={record => (
                             <FilterableField source="year" value={record.year} />
                         )}
+                    />
+                    <FunctionField
+                        label="Min"
+                        sortable
+                        source="min_value"
+                        render={record => record.min_value != null ? record.min_value.toFixed(1) : '-'}
+                    />
+                    <FunctionField
+                        label="Max"
+                        sortable
+                        source="max_value"
+                        render={record => record.max_value != null ? record.max_value.toFixed(1) : '-'}
+                    />
+                    <FunctionField
+                        label="Avg"
+                        sortable
+                        source="global_average"
+                        render={record => record.global_average != null ? record.global_average.toFixed(1) : '-'}
+                    />
+                    <FunctionField
+                        label="Size"
+                        sortable
+                        source="file_size"
+                        render={record => formatFileSize(record.file_size)}
+                    />
+                    <FunctionField
+                        label="Stats"
+                        render={record => <StatsStatusIndicator statsStatus={record.stats_status} />}
                     />
                     <FunctionField
                         label="Crop Specific"
