@@ -306,51 +306,30 @@ const ActivityChart = ({ statsSummary, loading, redirect, totalLayers, totalEnab
 };
 
 // Most Visited Layers Component
-const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
+const MostVisitedLayersCard = ({ layers, loading, redirect, totalLayers }) => {
     const dataProvider = useDataProvider();
     const notify = useNotify();
-    const [sortedLayers, setSortedLayers] = useState<any[]>([]);
-    const [layerStats, setLayerStats] = useState<Record<string, any>>({});
     const [cachedLayerIds, setCachedLayerIds] = useState<Set<string>>(new Set());
     const [persistedLayerIds, setPersistedLayerIds] = useState<Set<string>>(new Set());
     const [cacheData, setCacheData] = useState<Record<string, any>>({});
-    const [statsLoading, setStatsLoading] = useState(true);
+    const [cacheLoading, setCacheLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchCacheData = async () => {
             if (!layers || layers.length === 0) {
-                setStatsLoading(false);
+                setCacheLoading(false);
                 return;
             }
 
             try {
-                // Fetch stats and cache keys in parallel
-                const [statsResults, cacheData] = await Promise.all([
-                    // Fetch stats for all layers
-                    Promise.all(layers.map(async (layer: any) => {
-                        try {
-                            const { data } = await dataProvider.getList('statistics', {
-                                filter: { layer_name: layer.layer_name },
-                                sort: { field: 'total_requests', order: 'DESC' },
-                                pagination: { page: 1, perPage: 100 }
-                            });
-                            // Sum up total requests across all stat records for this layer
-                            const totalRequests = data.reduce((sum: number, stat: any) => sum + (stat.total_requests || 0), 0);
-                            return { layer, totalRequests, stats: data[0] };
-                        } catch (error) {
-                            return { layer, totalRequests: 0, stats: null };
-                        }
-                    })),
-                    // Fetch cache keys
-                    dataProvider.getCacheKeys().catch(() => ({ data: [] }))
-                ]);
+                const cacheResult = await dataProvider.getCacheKeys();
 
                 // Build set of cached layer IDs and persisted layer IDs
                 const cachedIds = new Set<string>();
                 const persistedIds = new Set<string>();
                 const cacheMap: Record<string, any> = {};
-                (cacheData.data || []).forEach((cached: any) => {
+                (cacheResult.data || []).forEach((cached: any) => {
                     if (cached.layer_id) {
                         cachedIds.add(cached.layer_id);
                         cacheMap[cached.layer_id] = cached;
@@ -363,29 +342,14 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
                 setCachedLayerIds(cachedIds);
                 setPersistedLayerIds(persistedIds);
                 setCacheData(cacheMap);
-
-                // Sort by total requests descending
-                statsResults.sort((a, b) => b.totalRequests - a.totalRequests);
-
-                // Build stats map and sorted layers
-                const statsMap: Record<string, any> = {};
-                const sorted: any[] = [];
-                statsResults.forEach(({ layer, totalRequests, stats }) => {
-                    statsMap[layer.id] = { ...stats, total_requests: totalRequests };
-                    sorted.push(layer);
-                });
-
-                setLayerStats(statsMap);
-                setSortedLayers(sorted);
             } catch (error) {
-                console.error('Error fetching layer stats:', error);
-                setSortedLayers(layers);
+                console.error('Error fetching cache data:', error);
             } finally {
-                setStatsLoading(false);
+                setCacheLoading(false);
             }
         };
 
-        fetchStats();
+        fetchCacheData();
     }, [layers, dataProvider]);
 
     const handleLayerClick = (layerId: string) => {
@@ -486,7 +450,7 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
         }
     };
 
-    if (loading || statsLoading) {
+    if (loading) {
         return (
             <Card sx={{ height: '100%' }}>
                 <CardContent>
@@ -501,8 +465,6 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
         );
     }
 
-    const displayLayers = sortedLayers.length > 0 ? sortedLayers : layers;
-
     return (
         <Card sx={{ height: '100%' }}>
             <CardContent>
@@ -513,7 +475,7 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
                             Most Visited Layers
                         </Typography>
                     </Box>
-                    {displayLayers && displayLayers.length > 0 && (
+                    {layers && layers.length > 0 && (
                         <Button
                             variant="outlined"
                             size="small"
@@ -523,9 +485,9 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
                         </Button>
                     )}
                 </Box>
-                {displayLayers && displayLayers.length > 0 ? (
+                {layers && layers.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {displayLayers.slice(0, 10).map((layer: any) => {
+                        {layers.map((layer: any) => {
                             // Build map URL
                             const params = new URLSearchParams();
                             if (layer.crop) params.set('crop', layer.crop);
@@ -593,7 +555,7 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
                                             <Chip
                                                 size="small"
                                                 icon={<VisibilityIcon sx={{ fontSize: '0.8rem !important' }} />}
-                                                label={layerStats[layer.id]?.total_requests?.toLocaleString() || '0'}
+                                                label={(layer.total_views || 0).toLocaleString()}
                                                 color="secondary"
                                                 variant="filled"
                                                 sx={{ fontSize: '0.7rem', fontWeight: 600, height: '22px', minWidth: '65px' }}
@@ -649,7 +611,7 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
                                 </Box>
                             );
                         })}
-                        {displayLayers.length > 10 && (
+                        {totalLayers > 10 && (
                             <Box sx={{ textAlign: 'center', mt: 2 }}>
                                 <Button
                                     variant="text"
@@ -657,14 +619,14 @@ const MostVisitedLayersCard = ({ layers, loading, redirect }) => {
                                     onClick={() => redirect('/layers')}
                                     sx={{ textTransform: 'none' }}
                                 >
-                                    View all {displayLayers.length} layers →
+                                    View all {totalLayers.toLocaleString()} layers →
                                 </Button>
                             </Box>
                         )}
                     </Box>
                 ) : (
                     <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
-                        No layer statistics found
+                        No layers found
                     </Typography>
                 )}
             </CardContent>
@@ -702,15 +664,15 @@ const Dashboard = () => {
         return () => clearInterval(interval);
     }, [dataProvider]);
 
-    // Fetch layers data
+    // Fetch most viewed layers (sorted by total_views descending)
     const {
-        data: layers,
+        data: mostViewedLayers,
         total: totalLayers,
         isPending: layersPending,
         error: layersError
     } = useGetList('layers', {
-        pagination: { page: 1, perPage: 100 },
-        sort: { field: 'uploaded_at', order: 'DESC' }
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: 'total_views', order: 'DESC' }
     });
 
     // Fetch enabled layers
@@ -859,9 +821,10 @@ const Dashboard = () => {
             {/* Most Visited Layers - Full Width Row */}
             <Box>
                 <MostVisitedLayersCard
-                    layers={layers}
+                    layers={mostViewedLayers}
                     loading={layersPending}
                     redirect={redirect}
+                    totalLayers={totalLayers}
                 />
             </Box>
         </Box>
