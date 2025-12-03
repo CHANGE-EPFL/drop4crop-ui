@@ -3,10 +3,12 @@ import {
     List,
     Datagrid,
     TextField,
-    ChipField,
-    useRecordContext
+    useRecordContext,
+    ReferenceManyCount,
 } from "react-admin";
 import { createStyleGradient } from '../../utils/styleUtils';
+import { Tooltip } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
 
 // Custom ColorBarField component that shows discrete blocks for discrete styles
 const ColorBarField = () => {
@@ -60,7 +62,43 @@ const StepsField = () => {
     const record = useRecordContext();
     if (!record || !record.style) return null;
     const steps = record.style.length;
-    return <span>{steps}</span>;
+    const isManual = record.label_display_mode === 'manual';
+    const showWarning = isManual && steps > 8;
+
+    return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {steps}
+            {showWarning && (
+                <Tooltip title="Manual mode with many labels may cause display issues">
+                    <WarningIcon sx={{ fontSize: 16, color: '#ff9800' }} />
+                </Tooltip>
+            )}
+        </span>
+    );
+};
+
+
+// Label display mode badge
+const LabelModeField = () => {
+    const record = useRecordContext();
+    if (!record) return null;
+
+    const isAuto = record.label_display_mode !== 'manual';
+    const labelCount = record.label_count || 5;
+
+    return (
+        <Tooltip title={isAuto ? `Auto: showing ${labelCount} labels` : 'Manual: showing all labels'}>
+            <span style={{
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                backgroundColor: isAuto ? '#4caf50' : '#9c27b0',
+                color: 'white'
+            }}>
+                {isAuto ? `Auto (${labelCount})` : 'Manual'}
+            </span>
+        </Tooltip>
+    );
 };
 
 // Interpolation type chip with color coding
@@ -87,9 +125,16 @@ export const StyleList = () => {
         <List storeKey={false}>
             <Datagrid rowClick="show">
                 <TextField source="name" />
+                <ReferenceManyCount
+                    label="Layers"
+                    reference="layers"
+                    target="style_id"
+                    link
+                />
                 <InterpolationTypeField label="Type" />
-                <MinValueField label="Min Value" />
-                <MaxValueField label="Max Value" />
+                <LabelModeField label="Labels" />
+                <MinValueField label="Min" />
+                <MaxValueField label="Max" />
                 <StepsField label="Steps" />
                 <ColorBarField label="Style" />
             </Datagrid>

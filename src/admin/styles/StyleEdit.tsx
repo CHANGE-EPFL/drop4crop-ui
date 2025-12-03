@@ -9,9 +9,12 @@ import {
     SimpleForm,
     SimpleFormIterator,
     TextInput,
-    required
+    required,
+    useRecordContext,
 } from 'react-admin';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
+import { Alert, Box, Typography } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
 
 
 /**
@@ -104,6 +107,51 @@ const interpolationTypeChoices = [
     { id: 'discrete', name: 'Discrete (stepped/bucketed)' },
 ];
 
+const labelDisplayModeChoices = [
+    { id: 'auto', name: 'Auto (evenly-spaced labels)' },
+    { id: 'manual', name: 'Manual (show all labels)' },
+];
+
+// Component to show warning when manual mode with many steps
+const LabelSettingsWarning = () => {
+    const labelDisplayMode = useWatch({ name: 'label_display_mode' });
+    const style = useWatch({ name: 'style' });
+
+    const isManual = labelDisplayMode === 'manual';
+    const steps = style?.length || 0;
+    const showWarning = isManual && steps > 8;
+
+    if (!showWarning) return null;
+
+    return (
+        <Alert severity="warning" sx={{ mb: 2 }} icon={<WarningIcon />}>
+            <Typography variant="body2">
+                <strong>Warning:</strong> Manual mode with {steps} labels may cause display issues on the map legend.
+                Consider using Auto mode, which will show evenly-spaced labels.
+            </Typography>
+        </Alert>
+    );
+};
+
+// Component to conditionally show label count input
+const LabelCountInput = () => {
+    const labelDisplayMode = useWatch({ name: 'label_display_mode' });
+
+    if (labelDisplayMode === 'manual') return null;
+
+    return (
+        <NumberInput
+            source="label_count"
+            label="Number of Labels"
+            min={2}
+            max={20}
+            defaultValue={5}
+            helperText="How many evenly-spaced labels to show (default: 5)"
+            sx={{ width: '200px' }}
+        />
+    );
+};
+
 const StyleEdit = () => {
     return (
         <Edit>
@@ -116,6 +164,29 @@ const StyleEdit = () => {
                     defaultValue="linear"
                     helperText="Linear: smooth gradient between colors. Discrete: each value falls into a bucket."
                 />
+
+                {/* Label Display Settings */}
+                <Box sx={{ mt: 2, mb: 1, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                        Legend Label Settings
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                        Control how labels appear on the map legend. Auto mode shows evenly-spaced labels
+                        to prevent overcrowding when you have many color stops.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                        <SelectInput
+                            source="label_display_mode"
+                            choices={labelDisplayModeChoices}
+                            defaultValue="auto"
+                            helperText="Auto: show limited labels. Manual: show all."
+                            sx={{ minWidth: '250px' }}
+                        />
+                        <LabelCountInput />
+                    </Box>
+                    <LabelSettingsWarning />
+                </Box>
+
                 <UpdateFromQGIS />
                 <ArrayInput source="style" validate={[required()]}>
                     <SimpleFormIterator inline>

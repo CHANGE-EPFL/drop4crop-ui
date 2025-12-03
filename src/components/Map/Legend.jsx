@@ -46,13 +46,19 @@ const createDiscreteLegendContent = (legendContent, colorMap) => {
 
 /**
  * Creates linear gradient legend content with labels from color stops
+ * @param {HTMLElement} legendContent - Container element
+ * @param {Array} colorMap - Color stops array
+ * @param {string} labelDisplayMode - 'auto' or 'manual'
+ * @param {number} labelCount - Number of labels to show in auto mode (default 5)
  */
-const createLinearLegendContent = (legendContent, colorMap) => {
+const createLinearLegendContent = (legendContent, colorMap, labelDisplayMode = 'auto', labelCount = 5) => {
   // Sort colorMap by value in reverse (high to low for top-to-bottom gradient)
   const sortedColorMap = [...colorMap].sort((a, b) => b.value - a.value);
 
-  // Check if any color stops have custom labels (check for undefined/null, not falsy, since "0" is valid)
-  const hasCustomLabels = sortedColorMap.some((stop) => stop.label !== undefined && stop.label !== null);
+  // In 'auto' mode, always use evenly-spaced labels regardless of custom labels
+  // In 'manual' mode, show all custom labels if present
+  const useCustomLabels = labelDisplayMode === 'manual' &&
+    sortedColorMap.some((stop) => stop.label !== undefined && stop.label !== null);
 
   // Get min/max for positioning calculations
   const values = colorMap.map((c) => c.value);
@@ -89,8 +95,8 @@ const createLinearLegendContent = (legendContent, colorMap) => {
     legendColorBarContainer
   );
 
-  if (hasCustomLabels) {
-    // Use absolute positioning to place labels at correct positions along the gradient
+  if (useCustomLabels) {
+    // Manual mode: Use absolute positioning to place labels at correct positions along the gradient
     legendLabels.style.position = "relative";
     legendLabels.style.height = `${barHeight}px`;
     legendLabels.style.minWidth = "40px";
@@ -125,20 +131,20 @@ const createLinearLegendContent = (legendContent, colorMap) => {
       }
     });
   } else {
-    // No custom labels - generate 5 evenly-spaced labels
+    // Auto mode: Generate evenly-spaced labels based on labelCount
     legendLabels.style.display = "flex";
     legendLabels.style.flexDirection = "column";
     legendLabels.style.justifyContent = "space-between";
     legendLabels.style.height = `${barHeight}px`;
 
-    const interval = range / 4;
-    const labelValues = [
-      maxValue,  // Top
-      maxValue - interval,
-      maxValue - 2 * interval,
-      maxValue - 3 * interval,
-      minValue,  // Bottom
-    ];
+    // Ensure at least 2 labels (min and max)
+    const numLabels = Math.max(2, labelCount);
+    const interval = range / (numLabels - 1);
+    const labelValues = [];
+
+    for (let i = 0; i < numLabels; i++) {
+      labelValues.push(maxValue - (interval * i));
+    }
 
     labelValues.forEach((value) => {
       const label = L.DomUtil.create("div", "legend-label", legendLabels);
@@ -156,6 +162,8 @@ const createLegendContainer = (
   globalAverage,
   colorMap,
   interpolationType,
+  labelDisplayMode,
+  labelCount,
   legendTitleText
 ) => {
   const isDiscrete = interpolationType === 'discrete';
@@ -222,7 +230,7 @@ const createLegendContainer = (
     if (isDiscrete) {
       createDiscreteLegendContent(legendContent, colorMap);
     } else {
-      createLinearLegendContent(legendContent, colorMap);
+      createLinearLegendContent(legendContent, colorMap, labelDisplayMode, labelCount);
     }
   }
 
@@ -271,6 +279,8 @@ export const LegendControl = ({
   globalAverage,
   colorMap,
   interpolationType = 'linear',
+  labelDisplayMode = 'auto',
+  labelCount = 5,
   selectedVariable,
 }) => {
   const legendTitleText = selectedVariable
@@ -286,6 +296,8 @@ export const LegendControl = ({
       globalAverage,
       colorMap,
       interpolationType,
+      labelDisplayMode,
+      labelCount,
       legendTitleText
     );
     const legendControl = L.control({ position: "topright" });
@@ -299,7 +311,7 @@ export const LegendControl = ({
     return () => {
       legendControl.remove();
     };
-  }, [isVisible, globalAverage, colorMap, interpolationType, legendTitleText]);
+  }, [isVisible, globalAverage, colorMap, interpolationType, labelDisplayMode, labelCount, legendTitleText]);
 
   return null;
 };

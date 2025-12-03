@@ -44,6 +44,8 @@ const MapView = forwardRef((props, ref) => {
     globalAverage,
     layerStyle,
     interpolationType,
+    labelDisplayMode,
+    labelCount,
     selectedVariable,
     loading,
   } = useContext(AppContext);
@@ -148,6 +150,8 @@ const MapView = forwardRef((props, ref) => {
               globalAverage={globalAverage}
               colorMap={layerStyle}
               interpolationType={interpolationType}
+              labelDisplayMode={labelDisplayMode}
+              labelCount={labelCount}
               selectedVariable={selectedVariable}
             />
           </>

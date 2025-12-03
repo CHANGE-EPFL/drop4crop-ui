@@ -1,16 +1,17 @@
 import React from 'react';
 import {
-    ArrayField,
     Datagrid,
-    FunctionField,
     ListContextProvider,
     Show,
     SimpleShowLayout,
     TextField,
     useRecordContext,
     useList,
+    ReferenceManyCount,
 } from "react-admin";
 import { createStyleGradient } from '../../utils/styleUtils';
+import { Box, Chip, Typography, Alert } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
 
 // Custom ColorBar component that adapts to interpolation type
 export const ColorBar = () => {
@@ -74,6 +75,57 @@ const InterpolationTypeBadge = () => {
     );
 };
 
+// Layer count with link to filtered layer list
+const LayerCountField = () => {
+    return (
+        <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                Associated Layers
+            </Typography>
+            <ReferenceManyCount
+                reference="layers"
+                target="style_id"
+                link
+            />
+        </Box>
+    );
+};
+
+// Label settings display
+const LabelSettingsField = () => {
+    const record = useRecordContext();
+    if (!record) return null;
+
+    const isAuto = record.label_display_mode !== 'manual';
+    const labelCount = record.label_count || 5;
+    const steps = record.style?.length || 0;
+    const showWarning = !isAuto && steps > 8;
+
+    return (
+        <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                Label Display Settings
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                    label={isAuto ? `Auto (${labelCount} labels)` : 'Manual (all labels)'}
+                    color={isAuto ? 'success' : 'secondary'}
+                    size="small"
+                />
+                <Typography variant="body2" color="textSecondary">
+                    {steps} color stops defined
+                </Typography>
+            </Box>
+            {showWarning && (
+                <Alert severity="warning" sx={{ mt: 1 }} icon={<WarningIcon />}>
+                    Manual mode with {steps} labels may cause display issues on the map.
+                    Consider switching to Auto mode.
+                </Alert>
+            )}
+        </Box>
+    );
+};
+
 // Color swatch for individual stops
 const ColorSwatchField = () => {
     const record = useRecordContext();
@@ -121,7 +173,11 @@ export const StyleShow = () => {
         <Show>
             <SimpleShowLayout>
                 <TextField source="name" />
-                <InterpolationTypeBadge label="Interpolation Type" />
+                <LayerCountField />
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+                    <InterpolationTypeBadge label="Interpolation Type" />
+                </Box>
+                <LabelSettingsField />
                 <ColorBar label="Preview" />
                 <SortedStyleArrayField label="Style" />
             </SimpleShowLayout>

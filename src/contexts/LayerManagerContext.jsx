@@ -40,6 +40,8 @@ export const LayerManagerProvider = ({ children }) => {
         setGlobalAverage,
         setLayerStyle,
         setInterpolationType,
+        setLabelDisplayMode,
+        setLabelCount,
         setloadingLayer,
         selectedVariable,
         selectedCropVariable,
@@ -81,6 +83,8 @@ export const LayerManagerProvider = ({ children }) => {
                     global_average: stacItem.properties.global_average || null,
                     style: stacItem.properties.style || [],
                     interpolation_type: stacItem.properties.interpolation_type || 'linear',
+                    label_display_mode: stacItem.properties.label_display_mode || 'auto',
+                    label_count: stacItem.properties.label_count || 5,
                     // Include STAC-specific fields for future use
                     stac_item: stacItem,
                     // STAC provides direct tile URL
@@ -137,12 +141,16 @@ export const LayerManagerProvider = ({ children }) => {
                 setGlobalAverage(null);
                 setLayerStyle([]);
                 setInterpolationType('linear');
+                setLabelDisplayMode('auto');
+                setLabelCount(5);
             } else {
                 setLayerName(response.layer_name);
                 setCountryAverageValues(response.country_values);
                 setGlobalAverage(response.global_average);
                 setLayerStyle(response.style || []);
                 setInterpolationType(response.interpolation_type || 'linear');
+                setLabelDisplayMode(response.label_display_mode || 'auto');
+                setLabelCount(response.label_count || 5);
             }
 
             if (selectedLayer.variable) {
@@ -170,6 +178,8 @@ export const LayerManagerProvider = ({ children }) => {
         setGlobalAverage,
         setLayerStyle,
         setInterpolationType,
+        setLabelDisplayMode,
+        setLabelCount,
         setloadingLayer,
         setVariableForLegend,
         selectedVariable,
