@@ -33,20 +33,20 @@ export const scenariosItems = [
 
 
 export const variablesItems = [
-    { id: 'vwc', name: 'Total', abbreviation: 'VWC', unit: 'm³ ton⁻¹', enabled: false },
-    { id: 'vwcb', name: 'Blue', abbreviation: 'VWCb', unit: 'm³ ton⁻¹', enabled: false },
-    { id: 'vwcg', name: 'Green', abbreviation: 'VWCg', unit: 'm³ ton⁻¹', enabled: false },
-    { id: 'vwcg_perc', name: 'Green', abbreviation: 'VWCg', unit: '%', enabled: false },
-    { id: 'vwcb_perc', name: 'Blue', abbreviation: 'VWCb', unit: '%', enabled: false },
-    { id: 'wf', name: 'Total', abbreviation: 'WF', unit: 'm³', enabled: false },
-    { id: 'wfb', name: 'Blue', abbreviation: 'WFb', unit: 'm³', enabled: false },
-    { id: 'wfg', name: 'Green', abbreviation: 'WFg', unit: 'm³', enabled: false },
-    { id: 'etb', name: 'Blue', abbreviation: 'ETb', unit: 'mm', enabled: false },
-    { id: 'etg', name: 'Green', abbreviation: 'ETg', unit: 'mm', enabled: false },
-    { id: 'rb', name: 'Blue', abbreviation: 'Rb', unit: 'mm', enabled: false },
-    { id: 'rg', name: 'Green', abbreviation: 'Rg', unit: 'mm', enabled: false },
-    { id: 'wdb', name: 'Blue', abbreviation: 'WDb', unit: 'years', enabled: false },
-    { id: 'wdg', name: 'Green', abbreviation: 'WDg', unit: 'years', enabled: false },
+    { id: 'vwc', name: 'Total', abbreviation: 'VWC', subscript: null, unit: 'm³ ton⁻¹', enabled: false },
+    { id: 'vwcb', name: 'Blue', abbreviation: 'VWC', subscript: 'b', unit: 'm³ ton⁻¹', enabled: false },
+    { id: 'vwcg', name: 'Green', abbreviation: 'VWC', subscript: 'g', unit: 'm³ ton⁻¹', enabled: false },
+    { id: 'vwcg_perc', name: 'Green', abbreviation: 'VWC', subscript: 'g', unit: '%', enabled: false },
+    { id: 'vwcb_perc', name: 'Blue', abbreviation: 'VWC', subscript: 'b', unit: '%', enabled: false },
+    { id: 'wf', name: 'Total', abbreviation: 'WF', subscript: null, unit: 'm³', enabled: false },
+    { id: 'wfb', name: 'Blue', abbreviation: 'WF', subscript: 'b', unit: 'm³', enabled: false },
+    { id: 'wfg', name: 'Green', abbreviation: 'WF', subscript: 'g', unit: 'm³', enabled: false },
+    { id: 'etb', name: 'Blue', abbreviation: 'ET', subscript: 'b', unit: 'mm', enabled: false },
+    { id: 'etg', name: 'Green', abbreviation: 'ET', subscript: 'g', unit: 'mm', enabled: false },
+    { id: 'rb', name: 'Blue', abbreviation: 'R', subscript: 'b', unit: 'mm', enabled: false },
+    { id: 'rg', name: 'Green', abbreviation: 'R', subscript: 'g', unit: 'mm', enabled: false },
+    { id: 'wdb', name: 'Blue', abbreviation: 'WD', subscript: 'b', unit: 'years', enabled: false },
+    { id: 'wdg', name: 'Green', abbreviation: 'WD', subscript: 'g', unit: 'years', enabled: false },
 ];
 
 export const cropVariablesItems = [

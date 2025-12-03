@@ -49,6 +49,7 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     loadingGroups,
     showcaseMode,
     setShowcaseMode,
+    setActivePanel,
   } = useContext(AppContext);
   const [searchParams] = useSearchParams();
   const [urlParamsApplied, setUrlParamsApplied] = useState(false);
@@ -92,6 +93,8 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     if (crop || waterModel || climateModel || scenario || variable || cropVariable || year) {
       // Disable showcase mode when URL params are present
       setShowcaseMode(false);
+      // Show info panel when loading from URL
+      setActivePanel('info');
 
       // Look up the full objects from the variables file
       if (crop) {
@@ -150,7 +153,7 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
       // Mark that we've applied URL params
       setUrlParamsApplied(true);
     }
-  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime, setShowcaseMode]);
+  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime, setShowcaseMode, setActivePanel]);
 
   return (
       <div style={{

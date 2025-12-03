@@ -258,6 +258,15 @@ const createLegendContainer = (
   return legendContainer;
 };
 
+// Helper to format variable abbreviation with subscript as HTML
+const formatAbbreviationHtml = (variable) => {
+  if (!variable) return "Legend";
+  const abbr = variable.subscript
+    ? `${variable.abbreviation}<sub>${variable.subscript}</sub>`
+    : variable.abbreviation;
+  return `${abbr} [${variable.unit}]`;
+};
+
 export const LegendControl = ({
   globalAverage,
   colorMap,
@@ -265,7 +274,7 @@ export const LegendControl = ({
   selectedVariable,
 }) => {
   const legendTitleText = selectedVariable
-    ? `${selectedVariable.abbreviation} [${selectedVariable.unit}]`
+    ? formatAbbreviationHtml(selectedVariable)
     : "Legend";
   const map = useMap();
   const [isVisible, setIsVisible] = useState(true);

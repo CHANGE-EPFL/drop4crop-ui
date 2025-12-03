@@ -3,9 +3,10 @@ import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close';
 
-const InfoPanel = ({ onClick, onClose }) => {
+const InfoPanel = ({ onClick, onClose, hasTimeline }) => {
+  const bottomClass = hasTimeline ? 'popup-bottom' : 'popup-bottom-no-timeline';
   return (
-    <div className="popup" onClick={onClick}>
+    <div className={`popup ${bottomClass}`} onClick={onClick}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" style={{ fontSize: '1rem' }}>Info & Attribution</Typography>

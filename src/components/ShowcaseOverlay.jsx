@@ -86,6 +86,7 @@ const ShowcaseOverlay = () => {
     setSelectedCropVariable,
     setSelectedTime,
     setLayerName,
+    setActivePanel,
     loadingGroups,
   } = useContext(AppContext);
 
@@ -234,7 +235,8 @@ const ShowcaseOverlay = () => {
     setSelectedCropVariable(null);
     setLayerName(null); // Clear the map layer immediately
     setShowcaseMode(false);
-  }, [setShowcaseMode, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable, setLayerName]);
+    setActivePanel('info'); // Open the info panel after exiting showcase mode
+  }, [setShowcaseMode, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable, setLayerName, setActivePanel]);
 
   if (!showcaseMode) return null;
 

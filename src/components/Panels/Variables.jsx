@@ -8,6 +8,18 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Typography from '@mui/material/Typography';
 import PanelTitleWithTooltip from './Title';
 
+// Helper to render variable label with subscript
+const renderVariableLabel = (variable) => {
+    if (variable.subscript) {
+        return (
+            <span>
+                {variable.name} ({variable.abbreviation}<sub>{variable.subscript}</sub>)
+            </span>
+        );
+    }
+    return `${variable.name} (${variable.abbreviation})`;
+};
+
 const VariablePanel = ({
     variables,
     selectedVariable,
@@ -67,12 +79,17 @@ const VariablePanel = ({
             <>
 
                 <div className="chips-group">
-                    <h5>Evapotranspiration</h5>
+                    <h5>Evapotranspiration [mm]</h5>
                     <div className="chips-list">
-                        {variables.filter(variable => ['etb', 'etg'].includes(variable.id)).map(variable => (
+                        {variables.filter(variable => ['etb', 'etg'].includes(variable.id))
+                            .sort((a, b) => {
+                                const order = ['etb', 'etg'];
+                                return order.indexOf(a.id) - order.indexOf(b.id);
+                            })
+                            .map(variable => (
                             <Chip
                                 key={variable.id}
-                                label={`${variable.name} [${variable.unit}]`}
+                                label={renderVariableLabel(variable)}
                                 clickable
                                 className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
                                 disabled={!variable.enabled}
@@ -81,46 +98,13 @@ const VariablePanel = ({
                         ))}
                     </div>
                 </div>
-
-                <div className="chips-group">
-                    <h5>Virtual Water Content</h5>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['vwc', 'vwcb', 'vwcg', 'vwcg_perc', 'vwcb_perc'].includes(variable.id)).map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={`${variable.name} [${variable.unit}]`}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="chips-group">
-                    <h5>Water Footprint</h5>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['wf', 'wfb', 'wfg'].includes(variable.id)).map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={`${variable.name} [${variable.unit}]`}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
 
                 <div className="chips-group">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <h5>Renewability Rates</h5>
+                            <h5>Renewability Rates [mm]</h5>
                             <Tooltip
-                                title="Soil moisture, surface water and groundwater"
+                                title="Blue renewability rate indicates the sum of surface runoff and groundwater recharge. The green renewability rate corresponds to the root zone soil moisture."
                                 placement="right"
                                 disableFocusListener disableTouchListener enterDelay={10}
                                 arrow
@@ -131,10 +115,15 @@ const VariablePanel = ({
                         </div>
                     </div>
                     <div className="chips-list">
-                        {variables.filter(variable => ['rb', 'rg'].includes(variable.id)).map(variable => (
+                        {variables.filter(variable => ['rb', 'rg'].includes(variable.id))
+                            .sort((a, b) => {
+                                const order = ['rb', 'rg'];
+                                return order.indexOf(a.id) - order.indexOf(b.id);
+                            })
+                            .map(variable => (
                             <Chip
                                 key={variable.id}
-                                label={`${variable.name} [${variable.unit}]`}
+                                label={renderVariableLabel(variable)}
                                 clickable
                                 className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
                                 disabled={!variable.enabled}
@@ -145,12 +134,38 @@ const VariablePanel = ({
                 </div>
 
                 <div className="chips-group">
-                    <h5>Water Debt</h5>
+                    <h5>Water Footprint [m³]</h5>
                     <div className="chips-list">
-                        {variables.filter(variable => ['wdb', 'wdg'].includes(variable.id)).map(variable => (
+                        {variables.filter(variable => ['wfb', 'wfg', 'wf'].includes(variable.id))
+                            .sort((a, b) => {
+                                const order = ['wfb', 'wfg', 'wf'];
+                                return order.indexOf(a.id) - order.indexOf(b.id);
+                            })
+                            .map(variable => (
                             <Chip
                                 key={variable.id}
-                                label={`${variable.name} [${variable.unit}]`}
+                                label={renderVariableLabel(variable)}
+                                clickable
+                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                                disabled={!variable.enabled}
+                                onClick={() => handleChipClick(variable)}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                <div className="chips-group">
+                    <h5>Water Debt [years]</h5>
+                    <div className="chips-list">
+                        {variables.filter(variable => ['wdb', 'wdg'].includes(variable.id))
+                            .sort((a, b) => {
+                                const order = ['wdb', 'wdg'];
+                                return order.indexOf(a.id) - order.indexOf(b.id);
+                            })
+                            .map(variable => (
+                            <Chip
+                                key={variable.id}
+                                label={renderVariableLabel(variable)}
                                 clickable
                                 className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
                                 disabled={!variable.enabled}

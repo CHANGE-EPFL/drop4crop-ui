@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -17,8 +17,18 @@ import DownloadPanel from './Panels/Download';
 import InfoPanel from './Panels/Info';
 import CropSpecificPanel from './Panels/CropSpecific';
 
+// Helper to render variable abbreviation with subscript
+const renderAbbreviation = (variable) => {
+  if (!variable) return '';
+  if (variable.subscript) {
+    return <>{variable.abbreviation}<sub>{variable.subscript}</sub></>;
+  }
+  return variable.abbreviation;
+};
+
 const SidePanel = ({ clearLayers }) => {
   const [isFirstTimeInfo, setIsFirstTimeInfo] = useState(true);
+  const mountedRef = useRef(false);
 
   const {
     APIServerURL,
@@ -99,12 +109,25 @@ const SidePanel = ({ clearLayers }) => {
     top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + ${arrowPositions[nextUnselected].offset}px)`,
   } : {};
 
+  // Mark as mounted after a short delay to avoid catching the click that opened the panel
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mountedRef.current = true;
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Add page click listener for first-time info dismissal
   useEffect(() => {
     if (isFirstTimeInfo && activePanel === 'info') {
-      document.addEventListener('click', handlePageClick);
+      const handlePageClickWithGuard = () => {
+        // Ignore clicks that happen before component is fully mounted
+        if (!mountedRef.current) return;
+        handlePageClick();
+      };
+      document.addEventListener('click', handlePageClickWithGuard);
       return () => {
-        document.removeEventListener('click', handlePageClick);
+        document.removeEventListener('click', handlePageClickWithGuard);
       };
     }
   }, [isFirstTimeInfo, activePanel]);
@@ -163,7 +186,7 @@ const SidePanel = ({ clearLayers }) => {
             <div className="button-content">
               <FontAwesomeIcon icon={faLayerGroup} size="xl" />
               <span>Variable</span>
-              <span className="current-selection">{selectedVariable ? `${selectedVariable.abbreviation} ` : ''}</span>
+              <span className="current-selection">{selectedVariable ? renderAbbreviation(selectedVariable) : ''}</span>
             </div>
           </button>
         </div>
@@ -279,6 +302,7 @@ const SidePanel = ({ clearLayers }) => {
         <InfoPanel
           onClick={isFirstTimeInfo ? handleInfoPanelClick : undefined}
           onClose={handleInfoClose}
+          hasTimeline={!!(selectedCrop && selectedGlobalWaterModel && selectedClimateModel && selectedScenario)}
         />
       )}
     </div>

@@ -31,7 +31,7 @@ export const AppProvider = ({ children }) => {
     const [variables, setVariables] = useState([]);
     const [cropVariables, setCropVariables] = useState([]);
     const [availableYears, setAvailableYears] = useState([]);
-    const [activePanel, setActivePanel] = useState('info');
+    const [activePanel, setActivePanel] = useState(null);
     // Showcase mode state - starts in showcase mode
     const [showcaseMode, setShowcaseMode] = useState(true);
     const [showcaseIndex, setShowcaseIndex] = useState(0);
