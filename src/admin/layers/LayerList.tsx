@@ -59,7 +59,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import GrassIcon from '@mui/icons-material/Grass';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import EditIcon from '@mui/icons-material/Edit';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MapIcon from '@mui/icons-material/Map';
@@ -394,11 +393,10 @@ const StyleDisplay = () => {
                     <WarningIcon sx={{ fontSize: 14, color: 'warning.main' }} />
                 </Tooltip>
             )}
-            <Tooltip title={style?.name || 'Applied style'}>
-                <Box>
-                    <StylePreviewBox style={style} height={6} width={40} />
-                </Box>
-            </Tooltip>
+            <StylePreviewBox style={style} height={6} width={40} />
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
+                {style?.name || ''}
+            </Typography>
         </Box>
     );
 };
@@ -924,9 +922,10 @@ export const LayerList = () => {
                         '& .RaDatagrid-headerCell': {
                             fontWeight: 600,
                             backgroundColor: 'grey.50',
-                            py: 0.5,
-                            px: 1,
-                            fontSize: '0.8rem'
+                            py: 0.25,
+                            px: 0.5,
+                            fontSize: '0.75rem',
+                            whiteSpace: 'nowrap',
                         },
                         '& .RaDatagrid-row': {
                             transition: 'all 0.2s ease',
@@ -936,9 +935,9 @@ export const LayerList = () => {
                             }
                         },
                         '& .RaDatagrid-rowCell': {
-                            py: 0.5,
-                            px: 1,
-                            fontSize: '0.8rem'
+                            py: 0.25,
+                            px: 0.5,
+                            fontSize: '0.75rem',
                         },
                         '& .RaDatagrid-even': {
                             backgroundColor: 'transparent'
@@ -1022,20 +1021,6 @@ export const LayerList = () => {
                         source="total_views"
                         sortable={true}
                         textAlign="center"
-                        render={record => (
-                            <Chip
-                                size="small"
-                                icon={<VisibilityIcon sx={{ fontSize: '0.85rem !important' }} />}
-                                label={(record.total_views || 0).toLocaleString()}
-                                color="secondary"
-                                variant="filled"
-                                sx={{ fontSize: '0.75rem', fontWeight: 600, height: '24px' }}
-                            />
-                        )}
-                    />
-                    <FunctionField
-                        label="Actions"
-                        textAlign="center"
                         render={record => {
                             // Construct the frontend URL with layer parameters
                             const params = new URLSearchParams();
@@ -1055,7 +1040,7 @@ export const LayerList = () => {
                             const mapUrl = `/?${params.toString()}`;
 
                             return (
-                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                     <Tooltip title={record.enabled ? "Open in map" : "Layer is disabled"}>
                                         <span>
                                             <IconButton
@@ -1068,24 +1053,22 @@ export const LayerList = () => {
                                                 }}
                                                 disabled={!record.enabled}
                                                 sx={{
-                                                    color: record.enabled ? 'primary.main' : 'action.disabled'
+                                                    color: record.enabled ? 'primary.main' : 'action.disabled',
+                                                    p: 0.25,
                                                 }}
                                             >
-                                                <MapIcon fontSize="small" />
+                                                <MapIcon sx={{ fontSize: '1rem' }} />
                                             </IconButton>
                                         </span>
                                     </Tooltip>
-                                    <IconButton
+                                    <Chip
                                         size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // Navigate to edit view
-                                            window.location.href = `#/layers/${record.id}`;
-                                        }}
-                                        title="Edit layer"
-                                    >
-                                        <EditIcon fontSize="small" />
-                                    </IconButton>
+                                        icon={<VisibilityIcon sx={{ fontSize: '0.75rem !important' }} />}
+                                        label={(record.total_views || 0).toLocaleString()}
+                                        color="secondary"
+                                        variant="filled"
+                                        sx={{ fontSize: '0.7rem', fontWeight: 600, height: '20px' }}
+                                    />
                                 </Box>
                             );
                         }}
