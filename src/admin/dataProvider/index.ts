@@ -313,10 +313,24 @@ const dataProvider = (
         scenario?: string,
         year?: number,
         only_null_stats?: boolean,
-        limit?: number
+        limit?: number,
+        stats_status_value?: string,
+        force?: boolean,
     }) => {
         const query = params ? stringify(params) : '';
         return httpClient(`${apiUrl}/layers/recalculate-stats${query ? '?' + query : ''}`, {
+            method: 'POST'
+        }).then(({ json }) => ({ data: json }));
+    },
+    // Get recalculation job status
+    getRecalculateJobStatus: async () => {
+        return httpClient(`${apiUrl}/layers/recalculate-stats/status`, {
+            method: 'GET'
+        }).then(({ json }) => ({ data: json }));
+    },
+    // Cancel running recalculation job
+    cancelRecalculateJob: async () => {
+        return httpClient(`${apiUrl}/layers/recalculate-stats/cancel`, {
             method: 'POST'
         }).then(({ json }) => ({ data: json }));
     },

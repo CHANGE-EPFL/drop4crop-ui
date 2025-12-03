@@ -30,7 +30,7 @@ import {
     ReferenceInput,
     AutocompleteInput,
 } from "react-admin";
-import { useState, createContext, useContext } from 'react';
+import { useState, createContext, useContext, useEffect } from 'react';
 import { createStyleGradient } from '../../utils/styleUtils';
 
 // Context to share preloaded styles data across components
@@ -111,6 +111,54 @@ const StatsStatusIndicator = ({ statsStatus }: { statsStatus: any }) => {
         <Tooltip title="Unknown status">
             <HelpOutlineIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
         </Tooltip>
+    );
+};
+
+// Stats status field with click-to-filter icon
+const StatsStatusFilterableField = ({ record }) => {
+    const { filterValues, setFilters } = useListContext();
+
+    // Determine the filter value based on stats_status
+    const getFilterValue = () => {
+        if (!record.stats_status) return '__null__';
+        return record.stats_status.status || '__null__';
+    };
+
+    const handleFilterClick = (e) => {
+        e.stopPropagation();
+        setFilters({ ...filterValues, stats_status_value: getFilterValue() }, {});
+    };
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                '&:hover .filter-icon': {
+                    opacity: 1,
+                }
+            }}
+        >
+            <StatsStatusIndicator statsStatus={record.stats_status} />
+            <IconButton
+                size="small"
+                onClick={handleFilterClick}
+                className="filter-icon"
+                sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    p: 0.25,
+                    '&:hover': {
+                        backgroundColor: 'primary.light',
+                        color: 'primary.main',
+                    }
+                }}
+                title={`Filter by ${getFilterValue() === '__null__' ? 'not calculated' : getFilterValue()} status`}
+            >
+                <FilterListIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+        </Box>
     );
 };
 
@@ -714,84 +762,292 @@ const BulkRecalculateStatsButton = () => {
     );
 };
 
-// Recalculate ALL layers button with confirmation dialog
+// Job status interface for distributed queue
+interface RecalculateJobStatus {
+    is_running: boolean;
+    started_at: string | null;
+    total_layers: number;
+    todo_count: number;
+    processing_count: number;
+    processed_count: number;
+    success_count: number;
+    error_count: number;
+    progress_percent: number;
+    elapsed_seconds: number | null;
+    recent_errors: string[];
+    completed_at: string | null;
+    started_by: string | null;
+    active_workers: number;
+    has_stale_items: boolean;
+    stale_count: number;
+}
+
+// Recalculate ALL layers button with confirmation dialog and progress tracking
 const RecalculateAllButton = () => {
     const dataProvider = useDataProvider();
     const notify = useNotify();
     const refresh = useRefresh();
-    const [isRecalculating, setIsRecalculating] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [progress, setProgress] = useState<{ current: number; total: number; errors: number } | null>(null);
+    const [jobStatus, setJobStatus] = useState<RecalculateJobStatus | null>(null);
+    const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
-    const handleRecalculateAll = async () => {
+    // Poll for job status
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const result = await dataProvider.getRecalculateJobStatus();
+                setJobStatus(result.data);
+            } catch (error) {
+                // Silently fail - status endpoint may not be available
+            }
+        };
+
+        fetchStatus();
+        const interval = setInterval(fetchStatus, 2000); // Poll every 2 seconds
+
+        return () => clearInterval(interval);
+    }, [dataProvider]);
+
+    const handleStartRecalculation = async (force: boolean = false) => {
         setConfirmOpen(false);
-        setIsRecalculating(true);
-        setProgress({ current: 0, total: 0, errors: 0 });
 
         try {
-            // Call the endpoint without limit to process all layers
-            const result = await dataProvider.recalculateAllLayerStats({});
-            const { success_count, error_count, errors } = result.data;
+            const params: any = { force };
 
-            setProgress({ current: success_count + error_count, total: success_count + error_count, errors: error_count });
-
-            if (success_count > 0) {
-                notify(`Recalculated stats for ${success_count} layer(s)${error_count > 0 ? `, ${error_count} failed` : ''}`, {
-                    type: error_count > 0 ? 'warning' : 'success',
-                    autoHideDuration: 10000
-                });
-                if (error_count > 0 && errors?.length > 0) {
-                    console.error('Recalculation errors:', errors);
-                }
-            } else if (error_count > 0) {
-                notify(`Failed to recalculate stats for all ${error_count} layer(s)`, { type: 'error' });
-            } else {
-                notify('No layers to recalculate', { type: 'info' });
+            // Apply filter based on selection
+            if (selectedFilter === 'error') {
+                params.stats_status_value = 'error';
+            } else if (selectedFilter === 'null') {
+                params.stats_status_value = 'null';
+            } else if (selectedFilter === 'pending') {
+                params.stats_status_value = 'pending';
             }
-            refresh();
+            // 'all' means no filter
+
+            const result = await dataProvider.recalculateAllLayerStats(params);
+
+            if (result.data.started) {
+                notify(`Background job started for ${result.data.total_layers} layers`, { type: 'success' });
+            } else {
+                notify(result.data.message, { type: 'info' });
+            }
         } catch (error: any) {
-            notify(`Failed to recalculate statistics: ${error.message || error}`, { type: 'error' });
-        } finally {
-            setIsRecalculating(false);
-            // Keep progress visible for a moment then clear
-            setTimeout(() => setProgress(null), 3000);
+            // Check if it's a conflict error (job already running)
+            if (error.status === 409) {
+                notify('A job is already running. Use "Force Restart" to cancel and start a new job.', { type: 'warning' });
+            } else {
+                notify(`Failed to start recalculation: ${error.message || error}`, { type: 'error' });
+            }
         }
     };
+
+    const handleCancelJob = async () => {
+        try {
+            await dataProvider.cancelRecalculateJob();
+            notify('Job cancellation requested. Job will stop after current layer.', { type: 'info' });
+            refresh();
+        } catch (error: any) {
+            notify(`Failed to cancel job: ${error.message || error}`, { type: 'error' });
+        }
+    };
+
+    const formatElapsed = (seconds: number | null) => {
+        if (seconds === null) return '';
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    };
+
+    const isRunning = jobStatus?.is_running || false;
+    const hasStaleItems = jobStatus?.has_stale_items || false;
 
     return (
         <>
             <Button
                 size="small"
-                label={isRecalculating ? 'Recalculating All...' : 'Recalc All'}
+                label={hasStaleItems ? 'Stale Items!' : isRunning ? 'Job Running...' : 'Recalc All'}
                 onClick={() => setConfirmOpen(true)}
-                disabled={isRecalculating}
-                color="warning"
+                color={hasStaleItems ? 'error' : isRunning ? 'primary' : 'warning'}
             />
-            {progress && (
-                <Chip
-                    size="small"
-                    label={`${progress.current}/${progress.total}${progress.errors > 0 ? ` (${progress.errors} errors)` : ''}`}
-                    color={progress.errors > 0 ? 'error' : 'success'}
-                    variant="outlined"
-                    sx={{ ml: 1 }}
-                />
+            {isRunning && jobStatus && (
+                <Tooltip title={hasStaleItems
+                    ? `WARNING: ${jobStatus.stale_count} stale items - workers may have crashed`
+                    : `${jobStatus.active_workers} workers | ${jobStatus.success_count} success, ${jobStatus.error_count} errors`
+                }>
+                    <Chip
+                        size="small"
+                        label={`${jobStatus.processed_count}/${jobStatus.total_layers} (${jobStatus.progress_percent.toFixed(0)}%)`}
+                        color={hasStaleItems ? 'error' : jobStatus.error_count > 0 ? 'warning' : 'primary'}
+                        variant="outlined"
+                        sx={{ ml: 1 }}
+                    />
+                </Tooltip>
             )}
-            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-                <DialogTitle>Recalculate All Layer Statistics?</DialogTitle>
+            {!isRunning && jobStatus?.completed_at && (
+                <Tooltip title={`Completed: ${jobStatus.success_count} success, ${jobStatus.error_count} errors`}>
+                    <Chip
+                        size="small"
+                        icon={<CheckCircleIcon sx={{ fontSize: '0.9rem !important' }} />}
+                        label="Done"
+                        color="success"
+                        variant="outlined"
+                        sx={{ ml: 1 }}
+                    />
+                </Tooltip>
+            )}
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    {hasStaleItems ? 'Job Has Stale Items' : isRunning ? 'Distributed Recalculation Running' : 'Start Bulk Recalculation'}
+                </DialogTitle>
                 <DialogContent>
-                    <Typography>
-                        This will recalculate min/max/average statistics for <strong>all layers</strong> in the database.
-                        This operation fetches each layer from S3 and may take several minutes depending on the number of layers.
-                    </Typography>
-                    <Typography sx={{ mt: 2, color: 'warning.main' }}>
-                        Files are fetched directly from S3 (bypassing cache) to avoid filling up Redis.
-                    </Typography>
+                    {isRunning && jobStatus ? (
+                        <Box>
+                            {hasStaleItems && (
+                                <Box sx={{ mb: 2, p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
+                                    <Typography variant="body2" color="error.contrastText" fontWeight="bold">
+                                        Warning: {jobStatus.stale_count} stale item(s) detected!
+                                    </Typography>
+                                    <Typography variant="body2" color="error.contrastText">
+                                        Some items have been processing for over 60 seconds.
+                                        They will be automatically recovered and retried.
+                                    </Typography>
+                                </Box>
+                            )}
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary">Progress</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                                    <Box sx={{ flexGrow: 1, bgcolor: 'grey.200', borderRadius: 1, height: 8 }}>
+                                        <Box
+                                            sx={{
+                                                width: `${jobStatus.progress_percent}%`,
+                                                bgcolor: jobStatus.error_count > 0 ? 'warning.main' : 'primary.main',
+                                                borderRadius: 1,
+                                                height: '100%',
+                                                transition: 'width 0.3s ease'
+                                            }}
+                                        />
+                                    </Box>
+                                    <Typography variant="body2" fontWeight="bold">
+                                        {jobStatus.progress_percent.toFixed(1)}%
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 2 }}>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Todo</Typography>
+                                    <Typography variant="h6">{jobStatus.todo_count}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Processing</Typography>
+                                    <Typography variant="h6" color="info.main">{jobStatus.processing_count}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Completed</Typography>
+                                    <Typography variant="h6">{jobStatus.processed_count}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Success</Typography>
+                                    <Typography variant="h6" color="success.main">{jobStatus.success_count}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Errors</Typography>
+                                    <Typography variant="h6" color="error.main">{jobStatus.error_count}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Workers</Typography>
+                                    <Typography variant="h6" color="primary.main">{jobStatus.active_workers}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Elapsed</Typography>
+                                    <Typography variant="h6">{formatElapsed(jobStatus.elapsed_seconds)}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">Total</Typography>
+                                    <Typography variant="h6">{jobStatus.total_layers}</Typography>
+                                </Box>
+                            </Box>
+                            {jobStatus.recent_errors.length > 0 && (
+                                <Box sx={{ mt: 2 }}>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>Recent Errors</Typography>
+                                    <Box sx={{ maxHeight: 150, overflow: 'auto', bgcolor: 'grey.100', p: 1, borderRadius: 1, fontSize: '0.75rem' }}>
+                                        {jobStatus.recent_errors.map((err, i) => (
+                                            <Typography key={i} variant="caption" display="block" color="error.main" sx={{ mb: 0.5 }}>
+                                                {err}
+                                            </Typography>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Box>
+                            <Typography gutterBottom>
+                                Select which layers to recalculate:
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, my: 2 }}>
+                                <MuiButton
+                                    variant={selectedFilter === 'all' ? 'contained' : 'outlined'}
+                                    onClick={() => setSelectedFilter('all')}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ justifyContent: 'flex-start' }}
+                                >
+                                    All Layers (may take a long time)
+                                </MuiButton>
+                                <MuiButton
+                                    variant={selectedFilter === 'error' ? 'contained' : 'outlined'}
+                                    onClick={() => setSelectedFilter('error')}
+                                    size="small"
+                                    color="error"
+                                    fullWidth
+                                    sx={{ justifyContent: 'flex-start' }}
+                                >
+                                    Only Layers with Errors
+                                </MuiButton>
+                                <MuiButton
+                                    variant={selectedFilter === 'null' ? 'contained' : 'outlined'}
+                                    onClick={() => setSelectedFilter('null')}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ justifyContent: 'flex-start' }}
+                                >
+                                    Only Layers Never Calculated
+                                </MuiButton>
+                                <MuiButton
+                                    variant={selectedFilter === 'pending' ? 'contained' : 'outlined'}
+                                    onClick={() => setSelectedFilter('pending')}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ justifyContent: 'flex-start' }}
+                                >
+                                    Only Pending Layers
+                                </MuiButton>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                                Layers are queued and processed by all available API workers in parallel.
+                                You can close this dialog and monitor progress from the button.
+                            </Typography>
+                        </Box>
+                    )}
                 </DialogContent>
                 <DialogActions>
-                    <MuiButton onClick={() => setConfirmOpen(false)}>Cancel</MuiButton>
-                    <MuiButton onClick={handleRecalculateAll} color="warning" variant="contained">
-                        Recalculate All
+                    <MuiButton onClick={() => setConfirmOpen(false)}>
+                        {isRunning ? 'Close' : 'Cancel'}
                     </MuiButton>
+                    {isRunning ? (
+                        <>
+                            <MuiButton onClick={handleCancelJob} color="error" variant="contained">
+                                {hasStaleItems ? 'Clear Stale Job' : 'Stop Job'}
+                            </MuiButton>
+                            <MuiButton onClick={() => handleStartRecalculation(true)} color="warning" variant="outlined">
+                                Restart with New Filter
+                            </MuiButton>
+                        </>
+                    ) : (
+                        <MuiButton onClick={() => handleStartRecalculation(false)} color="warning" variant="contained">
+                            Start Recalculation
+                        </MuiButton>
+                    )}
                 </DialogActions>
             </Dialog>
         </>
@@ -1089,7 +1345,7 @@ export const LayerList = () => {
                     />
                     <FunctionField
                         label="Stats"
-                        render={record => <StatsStatusIndicator statsStatus={record.stats_status} />}
+                        render={record => <StatsStatusFilterableField record={record} />}
                     />
                     <FunctionField
                         label="Crop Specific"
