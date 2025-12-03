@@ -1,87 +1,130 @@
 /* eslint react/jsx-key: off */
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     ArrayInput,
     Button,
     Edit,
     NumberInput,
+    SelectInput,
     SimpleForm,
     SimpleFormIterator,
-    TextField,
     TextInput,
     required
 } from 'react-admin';
 import { useFormContext } from 'react-hook-form';
-import { Typography } from '@mui/material';
 
 
-const parseCSV = (csv) => {
-    const lines = csv.split('\n');
+/**
+ * Parses QGIS color map format into style array
+ * Example QGIS format:
+ * INTERPOLATION:DISCRETE
+ * 0.1,49,54,149,105,<= 0.1
+ * 0.22,69,117,180,255,0.1 - 0.2
+ */
+const parseQGISColorMap = (content) => {
+    const lines = content.split('\n');
     const result = [];
+    let interpolationType = 'linear';
 
     for (const line of lines) {
-        const values = line.split(',').map(value => value.trim());
-        if (values.length === 6 && !isNaN(values[0])) {
+        const trimmedLine = line.trim();
+
+        // Skip empty lines and comments
+        if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+
+        // Check for interpolation header
+        if (trimmedLine.startsWith('INTERPOLATION:')) {
+            const interp = trimmedLine.split(':')[1]?.toUpperCase();
+            interpolationType = interp === 'DISCRETE' ? 'discrete' : 'linear';
+            continue;
+        }
+
+        // Skip nan/nv lines
+        if (trimmedLine.startsWith('nan') || trimmedLine.startsWith('nv')) continue;
+
+        // Parse color stop: value,R,G,B,A,label
+        const parts = trimmedLine.split(',');
+        if (parts.length >= 5 && !isNaN(parseFloat(parts[0]))) {
             result.push({
-                value: parseFloat(values[0]),
-                red: parseInt(values[1], 10),
-                green: parseInt(values[2], 10),
-                blue: parseInt(values[3], 10),
-                opacity: parseInt(values[4], 10),
-                label: parseFloat(values[5])
+                value: parseFloat(parts[0]),
+                red: parseInt(parts[1], 10),
+                green: parseInt(parts[2], 10),
+                blue: parseInt(parts[3], 10),
+                opacity: parseInt(parts[4], 10),
+                label: parts.length >= 6 ? parts.slice(5).join(',').trim() : null
             });
         }
     }
 
-    return result;
+    return { stops: result, interpolationType };
 };
 
-export const UpdateFromCSV = () => {
-    const { setValue } = useFormContext();
-    const [csvData, setCsvData] = useState('');
+export const UpdateFromQGIS = () => {
+    const { setValue, getValues } = useFormContext();
+    const [qgisData, setQgisData] = useState('');
+
+    const handleImport = () => {
+        const { stops, interpolationType } = parseQGISColorMap(qgisData);
+        if (stops.length > 0) {
+            setValue('style', stops);
+            setValue('interpolation_type', interpolationType);
+        }
+    };
 
     return (
-        <>
-            <div>
-                <textarea
-                    placeholder="You may use a QGIS saved styly by pasting the data here.
-It should look similar to:
+        <div style={{ marginBottom: '20px' }}>
+            <textarea
+                placeholder={`Paste QGIS color map export here. Example:
 
 # QGIS Generated Color Map Export File
-INTERPOLATION:INTERPOLATED
-0.523522,215,25,28,255,0.5235
-2.246340,253,174,97,255,2.2463
-3.969157,255,255,191,255,3.9692"
-                    onChange={(event) => setCsvData(event.target.value)}
-                    rows="10"
-                    style={{ width: '200%', marginBottom: '20px' }}
-                />
-            </div>
-            <Button onClick={() => {
-                const parsedData = parseCSV(csvData);
-                setValue('style', parsedData);
-            }
-            } variant="contained">Update from CSV</Button>
-        </>
-    )
-}
+INTERPOLATION:DISCRETE
+0.1,49,54,149,105,<= 0.1
+0.22,69,117,180,255,0.1 - 0.2
+0.32,107,174,214,255,0.2 - 0.3
+1.5,255,255,191,255,1.0 - 1.5
+1000,165,0,38,255,> 10`}
+                value={qgisData}
+                onChange={(event) => setQgisData(event.target.value)}
+                rows={10}
+                style={{ width: '100%', marginBottom: '10px', fontFamily: 'monospace' }}
+            />
+            <Button
+                onClick={handleImport}
+                variant="contained"
+                disabled={!qgisData.trim()}
+            >
+                Import from QGIS Format
+            </Button>
+        </div>
+    );
+};
+
+const interpolationTypeChoices = [
+    { id: 'linear', name: 'Linear (smooth gradient)' },
+    { id: 'discrete', name: 'Discrete (stepped/bucketed)' },
+];
 
 const StyleEdit = () => {
-
     return (
         <Edit>
             <SimpleForm>
                 <TextInput source="id" disabled />
-                <TextInput source="name" validate={[required()]} />
-                <UpdateFromCSV />
+                <TextInput source="name" validate={[required()]} fullWidth />
+                <SelectInput
+                    source="interpolation_type"
+                    choices={interpolationTypeChoices}
+                    defaultValue="linear"
+                    helperText="Linear: smooth gradient between colors. Discrete: each value falls into a bucket."
+                />
+                <UpdateFromQGIS />
                 <ArrayInput source="style" validate={[required()]}>
                     <SimpleFormIterator inline>
-                        <NumberInput source="value" validate={[required()]} sx={{ width: '10%' }} />
-                        <NumberInput source="red" validate={[required()]} sx={{ width: '10%' }} />
-                        <NumberInput source="green" validate={[required()]} sx={{ width: '10%' }} />
-                        <NumberInput source="blue" validate={[required()]} sx={{ width: '10%' }} />
-                        <NumberInput source="opacity" validate={[required()]} sx={{ width: '10%' }} defaultValue={255} />
-                        <NumberInput source="label" validate={[required()]} sx={{ width: '10%' }} />
+                        <NumberInput source="value" validate={[required()]} sx={{ width: '12%' }} helperText="Threshold value" />
+                        <NumberInput source="red" validate={[required()]} sx={{ width: '10%' }} min={0} max={255} />
+                        <NumberInput source="green" validate={[required()]} sx={{ width: '10%' }} min={0} max={255} />
+                        <NumberInput source="blue" validate={[required()]} sx={{ width: '10%' }} min={0} max={255} />
+                        <NumberInput source="opacity" validate={[required()]} sx={{ width: '10%' }} min={0} max={255} defaultValue={255} />
+                        <TextInput source="label" sx={{ width: '20%' }} helperText="e.g., '0.1 - 0.2'" />
                     </SimpleFormIterator>
                 </ArrayInput>
             </SimpleForm>

@@ -43,6 +43,7 @@ const MapView = forwardRef((props, ref) => {
     countryPolygons,
     globalAverage,
     layerStyle,
+    interpolationType,
     selectedVariable,
     loading,
   } = useContext(AppContext);
@@ -113,6 +114,7 @@ const MapView = forwardRef((props, ref) => {
         />
         {layerName && !loading && (
           <TileLayer
+            key={layerName} // Force remount when layer changes to clear old tiles
             url={`/api/layers/xyz/{z}/{x}/{y}?layer=${layerName}`}
             maxZoom={20}
             noWrap={true}
@@ -145,6 +147,7 @@ const MapView = forwardRef((props, ref) => {
             <LegendControl
               globalAverage={globalAverage}
               colorMap={layerStyle}
+              interpolationType={interpolationType}
               selectedVariable={selectedVariable}
             />
           </>

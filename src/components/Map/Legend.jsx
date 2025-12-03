@@ -5,13 +5,161 @@ import { useMap } from "react-leaflet";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
+/**
+ * Creates discrete legend content with individual color blocks and labels
+ */
+const createDiscreteLegendContent = (legendContent, colorMap) => {
+  const legendColorBarContainer = L.DomUtil.create(
+    "div",
+    "legend-color-bar-container",
+    legendContent
+  );
+  legendColorBarContainer.style.display = "flex";
+  legendColorBarContainer.style.flexDirection = "column";
+  legendColorBarContainer.style.gap = "2px";
+  legendColorBarContainer.style.width = "100%";
+
+  // Create individual color blocks for each stop (in reverse order so highest is at top)
+  const sortedColorMap = [...colorMap].sort((a, b) => b.value - a.value);
+
+  sortedColorMap.forEach((stop) => {
+    const row = L.DomUtil.create("div", "legend-discrete-row", legendColorBarContainer);
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.gap = "8px";
+
+    const colorBox = L.DomUtil.create("div", "legend-color-box", row);
+    colorBox.style.width = "20px";
+    colorBox.style.height = "16px";
+    colorBox.style.backgroundColor = `rgba(${stop.red},${stop.green},${stop.blue},${(stop.opacity || 255) / 255})`;
+    colorBox.style.borderRadius = "2px";
+    colorBox.style.flexShrink = "0";
+
+    const label = L.DomUtil.create("span", "legend-discrete-label", row);
+    // Use the label from the color stop if available, otherwise show the value
+    label.textContent = stop.label || `≤ ${stop.value}`;
+    label.style.color = "#fff";
+    label.style.fontSize = "11px";
+    label.style.whiteSpace = "nowrap";
+  });
+};
+
+/**
+ * Creates linear gradient legend content with labels from color stops
+ */
+const createLinearLegendContent = (legendContent, colorMap) => {
+  // Sort colorMap by value in reverse (high to low for top-to-bottom gradient)
+  const sortedColorMap = [...colorMap].sort((a, b) => b.value - a.value);
+
+  // Check if any color stops have custom labels (check for undefined/null, not falsy, since "0" is valid)
+  const hasCustomLabels = sortedColorMap.some((stop) => stop.label !== undefined && stop.label !== null);
+
+  // Get min/max for positioning calculations
+  const values = colorMap.map((c) => c.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const range = maxValue - minValue;
+  const barHeight = 200;
+
+  // Create a wrapper that positions color bar and labels side by side
+  const legendColorBarContainer = L.DomUtil.create(
+    "div",
+    "legend-color-bar-container",
+    legendContent
+  );
+  legendColorBarContainer.setAttribute("style", "display: flex; flex-direction: row; align-items: flex-start; width: 100%;");
+
+  const legendColorBar = L.DomUtil.create(
+    "div",
+    "legend-color-bar",
+    legendColorBarContainer
+  );
+  legendColorBar.style.width = "20px";
+  legendColorBar.style.height = `${barHeight}px`;
+  legendColorBar.style.flexShrink = "0";
+  legendColorBar.style.background = `linear-gradient(to bottom, ${sortedColorMap
+    .map((c) => `rgba(${c.red},${c.green},${c.blue},${(c.opacity || 255) / 255})`)
+    .join(", ")})`;
+  legendColorBar.style.borderRadius = "5px";
+  legendColorBar.style.marginRight = "10px";
+
+  const legendLabels = L.DomUtil.create(
+    "div",
+    "legend-labels",
+    legendColorBarContainer
+  );
+
+  if (hasCustomLabels) {
+    // Use absolute positioning to place labels at correct positions along the gradient
+    legendLabels.style.position = "relative";
+    legendLabels.style.height = `${barHeight}px`;
+    legendLabels.style.minWidth = "40px";
+
+    // Filter to only stops that have labels (non-empty string, and not null/undefined)
+    const stopsWithLabels = sortedColorMap.filter((stop) =>
+      stop.label !== undefined && stop.label !== null && stop.label !== ""
+    );
+
+    stopsWithLabels.forEach((stop, index) => {
+      const label = L.DomUtil.create("div", "legend-label", legendLabels);
+      label.textContent = stop.label;
+      // Calculate pixel position: 0px at top (maxValue), 200px at bottom (minValue)
+      const pixelsFromTop = range > 0 ? ((maxValue - stop.value) / range) * barHeight : 0;
+      label.style.position = "absolute";
+      label.style.left = "0";
+      label.style.color = "#fff";
+      label.style.fontSize = "11px";
+      label.style.whiteSpace = "nowrap";
+
+      // Adjust positioning for edge labels to keep them within bounds
+      if (pixelsFromTop === 0) {
+        // Top label - align to top
+        label.style.top = "0";
+      } else if (pixelsFromTop >= barHeight) {
+        // Bottom label - align to bottom
+        label.style.bottom = "0";
+      } else {
+        // Middle labels - center on position
+        label.style.top = `${pixelsFromTop}px`;
+        label.style.transform = "translateY(-50%)";
+      }
+    });
+  } else {
+    // No custom labels - generate 5 evenly-spaced labels
+    legendLabels.style.display = "flex";
+    legendLabels.style.flexDirection = "column";
+    legendLabels.style.justifyContent = "space-between";
+    legendLabels.style.height = `${barHeight}px`;
+
+    const interval = range / 4;
+    const labelValues = [
+      maxValue,  // Top
+      maxValue - interval,
+      maxValue - 2 * interval,
+      maxValue - 3 * interval,
+      minValue,  // Bottom
+    ];
+
+    labelValues.forEach((value) => {
+      const label = L.DomUtil.create("div", "legend-label", legendLabels);
+      const formattedValue = Math.abs(value) < 10 ? value.toFixed(1) : Math.round(value);
+      label.textContent = formattedValue;
+      label.style.color = "#fff";
+      label.style.fontSize = "11px";
+    });
+  }
+};
+
 const createLegendContainer = (
   isVisible,
   setIsVisible,
   globalAverage,
   colorMap,
+  interpolationType,
   legendTitleText
 ) => {
+  const isDiscrete = interpolationType === 'discrete';
+
   const legendContainer = L.DomUtil.create("div", "legend-container");
   legendContainer.style.position = "relative";
   legendContainer.style.backgroundColor = "#333";
@@ -22,7 +170,10 @@ const createLegendContainer = (
   legendContainer.style.flexDirection = "column";
   legendContainer.style.alignItems = "center";
   legendContainer.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.4)";
-  legendContainer.style.width = isVisible ? "120px" : "25px";
+  // Discrete legends may need more width for labels
+  legendContainer.style.width = isVisible ? (isDiscrete ? "auto" : "120px") : "25px";
+  legendContainer.style.minWidth = isVisible ? (isDiscrete ? "140px" : "120px") : "25px";
+  legendContainer.style.maxWidth = isVisible ? "250px" : "25px";
   legendContainer.style.minHeight = isVisible ? "auto" : "25px";
   legendContainer.style.transition = "width 0.2s ease-in-out, padding 0.2s ease-in-out, min-height 0.2s ease-in-out";
 
@@ -51,7 +202,6 @@ const createLegendContainer = (
   averageDisplay.style.marginBottom = "10px";
   averageDisplay.style.textAlign = "left";
   averageDisplay.style.width = "100%";
-  // averageDisplay.innerHTML = `<strong>Global: ${globalAverage ? globalAverage.toFixed(2) : 'N/A'}</strong>`;
 
   const legendContent = L.DomUtil.create(
     "div",
@@ -69,59 +219,11 @@ const createLegendContainer = (
   legendTitle.style.width = "100%";
 
   if (colorMap.length) {
-    const legendColorBarContainer = L.DomUtil.create(
-      "div",
-      "legend-color-bar-container",
-      legendContent
-    );
-    legendColorBarContainer.style.display = "flex";
-    legendColorBarContainer.style.alignItems = "center";
-
-    const legendColorBar = L.DomUtil.create(
-      "div",
-      "legend-color-bar",
-      legendColorBarContainer
-    );
-    legendColorBar.style.width = "20px";
-    legendColorBar.style.height = "200px";
-    legendColorBar.style.background = `linear-gradient(to bottom, ${colorMap
-      .map((c) => `rgba(${c.red},${c.green},${c.blue},${c.opacity / 255})`)
-      .join(", ")})`;
-    legendColorBar.style.borderRadius = "5px";
-    legendColorBar.style.marginRight = "10px";
-
-    const legendLabels = L.DomUtil.create(
-      "div",
-      "legend-labels",
-      legendColorBarContainer
-    );
-    legendLabels.style.display = "flex";
-    legendLabels.style.flexDirection = "column";
-    legendLabels.style.justifyContent = "space-between";
-    legendLabels.style.height = "200px";
-
-    // Extracting the min and max values from the colorMap, ensuring they are rounded
-    const rawMinValue = Math.min(...colorMap.map((c) => c.label));
-    const rawMaxValue = Math.max(...colorMap.map((c) => c.label));
-    const minValue = Math.round(rawMinValue);
-    const maxValue = Math.round(rawMaxValue);
-
-    // Calculate three equal intervals between min and max
-    const interval = (maxValue - minValue) / 4;
-    const labelValues = [
-      minValue,
-      Math.round(minValue + interval),
-      Math.round(minValue + 2 * interval),
-      Math.round(minValue + 3 * interval),
-      maxValue,
-    ];
-
-    // Render only the 5 labels
-    labelValues.forEach((value) => {
-      const label = L.DomUtil.create("div", "legend-label", legendLabels);
-      label.innerHTML = `<span>${value}</span>`;
-      label.style.color = "#fff";
-    });
+    if (isDiscrete) {
+      createDiscreteLegendContent(legendContent, colorMap);
+    } else {
+      createLinearLegendContent(legendContent, colorMap);
+    }
   }
 
   toggleButton.onclick = (e) => {
@@ -129,7 +231,7 @@ const createLegendContainer = (
     setIsVisible(!isVisible);
   };
 
-  
+
   const root = createRoot(toggleButton);
   root.render(
     isVisible ?
@@ -159,6 +261,7 @@ const createLegendContainer = (
 export const LegendControl = ({
   globalAverage,
   colorMap,
+  interpolationType = 'linear',
   selectedVariable,
 }) => {
   const legendTitleText = selectedVariable
@@ -173,6 +276,7 @@ export const LegendControl = ({
       setIsVisible,
       globalAverage,
       colorMap,
+      interpolationType,
       legendTitleText
     );
     const legendControl = L.control({ position: "topright" });
@@ -186,7 +290,7 @@ export const LegendControl = ({
     return () => {
       legendControl.remove();
     };
-  }, [isVisible, globalAverage, colorMap, legendTitleText]);
+  }, [isVisible, globalAverage, colorMap, interpolationType, legendTitleText]);
 
   return null;
 };

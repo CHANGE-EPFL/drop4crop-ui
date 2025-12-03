@@ -80,7 +80,7 @@ import {
     Cell,
 } from 'recharts';
 
-// Style name display component - uses separate API call
+// Style name display component - uses separate API call, clickable to go to style page
 const StyleNameDisplay = ({ styleId }) => {
     const { data: style, isLoading } = useGetOne('styles', { id: styleId }, { enabled: !!styleId });
 
@@ -102,13 +102,26 @@ const StyleNameDisplay = ({ styleId }) => {
     }
 
     return (
-        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+        <Typography
+            variant="body1"
+            component="a"
+            href={`#/styles/${styleId}/show`}
+            sx={{
+                fontWeight: 500,
+                color: 'primary.main',
+                textDecoration: 'none',
+                '&:hover': {
+                    textDecoration: 'underline',
+                    cursor: 'pointer'
+                }
+            }}
+        >
             {style.name || 'Unnamed style'}
         </Typography>
     );
 };
 
-// ColorBar component that fetches style data
+// ColorBar component that fetches style data and supports discrete/linear modes
 const ColorBarWithData = ({ styleId }) => {
     const { data: style, isLoading } = useGetOne('styles', { id: styleId }, { enabled: !!styleId });
 
@@ -132,14 +145,47 @@ const ColorBarWithData = ({ styleId }) => {
         );
     }
 
+    const isDiscrete = style.interpolation_type === 'discrete';
+
+    if (isDiscrete) {
+        // Show discrete color blocks
+        const sortedStyle = [...style.style].sort((a, b) => a.value - b.value);
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    height: '20px',
+                    width: '100%',
+                    maxWidth: '400px',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    border: '1px solid #ddd',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}
+            >
+                {sortedStyle.map((stop, index) => (
+                    <Tooltip key={index} title={stop.label || `≤ ${stop.value}`}>
+                        <Box
+                            sx={{
+                                flex: 1,
+                                backgroundColor: `rgba(${stop.red},${stop.green},${stop.blue},${(stop.opacity || 255) / 255})`,
+                            }}
+                        />
+                    </Tooltip>
+                ))}
+            </Box>
+        );
+    }
+
+    // Linear gradient - same size as discrete
     const gradient = createStyleGradient(style.style);
 
     return (
         <Box
             sx={{
-                height: '12px',
+                height: '20px',
                 width: '100%',
-                maxWidth: '200px',
+                maxWidth: '400px',
                 background: gradient,
                 borderRadius: '6px',
                 border: '1px solid #ddd',

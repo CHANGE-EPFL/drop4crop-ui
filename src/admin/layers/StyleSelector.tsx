@@ -5,6 +5,70 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PaletteIcon from '@mui/icons-material/Palette';
 import { createStyleGradient } from '../../utils/styleUtils';
 
+// Helper component to render style preview (supports discrete and linear)
+const StylePreview: React.FC<{ style: any; height?: number; width?: number }> = ({
+    style,
+    height = 8,
+    width = 60
+}) => {
+    if (!style || !style.style || style.style.length === 0) {
+        return (
+            <Box
+                sx={{
+                    height: `${height}px`,
+                    width: `${width}px`,
+                    backgroundColor: '#e0e0e0',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                }}
+            />
+        );
+    }
+
+    const isDiscrete = style.interpolation_type === 'discrete';
+
+    if (isDiscrete) {
+        const sortedStops = [...style.style].sort((a, b) => a.value - b.value);
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    height: `${height}px`,
+                    width: `${width}px`,
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    border: '1px solid #ddd',
+                }}
+            >
+                {sortedStops.map((stop, index) => (
+                    <Box
+                        key={index}
+                        sx={{
+                            flex: 1,
+                            backgroundColor: `rgba(${stop.red},${stop.green},${stop.blue},${(stop.opacity || 255) / 255})`,
+                        }}
+                    />
+                ))}
+            </Box>
+        );
+    }
+
+    // Linear gradient
+    const gradient = createStyleGradient(style.style);
+    return (
+        <Box
+            sx={{
+                height: `${height}px`,
+                width: `${width}px`,
+                background: gradient,
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+        />
+    );
+};
+
 interface StyleSelectorProps {
     layerId: string;
     currentStyleId?: string | null;
@@ -118,34 +182,20 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({
                             </Typography>
                         </Box>
                     </MenuItem>
-                    {styles && styles.map((style) => {
-                        const gradient = style.style ? createStyleGradient(style.style) : '#e0e0e0';
-                        return (
-                            <MenuItem
-                                key={style.id}
-                                onClick={() => handleMenuItemClick(style.id)}
-                                selected={style.id === currentStyleId}
-                            >
-                                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-                                    <Typography variant="body2" sx={{ flex: 1 }}>
-                                        {style.name || 'Unnamed Style'}
-                                    </Typography>
-                                    <Box
-                                        sx={{
-                                            height: '8px',
-                                            width: '60px',
-                                            backgroundImage: gradient,
-                                            borderRadius: '4px',
-                                            border: '1px solid #ddd',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                                            backgroundColor: '#e0e0e0',
-                                            backgroundSize: '100% 100%'
-                                        }}
-                                    />
-                                </Box>
-                            </MenuItem>
-                        );
-                    })}
+                    {styles && styles.map((style) => (
+                        <MenuItem
+                            key={style.id}
+                            onClick={() => handleMenuItemClick(style.id)}
+                            selected={style.id === currentStyleId}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: 1 }}>
+                                <Typography variant="body2" sx={{ flex: 1 }}>
+                                    {style.name || 'Unnamed Style'}
+                                </Typography>
+                                <StylePreview style={style} />
+                            </Box>
+                        </MenuItem>
+                    ))}
                 </Menu>
             </>
         );
@@ -178,30 +228,16 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({
                     </Typography>
                 </Box>
             </MenuItem>
-            {styles && styles.map((style) => {
-                const gradient = style.style ? createStyleGradient(style.style) : '#e0e0e0';
-                return (
-                    <MenuItem key={style.id} value={style.id}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" sx={{ flex: 1 }}>
-                                {style.name || 'Unnamed Style'}
-                            </Typography>
-                            <Box
-                                sx={{
-                                    height: '8px',
-                                    width: '60px',
-                                    backgroundImage: gradient,
-                                    borderRadius: '4px',
-                                    border: '1px solid #ddd',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                                    backgroundColor: '#e0e0e0',
-                                    backgroundSize: '100% 100%'
-                                }}
-                            />
-                        </Box>
-                    </MenuItem>
-                );
-            })}
+            {styles && styles.map((style) => (
+                <MenuItem key={style.id} value={style.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: 1 }}>
+                        <Typography variant="body2" sx={{ flex: 1 }}>
+                            {style.name || 'Unnamed Style'}
+                        </Typography>
+                        <StylePreview style={style} />
+                    </Box>
+                </MenuItem>
+            ))}
         </Select>
     );
 };

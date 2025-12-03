@@ -12,6 +12,7 @@ export const AppProvider = ({ children }) => {
     const [globalAverage, setGlobalAverage] = useState(undefined);
     const [countryAverageValues, setCountryAverageValues] = useState(undefined);
     const [layerStyle, setLayerStyle] = useState([]);
+    const [interpolationType, setInterpolationType] = useState('linear');
     const [selectedLayer, setSelectedLayer] = useState({
         crop: undefined,
         water_model: undefined,
@@ -64,6 +65,8 @@ export const AppProvider = ({ children }) => {
         setCountryAverageValues,
         layerStyle,
         setLayerStyle,
+        interpolationType,
+        setInterpolationType,
         selectedLayer,
         setSelectedLayer,
         boundingBox,
@@ -112,7 +115,7 @@ export const AppProvider = ({ children }) => {
         setCountryPolygons,
     }), [
         loadingGroups, loadingCountries, loadingLayer, loadingAll,
-        layerName, globalAverage, countryAverageValues, layerStyle,
+        layerName, globalAverage, countryAverageValues, layerStyle, interpolationType,
         selectedLayer, boundingBox, enableSelection, countryAverages,
         crops, globalWaterModels, climateModels, scenarios,
         variables, cropVariables, availableYears, activePanel,

@@ -224,6 +224,66 @@ const FilterableField = ({ source, value, transform }) => {
     );
 };
 
+// Helper to render style preview (supports discrete and linear)
+const StylePreviewBox = ({ style, height = 8, width = 60 }) => {
+    if (!style?.style || style.style.length === 0) {
+        return (
+            <Box
+                sx={{
+                    height: `${height}px`,
+                    width: `${width}px`,
+                    backgroundColor: '#e0e0e0',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                }}
+            />
+        );
+    }
+
+    const isDiscrete = style.interpolation_type === 'discrete';
+
+    if (isDiscrete) {
+        const sortedStops = [...style.style].sort((a, b) => a.value - b.value);
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    height: `${height}px`,
+                    width: `${width}px`,
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    border: '1px solid #ddd',
+                }}
+            >
+                {sortedStops.map((stop, index) => (
+                    <Box
+                        key={index}
+                        sx={{
+                            flex: 1,
+                            backgroundColor: `rgba(${stop.red},${stop.green},${stop.blue},${(stop.opacity || 255) / 255})`,
+                        }}
+                    />
+                ))}
+            </Box>
+        );
+    }
+
+    // Linear gradient
+    const gradient = createStyleGradient(style.style);
+    return (
+        <Box
+            sx={{
+                height: `${height}px`,
+                width: `${width}px`,
+                background: gradient,
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+        />
+    );
+};
+
 // Style name and color bar component - uses context to avoid per-row queries
 const StyleDisplay = () => {
     const record = useRecordContext();
@@ -254,23 +314,13 @@ const StyleDisplay = () => {
 
     // Look up the style from the preloaded context
     const style = stylesMap.get(record.style_id);
-    const gradient = style?.style ? createStyleGradient(style.style) : null;
 
     return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="body2">
                 {style?.name || 'Applied style'}
             </Typography>
-            <Box
-                sx={{
-                    height: '8px',
-                    width: '60px',
-                    background: gradient || '#e0e0e0',
-                    borderRadius: '4px',
-                    border: '1px solid #ddd',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                }}
-            />
+            <StylePreviewBox style={style} />
         </Box>
     );
 };
@@ -498,27 +548,16 @@ const StyleSelectMenu = () => {
                     </Typography>
                 </Box>
             </MenuItem>
-            {data.map(style => {
-                const gradient = style.style ? createStyleGradient(style.style) : '#e0e0e0';
-                return (
-                    <MenuItem key={style.id} value={style.id}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: 2 }}>
-                            <Typography variant="body2">
-                                {style.name}
-                            </Typography>
-                            <Box sx={{
-                                width: 60,
-                                height: 8,
-                                borderRadius: '4px',
-                                border: '1px solid #ddd',
-                                backgroundImage: gradient,
-                                backgroundColor: '#e0e0e0',
-                                backgroundSize: '100% 100%'
-                            }} />
-                        </Box>
-                    </MenuItem>
-                );
-            })}
+            {data.map(style => (
+                <MenuItem key={style.id} value={style.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: 2 }}>
+                        <Typography variant="body2">
+                            {style.name}
+                        </Typography>
+                        <StylePreviewBox style={style} />
+                    </Box>
+                </MenuItem>
+            ))}
         </Select>
     );
 };
