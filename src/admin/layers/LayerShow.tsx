@@ -627,6 +627,11 @@ const LayerShowContent = () => {
                                             Error: {record.stats_status.error}
                                         </Typography>
                                     )}
+                                    {record.stats_status.details && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                            {record.stats_status.details}
+                                        </Typography>
+                                    )}
                                 </Box>
                             )}
                         </Stack>
