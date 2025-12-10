@@ -138,6 +138,27 @@ const VariablePanel = ({
                 </div>
 
                 <div className="chips-group">
+                    <h5>Virtual Water Content [m³ ton⁻¹]</h5>
+                    <div className="chips-list">
+                        {variables.filter(variable => ['vwcb', 'vwcg', 'vwc'].includes(variable.id))
+                            .sort((a, b) => {
+                                const order = ['vwcb', 'vwcg', 'vwc'];
+                                return order.indexOf(a.id) - order.indexOf(b.id);
+                            })
+                            .map(variable => (
+                            <Chip
+                                key={variable.id}
+                                label={renderVariableLabel(variable)}
+                                clickable
+                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                                disabled={!variable.enabled}
+                                onClick={() => handleChipClick(variable)}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                <div className="chips-group">
                     <h5>Water Footprint [m³]</h5>
                     <div className="chips-list">
                         {variables.filter(variable => ['wfb', 'wfg', 'wf'].includes(variable.id))

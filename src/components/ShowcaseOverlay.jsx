@@ -68,7 +68,7 @@ const showcaseExamples = [
   },
 ];
 
-const ROTATION_INTERVAL = 10000; // 10 seconds
+const ROTATION_INTERVAL = 12000; // 12 seconds
 const PROGRESS_STEP = 100 / (ROTATION_INTERVAL / 100); // Progress increment per 100ms
 const MAP_INTERACTION_DEBOUNCE = 1500; // Resume after 1.5 seconds of no interaction
 
