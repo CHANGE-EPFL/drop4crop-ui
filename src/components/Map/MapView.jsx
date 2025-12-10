@@ -33,6 +33,33 @@ function UpdateMapZoom({ computedZoom, resetView, onResetDone }) {
   return null;
 }
 
+// Component to handle drag cursor - only shows grabbing cursor when actually dragging
+function DragCursorHandler() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+
+    const onDragStart = () => {
+      container.classList.add('map-dragging');
+    };
+
+    const onDragEnd = () => {
+      container.classList.remove('map-dragging');
+    };
+
+    map.on('dragstart', onDragStart);
+    map.on('dragend', onDragEnd);
+
+    return () => {
+      map.off('dragstart', onDragStart);
+      map.off('dragend', onDragEnd);
+      container.classList.remove('map-dragging');
+    };
+  }, [map]);
+
+  return null;
+}
+
 const MapView = forwardRef((props, ref) => {
   const {
     layerName,
@@ -106,6 +133,7 @@ const MapView = forwardRef((props, ref) => {
           resetView={resetView}
           onResetDone={() => setResetView(false)}
         />
+        <DragCursorHandler />
         <MapOverlay layerName={layerName} loading={loadingLayer} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
