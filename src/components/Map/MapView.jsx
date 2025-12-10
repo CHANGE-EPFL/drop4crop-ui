@@ -46,7 +46,7 @@ const MapView = forwardRef((props, ref) => {
     interpolationType,
     labelDisplayMode,
     labelCount,
-    selectedVariable,
+    variableForLegend,
     loadingLayer,
   } = useContext(AppContext);
 
@@ -142,7 +142,7 @@ const MapView = forwardRef((props, ref) => {
               interpolationType={interpolationType}
               labelDisplayMode={labelDisplayMode}
               labelCount={labelCount}
-              selectedVariable={selectedVariable}
+              selectedVariable={variableForLegend}
             />
           </>
         )}
