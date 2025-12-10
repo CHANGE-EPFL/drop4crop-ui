@@ -161,18 +161,16 @@ const MapView = forwardRef((props, ref) => {
           enableSelection={enableSelection}
           setEnableSelection={setEnableSelection}
         />
+        <MapClickHandler />
         {layerName && (
-          <>
-            <MapClickHandler />
-            <LegendControl
-              globalAverage={globalAverage}
-              colorMap={layerStyle}
-              interpolationType={interpolationType}
-              labelDisplayMode={labelDisplayMode}
-              labelCount={labelCount}
-              selectedVariable={variableForLegend}
-            />
-          </>
+          <LegendControl
+            globalAverage={globalAverage}
+            colorMap={layerStyle}
+            interpolationType={interpolationType}
+            labelDisplayMode={labelDisplayMode}
+            labelCount={labelCount}
+            selectedVariable={variableForLegend}
+          />
         )}
       </MapContainer>
     </div>

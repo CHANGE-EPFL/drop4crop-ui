@@ -135,11 +135,12 @@ export const MapClickHandler = () => {
     const map = useMap();
     const [clickPosition, setClickPosition] = useState(null);
     const rootRef = useRef(null);
+    const popupRef = useRef(null);
     const container = PopupContentContainer();
 
-    const fetchPixelValue = async (lat, lon) => {
+    const fetchPixelValue = async (lat, lon, layer) => {
         try {
-            const response = await axios.get(`/api/layers/${layerName}/value`, {
+            const response = await axios.get(`/api/layers/${layer}/value`, {
                 params: { lat, lon }
             });
             return response.data.value;
@@ -153,16 +154,53 @@ export const MapClickHandler = () => {
         map.closePopup();
     };
 
+    // Clear click position only when popup is closed by user (not programmatically)
+    useEffect(() => {
+        const onPopupClose = (e) => {
+            // Only reset if closed by user interaction, not by our updates
+            if (!e.popup._keepOpen) {
+                setClickPosition(null);
+                popupRef.current = null;
+            }
+        };
+        map.on('popupclose', onPopupClose);
+        return () => {
+            map.off('popupclose', onPopupClose);
+        };
+    }, [map]);
+
     useMapEvent('click', (e) => {
         if (enableSelection) {
             setEnableSelection(false);
             return;
         }
+        // Close existing popup and open new one at clicked location
+        if (popupRef.current) {
+            map.closePopup(popupRef.current);
+            popupRef.current = null;
+        }
         setClickPosition(e.latlng);
     });
 
+    // Close popup when layer is cleared (switching modes, layer doesn't exist, etc.)
+    // Use a small delay to distinguish between layer transitions and intentional clearing
     useEffect(() => {
-        if (!clickPosition) return;
+        if (!layerName && popupRef.current) {
+            const timeout = setTimeout(() => {
+                // Only close if layer is still null after delay (not a transition)
+                if (popupRef.current) {
+                    map.closePopup(popupRef.current);
+                    popupRef.current = null;
+                    setClickPosition(null);
+                }
+            }, 100);
+            return () => clearTimeout(timeout);
+        }
+    }, [layerName, map]);
+
+    // Update popup content when click position OR layer/selection changes
+    useEffect(() => {
+        if (!clickPosition || !layerName) return;
 
         const fetchData = async () => {
             if (countryAverages && countryPolygons) {
@@ -187,28 +225,26 @@ export const MapClickHandler = () => {
                     />
                 );
 
-                // Use requestAnimationFrame to ensure DOM is ready before showing popup
-                requestAnimationFrame(() => {
-                    const popup = L.popup({
-                        closeButton: true,
-                        autoClose: true,
-                        className: 'custom-leaflet-popup'
-                    })
-                        .setLatLng(clickPosition)
-                        .setContent(container)
-                        .openOn(map);
-
-                    // Force Leaflet to recalculate popup position after content is rendered
+                // Only create popup if it doesn't exist
+                if (!popupRef.current) {
                     requestAnimationFrame(() => {
-                        popup.update();
+                        popupRef.current = L.popup({
+                            closeButton: true,
+                            autoClose: false,
+                            closeOnClick: false,
+                            className: 'custom-leaflet-popup'
+                        })
+                            .setLatLng(clickPosition)
+                            .setContent(container)
+                            .openOn(map);
                     });
-                });
+                }
 
                 return;
             }
 
             try {
-                const pixelValue = await fetchPixelValue(clickPosition.lat, clickPosition.lng);
+                const pixelValue = await fetchPixelValue(clickPosition.lat, clickPosition.lng, layerName);
                 if (!rootRef.current) {
                     rootRef.current = createRoot(container);
                 }
@@ -230,22 +266,20 @@ export const MapClickHandler = () => {
                     </div>
                 );
 
-                // Use requestAnimationFrame to ensure DOM is ready before showing popup
-                requestAnimationFrame(() => {
-                    const popup = L.popup({
-                        closeButton: true,
-                        autoClose: true,
-                        className: 'custom-leaflet-popup'
-                    })
-                        .setLatLng(clickPosition)
-                        .setContent(container)
-                        .openOn(map);
-
-                    // Force Leaflet to recalculate popup position after content is rendered
+                // Only create popup if it doesn't exist, otherwise just update content
+                if (!popupRef.current) {
                     requestAnimationFrame(() => {
-                        popup.update();
+                        popupRef.current = L.popup({
+                            closeButton: true,
+                            autoClose: false,
+                            closeOnClick: false,
+                            className: 'custom-leaflet-popup'
+                        })
+                            .setLatLng(clickPosition)
+                            .setContent(container)
+                            .openOn(map);
                     });
-                });
+                }
 
             } catch (error) {
                 console.error('Error fetching pixel value:', error);
@@ -253,7 +287,7 @@ export const MapClickHandler = () => {
         };
 
         fetchData();
-    }, [clickPosition, highlightedFeature, countryAverages, countryPolygons, countryAverageValues, map, container]);
+    }, [clickPosition, layerName, selectedCrop, selectedVariable, selectedCropVariable, selectedTime, highlightedFeature, countryAverages, countryPolygons, countryAverageValues, map, container]);
 
     useEffect(() => {
         return () => {
