@@ -10,6 +10,38 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppContext } from '../../contexts/AppContext';
 
+// Subtle layer info header for popups - shows essential info only
+const LayerInfoHeader = ({ crop, variable, cropVariable, year }) => {
+    const parts = [];
+    if (crop) parts.push(crop.name);
+    if (variable) {
+        const varLabel = variable.subscript
+            ? `${variable.abbreviation}${variable.subscript}`
+            : variable.abbreviation;
+        parts.push(varLabel);
+    }
+    if (cropVariable) parts.push(cropVariable.name);
+    // Only show year for time-based variables, not crop-specific
+    if (year && !cropVariable) parts.push(year);
+
+    if (parts.length === 0) return null;
+
+    return (
+        <div style={{
+            fontSize: '0.85em',
+            color: '#d1a766',
+            opacity: 0.8,
+            marginBottom: '10px',
+            paddingBottom: '8px',
+            borderBottom: '1px solid #444',
+            textAlign: 'center',
+            width: '100%',
+        }}>
+            {parts.join(' · ')}
+        </div>
+    );
+};
+
 const CountryPopupContent = ({ country, countryAverage, onClose }) => {
     const handleClosePopup = () => {
         map.closePopup();
@@ -95,6 +127,10 @@ export const MapClickHandler = () => {
         countryAverageValues,
         enableSelection,
         setEnableSelection,
+        selectedCrop,
+        selectedVariable,
+        selectedCropVariable,
+        selectedTime,
     } = useContext(AppContext);
     const map = useMap();
     const [clickPosition, setClickPosition] = useState(null);
@@ -178,6 +214,12 @@ export const MapClickHandler = () => {
                 }
                 rootRef.current.render(
                     <div style={{ ...popupBoxStyle, width: '200px', padding: '10px', position: 'relative', textAlign: 'left' }}>
+                        <LayerInfoHeader
+                            crop={selectedCrop}
+                            variable={selectedVariable}
+                            cropVariable={selectedCropVariable}
+                            year={selectedTime}
+                        />
                         <div style={{ textAlign: 'left', width: '100%' }}>
                             <b>Lat</b>: {clickPosition.lat.toFixed(6)}°
                             <br />
@@ -230,17 +272,17 @@ export default MapClickHandler;
 
 const popupBoxStyle = {
     backgroundColor: '#333',
-    padding: '10px',
+    padding: '12px',
     borderRadius: '5px',
     opacity: '0.95',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
-    color: '#d3d3d3',
-    fontSize: '1em',
+    color: 'white',
+    fontSize: '1.05em',
     textAlign: 'center',
-    lineHeight: '1.2em',
-    minWidth: '150px',  // Ensures the popup is not too squished
-    maxWidth: '300px',  // Limits the width
+    lineHeight: '1.5em',
+    minWidth: '150px',
+    maxWidth: '300px',
 };
