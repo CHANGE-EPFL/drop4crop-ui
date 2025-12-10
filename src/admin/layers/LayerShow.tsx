@@ -318,6 +318,8 @@ const LayerShowContent = () => {
     const [activeTab, setActiveTab] = useState(0);
     const [timelineData, setTimelineData] = useState([]);
     const [timelineLoading, setTimelineLoading] = useState(true);
+    const [cacheDetail, setCacheDetail] = useState(null);
+    const [cacheDetailLoading, setCacheDetailLoading] = useState(false);
 
     // Cache and stats are now included in the record from the backend
     const cacheStatus = record?.cache_status;
@@ -360,6 +362,25 @@ const LayerShowContent = () => {
             fetchTimeline();
         }
     }, [activeTab, record, dataProvider]);
+
+    // Fetch cache detail when cache tab is opened
+    useEffect(() => {
+        if (activeTab === 2 && record?.layer_name) {
+            const fetchCacheDetail = async () => {
+                setCacheDetailLoading(true);
+                try {
+                    const { data } = await dataProvider.getLayerCacheDetail(record.layer_name);
+                    setCacheDetail(data);
+                } catch (error) {
+                    console.error('Error fetching cache detail:', error);
+                    setCacheDetail(null);
+                } finally {
+                    setCacheDetailLoading(false);
+                }
+            };
+            fetchCacheDetail();
+        }
+    }, [activeTab, record?.layer_name, dataProvider]);
 
     if (!record) {
         return <div>No data available</div>;
@@ -604,6 +625,25 @@ const LayerShowContent = () => {
                                         {record.global_average?.toFixed(2) || 'N/A'}
                                     </Typography>
                                 </Box>
+                            </Box>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                                <Tooltip title="Pre-computed overview quality hint for optimized tile serving. -2 = all overviews usable, -1 = none usable, ≥0 = minimum usable overview index">
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Overview Quality
+                                        </Typography>
+                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                            {record.min_usable_overview === null || record.min_usable_overview === undefined
+                                                ? <Chip label="Not computed" size="small" color="warning" variant="outlined" />
+                                                : record.min_usable_overview === -2
+                                                ? <Chip label="All usable" size="small" color="success" variant="outlined" />
+                                                : record.min_usable_overview === -1
+                                                ? <Chip label="None usable" size="small" color="error" variant="outlined" />
+                                                : <Chip label={`Min index: ${record.min_usable_overview}`} size="small" color="info" variant="outlined" />
+                                            }
+                                        </Typography>
+                                    </Box>
+                                </Tooltip>
                             </Box>
                             {/* Stats Status */}
                             {record.stats_status && (
@@ -878,28 +918,24 @@ const LayerShowContent = () => {
                 {/* Cache Tab */}
                 {activeTab === 2 && (
                     <Stack spacing={2}>
-                        {cacheStatus && cacheStatus.cached ? (
+                        {cacheDetailLoading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : cacheDetail && cacheDetail.total_items > 0 ? (
                             <>
-                                {/* Cache Information - Compact Layout */}
-                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                                {/* Cache Summary */}
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                            Cache Size
-                                        </Typography>
                                         <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                            {cacheStatus.size_mb?.toFixed(2)} MB
+                                            {cacheDetail.total_size_mb?.toFixed(2)} MB cached
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {cacheDetail.total_items} items ({cacheDetail.cog_file ? '1 COG file' : '0 COG files'}, {cacheDetail.png_tiles?.length || 0} PNG tiles)
                                         </Typography>
                                     </Box>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                            TTL Remaining
-                                        </Typography>
-                                        <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                                            {cacheStatus.ttl_hours != null ? `${cacheStatus.ttl_hours.toFixed(1)} hours` : 'Permanent'}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', gap: 1, mt: 2.5 }}>
-                                        {cacheStatus.ttl_hours != null ? (
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        {cacheDetail.cog_file && cacheDetail.cog_file.ttl_hours != null ? (
                                             <Button
                                                 variant="outlined"
                                                 color="success"
@@ -907,7 +943,7 @@ const LayerShowContent = () => {
                                                 onClick={async () => {
                                                     try {
                                                         await dataProvider.persistLayerCache(record.layer_name);
-                                                        notify('Cache is now permanent (will not expire)', { type: 'success' });
+                                                        notify('COG cache is now permanent', { type: 'success' });
                                                         refresh();
                                                     } catch (error) {
                                                         notify('Failed to make cache permanent', { type: 'error' });
@@ -916,7 +952,7 @@ const LayerShowContent = () => {
                                             >
                                                 Make Permanent
                                             </Button>
-                                        ) : (
+                                        ) : cacheDetail.cog_file && (
                                             <Button
                                                 variant="outlined"
                                                 color="warning"
@@ -924,7 +960,7 @@ const LayerShowContent = () => {
                                                 onClick={async () => {
                                                     try {
                                                         await dataProvider.unpersistLayerCache(record.layer_name);
-                                                        notify('Cache will now expire after the default TTL', { type: 'success' });
+                                                        notify('COG cache will now expire after default TTL', { type: 'success' });
                                                         refresh();
                                                     } catch (error) {
                                                         notify('Failed to restore expiry', { type: 'error' });
@@ -940,7 +976,7 @@ const LayerShowContent = () => {
                                             size="small"
                                             startIcon={<DeleteIcon />}
                                             onClick={async () => {
-                                                if (window.confirm(`Clear cache for "${record.layer_name}"?`)) {
+                                                if (window.confirm(`Clear all cache for "${record.layer_name}"?`)) {
                                                     try {
                                                         await dataProvider.clearLayerCache(record.layer_name);
                                                         notify('Cache cleared', { type: 'success' });
@@ -951,27 +987,84 @@ const LayerShowContent = () => {
                                                 }
                                             }}
                                         >
-                                            Clear Cache
+                                            Clear All Cache
                                         </Button>
                                     </Box>
                                 </Box>
 
-                                {/* Cache Key */}
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                        Cache Key
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem', color: 'text.primary' }}>
-                                        {cacheStatus.cache_key}
-                                    </Typography>
-                                </Box>
+                                <Divider />
 
-                                <Divider sx={{ my: 1 }} />
+                                {/* COG File Section */}
+                                {cacheDetail.cog_file && (
+                                    <Box>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <StorageIcon fontSize="small" color="primary" /> COG File
+                                        </Typography>
+                                        <TableContainer component={Paper} variant="outlined">
+                                            <Table size="small">
+                                                <TableBody>
+                                                    <TableRow>
+                                                        <TableCell sx={{ fontWeight: 500, width: '120px' }}>Size</TableCell>
+                                                        <TableCell>{cacheDetail.cog_file.size_mb?.toFixed(2)} MB</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell sx={{ fontWeight: 500 }}>TTL</TableCell>
+                                                        <TableCell>
+                                                            {cacheDetail.cog_file.ttl_hours != null
+                                                                ? `${cacheDetail.cog_file.ttl_hours.toFixed(1)} hours remaining`
+                                                                : 'Permanent (no expiry)'}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell sx={{ fontWeight: 500 }}>Cache Key</TableCell>
+                                                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                                            {cacheDetail.cog_file.cache_key}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </Box>
+                                )}
 
-                                {/* Compact Info Alert */}
+                                {/* PNG Tiles Section */}
+                                {cacheDetail.png_tiles && cacheDetail.png_tiles.length > 0 && (
+                                    <Box>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <MapIcon fontSize="small" color="secondary" /> PNG Tiles ({cacheDetail.png_tiles.length})
+                                        </Typography>
+                                        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                                            <Table size="small" stickyHeader>
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell><strong>Tile (z/x/y)</strong></TableCell>
+                                                        <TableCell><strong>Size</strong></TableCell>
+                                                        <TableCell><strong>TTL</strong></TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {cacheDetail.png_tiles.map((tile, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell sx={{ fontFamily: 'monospace' }}>
+                                                                {tile.tile_coords || '—'}
+                                                            </TableCell>
+                                                            <TableCell>{(tile.size_bytes / 1024).toFixed(1)} KB</TableCell>
+                                                            <TableCell>
+                                                                {tile.ttl_hours != null
+                                                                    ? `${tile.ttl_hours.toFixed(1)} hrs`
+                                                                    : 'No expiry'}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </Box>
+                                )}
+
                                 <Alert severity="info" sx={{ py: 1 }}>
                                     <Typography variant="body2">
-                                        Cached GeoTIFF loads faster • TTL resets on each access • Popular layers stay cached longer • Clearing forces S3 re-download
+                                        COG files are cached for fast S3 access • PNG tiles are cached for instant response • TTL resets on each access
                                     </Typography>
                                 </Alert>
                             </>
@@ -981,7 +1074,7 @@ const LayerShowContent = () => {
                                     This layer is not cached. It will be cached automatically on first access.
                                 </Alert>
                                 <Typography variant="body2" color="text.secondary">
-                                    Caching stores the entire GeoTIFF in Redis for faster access. TTL resets on each access, so frequently used layers stay cached.
+                                    COG files are cached from S3 for fast tile generation. PNG tiles are cached after rendering for instant response.
                                 </Typography>
                             </>
                         )}

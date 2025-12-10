@@ -265,6 +265,12 @@ const dataProvider = (
     getCacheKeys: async () => {
         return httpClient(`${apiUrl}/cache/keys`).then(({ json }) => ({ data: json }));
     },
+    getCacheAggregated: async () => {
+        return httpClient(`${apiUrl}/cache/aggregated`).then(({ json }) => ({ data: json }));
+    },
+    getLayerCacheDetail: async (layerName) => {
+        return httpClient(`${apiUrl}/cache/layers/${layerName}/detail`).then(({ json }) => ({ data: json }));
+    },
     clearAllCache: async () => {
         return httpClient(`${apiUrl}/cache/clear`, {
             method: 'POST'

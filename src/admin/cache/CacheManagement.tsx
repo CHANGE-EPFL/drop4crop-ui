@@ -3,7 +3,6 @@ import { useDataProvider, useNotify, Title, useRedirect } from 'react-admin';
 import {
     Card,
     CardContent,
-    Grid,
     Typography,
     Box,
     Button,
@@ -26,14 +25,13 @@ import {
     Alert,
 } from '@mui/material';
 import {
-    Storage as StorageIcon,
     Delete as DeleteIcon,
-    Timer as TimerIcon,
     CheckCircle as CheckCircleIcon,
     Error as ErrorIcon,
-    Speed as SpeedIcon,
     Layers as LayersIcon,
     BarChart as BarChartIcon,
+    Image as ImageIcon,
+    Storage as StorageIcon,
 } from '@mui/icons-material';
 
 export const CacheManagement = () => {
@@ -42,7 +40,7 @@ export const CacheManagement = () => {
     const redirect = useRedirect();
 
     const [cacheInfo, setCacheInfo] = useState(null);
-    const [cacheKeys, setCacheKeys] = useState([]);
+    const [aggregatedCache, setAggregatedCache] = useState([]);
     const [loading, setLoading] = useState(true);
     const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
     const [clearLayerDialogOpen, setClearLayerDialogOpen] = useState(false);
@@ -51,12 +49,12 @@ export const CacheManagement = () => {
     const fetchCacheData = async () => {
         setLoading(true);
         try {
-            const [infoResponse, keysResponse] = await Promise.all([
+            const [infoResponse, aggregatedResponse] = await Promise.all([
                 dataProvider.getCacheInfo(),
-                dataProvider.getCacheKeys(),
+                dataProvider.getCacheAggregated(),
             ]);
             setCacheInfo(infoResponse.data);
-            setCacheKeys(keysResponse.data);
+            setAggregatedCache(aggregatedResponse.data);
         } catch (error) {
             notify('Error loading cache data', { type: 'error' });
             console.error('Cache fetch error:', error);
@@ -115,6 +113,10 @@ export const CacheManagement = () => {
         );
     }
 
+    // Calculate totals from aggregated data
+    const totalSize = aggregatedCache.reduce((sum, item) => sum + (item.total_size_bytes || 0), 0);
+    const totalSizeMb = totalSize / (1024 * 1024);
+
     return (
         <Box sx={{ p: 3 }}>
             <Title title="Cache Management" />
@@ -134,36 +136,37 @@ export const CacheManagement = () => {
                                 size="small"
                             />
                             <Typography variant="body2">
-                                <strong>{cacheInfo?.cache_size_mb?.toFixed(1) || '0'} MB</strong> cached
+                                <strong>{totalSizeMb.toFixed(1)} MB</strong> cached
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                {cacheInfo?.cached_layers_count || 0} layers
+                                {aggregatedCache.length} layers
                             </Typography>
-                            <IconButton
-                                color="error"
-                                size="small"
-                                onClick={() => setClearAllDialogOpen(true)}
-                                disabled={!cacheInfo?.redis_connected || cacheInfo?.cached_layers_count === 0}
-                                title="Clear all cache"
-                            >
-                                <DeleteIcon />
-                            </IconButton>
+                            <Tooltip title="Clear all cache">
+                                <IconButton
+                                    color="error"
+                                    size="small"
+                                    onClick={() => setClearAllDialogOpen(true)}
+                                    disabled={!cacheInfo?.redis_connected || aggregatedCache.length === 0}
+                                >
+                                    <DeleteIcon />
+                                </IconButton>
+                            </Tooltip>
                         </Box>
                     </Box>
-                    {cacheKeys.length > 0 ? (
+                    {aggregatedCache.length > 0 ? (
                         <TableContainer component={Paper} sx={{ mt: 2 }}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
                                         <TableCell><strong>Layer Name</strong></TableCell>
-                                        <TableCell><strong>Size</strong></TableCell>
-                                        <TableCell><strong>TTL Remaining</strong></TableCell>
-                                        <TableCell><strong>Cache Key</strong></TableCell>
+                                        <TableCell><strong>Total Size</strong></TableCell>
+                                        <TableCell><strong>COG File</strong></TableCell>
+                                        <TableCell><strong>PNG Tiles</strong></TableCell>
                                         <TableCell align="right"><strong>Actions</strong></TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {cacheKeys.map((item, index) => (
+                                    {aggregatedCache.map((item, index) => (
                                         <TableRow
                                             key={index}
                                             hover
@@ -178,38 +181,42 @@ export const CacheManagement = () => {
                                         >
                                             <TableCell>{item.layer_name}</TableCell>
                                             <TableCell>
-                                                {item.size_mb !== null && item.size_mb !== undefined ? (
-                                                    <Chip
-                                                        label={`${item.size_mb.toFixed(2)} MB`}
-                                                        size="small"
-                                                        color="primary"
-                                                        variant="outlined"
-                                                    />
+                                                <Chip
+                                                    label={`${item.total_size_mb?.toFixed(2) || '0'} MB`}
+                                                    size="small"
+                                                    color="primary"
+                                                    variant="outlined"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                {item.cog_cached ? (
+                                                    <Tooltip title={item.cog_ttl_hours ? `TTL: ${item.cog_ttl_hours.toFixed(1)} hrs` : 'No expiry'}>
+                                                        <Chip
+                                                            icon={<StorageIcon />}
+                                                            label={`${item.cog_size_mb?.toFixed(2) || '0'} MB`}
+                                                            size="small"
+                                                            color="success"
+                                                            variant="outlined"
+                                                        />
+                                                    </Tooltip>
                                                 ) : (
-                                                    <Typography variant="body2" color="textSecondary">N/A</Typography>
+                                                    <Typography variant="body2" color="text.secondary">—</Typography>
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {item.ttl_hours !== null && item.ttl_hours !== undefined ? (
-                                                    <Chip
-                                                        label={`${item.ttl_hours.toFixed(1)} hrs`}
-                                                        size="small"
-                                                        color={item.ttl_hours < 1 ? "warning" : "success"}
-                                                        variant="outlined"
-                                                    />
+                                                {item.png_tile_count > 0 ? (
+                                                    <Tooltip title={`${item.png_tile_size_mb?.toFixed(2) || '0'} MB`}>
+                                                        <Chip
+                                                            icon={<ImageIcon />}
+                                                            label={`${item.png_tile_count.toLocaleString()} tiles`}
+                                                            size="small"
+                                                            color="secondary"
+                                                            variant="outlined"
+                                                        />
+                                                    </Tooltip>
                                                 ) : (
-                                                    <Chip
-                                                        label="No expiry"
-                                                        size="small"
-                                                        color="default"
-                                                        variant="outlined"
-                                                    />
+                                                    <Typography variant="body2" color="text.secondary">—</Typography>
                                                 )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                                                    {item.cache_key}
-                                                </Typography>
                                             </TableCell>
                                             <TableCell align="right">
                                                 <Tooltip title="View Layer">
@@ -260,7 +267,7 @@ export const CacheManagement = () => {
                         </TableContainer>
                     ) : (
                         <Alert severity="info" sx={{ mt: 2 }}>
-                            No cached layers found
+                            No cached layers found. Layers are cached when accessed.
                         </Alert>
                     )}
                 </CardContent>
@@ -271,8 +278,8 @@ export const CacheManagement = () => {
                 <DialogTitle>Clear All Cache?</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        This will remove all {cacheInfo?.cached_layers_count || 0} cached layers from Redis.
-                        This action cannot be undone. Layers will be re-downloaded from S3 on next access.
+                        This will remove all {aggregatedCache.length} cached layers from Redis ({totalSizeMb.toFixed(1)} MB).
+                        This action cannot be undone. Layers will be re-fetched from S3 on next access.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -288,9 +295,9 @@ export const CacheManagement = () => {
                 <DialogTitle>Clear Layer Cache?</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        This will remove the cache for layer: <strong>{selectedLayer}</strong>
+                        This will remove all cache entries for layer: <strong>{selectedLayer}</strong>
                         <br />
-                        The layer will be re-downloaded from S3 on next access.
+                        (COG file and all PNG tiles)
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>

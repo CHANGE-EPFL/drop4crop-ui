@@ -1,11 +1,12 @@
 import React, { useRef, useState, useContext } from "react";
 import { useNotify, useRefresh, AuthContext } from "react-admin";
-import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton, Tooltip } from "@mui/material";
+import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton, Tooltip, Button } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import CancelIcon from "@mui/icons-material/Cancel";
 import InfoIcon from "@mui/icons-material/Info";
+import ReplayIcon from "@mui/icons-material/Replay";
 
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
@@ -14,9 +15,10 @@ import "@uppy/core/css/style.min.css";
 import "@uppy/dashboard/css/style.min.css";
 import "./UppyUploader.css"; // Import custom CSS
 
-// Simple file list component for efficient bulk uploads
-const UppyFileList = ({ uppy }) => {
+// Error-only file list component - shows success count summary and only displays errors
+const UppyFileList = ({ uppy, uploadState }) => {
   const [files, setFiles] = useState([]);
+  const [errorMessages, setErrorMessages] = useState({});
 
   React.useEffect(() => {
     const updateFiles = () => {
@@ -42,79 +44,149 @@ const UppyFileList = ({ uppy }) => {
     };
   }, [uppy]);
 
+  // Store error messages when they occur
+  const updateErrorMessage = (fileId, message) => {
+    setErrorMessages(prev => ({ ...prev, [fileId]: message }));
+  };
+
+  // Expose the updateErrorMessage function via a ref-like pattern
+  React.useEffect(() => {
+    uppy.__updateErrorMessage = updateErrorMessage;
+  }, [uppy]);
+
   const handleRemoveFile = (fileId) => {
     uppy.removeFile(fileId);
+    // Clean up error message
+    setErrorMessages(prev => {
+      const newMessages = { ...prev };
+      delete newMessages[fileId];
+      return newMessages;
+    });
   };
 
-  const getStatusIcon = (file) => {
-    if (file.error) {
-      return <ErrorIcon color="error" fontSize="small" />;
-    }
-    if (file.progress.complete) {
-      return <CheckCircleIcon color="success" fontSize="small" />;
-    }
-    if (file.progress.uploadStarted) {
-      return <CircularProgress size={16} thickness={2} />;
-    }
-    return <CircularProgress size={16} thickness={2} variant="indeterminate" />;
+  const handleRetryFile = (fileId) => {
+    // Clear the error message before retry
+    setErrorMessages(prev => {
+      const newMessages = { ...prev };
+      delete newMessages[fileId];
+      return newMessages;
+    });
+    uppy.retryUpload(fileId);
   };
 
-  const getStatusText = (file) => {
-    if (file.error) {
-      return `Error: ${file.error.message || 'Upload failed'}`;
-    }
-    if (file.progress.complete) {
-      return 'Upload complete';
-    }
-    if (file.progress.uploadStarted) {
-      return `Uploading... ${Math.round(file.progress.percentage)}%`;
-    }
-    return 'Waiting to upload';
+  const handleRetryAllFailed = () => {
+    // Clear all error messages before retry
+    setErrorMessages({});
+    uppy.retryAll();
   };
 
-  if (files.length === 0) {
+  // Filter to only show files with errors
+  const errorFiles = files.filter(file => file.error);
+
+  // Calculate counts
+  const totalFiles = files.length;
+  const completedFiles = files.filter(file => file.progress.complete || file.error).length;
+  const successfulFiles = files.filter(file => file.progress.complete && !file.error).length;
+  const pendingFiles = files.filter(file => !file.progress.complete && !file.error).length;
+
+  if (totalFiles === 0) {
     return null;
   }
 
   return (
     <Box sx={{ border: '1px solid #ddd', borderRadius: 1, bgcolor: 'background.paper' }}>
-      <Typography variant="subtitle2" sx={{ p: 1, borderBottom: '1px solid #ddd', bgcolor: 'grey.50' }}>
-        Upload Queue ({files.length} files)
-      </Typography>
-      <List dense sx={{ maxHeight: 280, overflow: 'auto', p: 0 }}>
-        {files.map((file) => (
-          <ListItem
-            key={file.id}
-            sx={{
-              px: 1,
-              py: 0.5,
-              borderBottom: '1px solid #f0f0f0',
-              '&:last-child': { borderBottom: 'none' }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-              {getStatusIcon(file)}
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="body2" noWrap sx={{ fontSize: '0.85rem' }}>
-                  {file.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                  {getStatusText(file)}
-                </Typography>
-              </Box>
-              {!file.progress.uploadStarted && (
-                <IconButton
-                  size="small"
-                  onClick={() => handleRemoveFile(file.id)}
-                  sx={{ p: 0.5 }}
-                >
-                  <CancelIcon fontSize="small" />
-                </IconButton>
-              )}
-            </Box>
-          </ListItem>
-        ))}
-      </List>
+      {/* Summary header */}
+      <Box sx={{ p: 1, borderBottom: '1px solid #ddd', bgcolor: 'grey.50' }}>
+        <Typography variant="subtitle2">
+          Upload Status
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+          {successfulFiles > 0 && (
+            <Typography variant="caption" sx={{ color: 'success.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <CheckCircleIcon sx={{ fontSize: 14 }} />
+              {successfulFiles} successful
+            </Typography>
+          )}
+          {errorFiles.length > 0 && (
+            <Typography variant="caption" sx={{ color: 'error.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <ErrorIcon sx={{ fontSize: 14 }} />
+              {errorFiles.length} failed
+            </Typography>
+          )}
+          {pendingFiles > 0 && (
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <CircularProgress size={12} thickness={3} />
+              {pendingFiles} pending
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      {/* Only show error list if there are errors */}
+      {errorFiles.length > 0 && (
+        <>
+          <Box sx={{ p: 1, pb: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 500 }}>
+              Errors:
+            </Typography>
+            {errorFiles.length > 1 && (
+              <Button
+                size="small"
+                startIcon={<ReplayIcon sx={{ fontSize: 14 }} />}
+                onClick={handleRetryAllFailed}
+                sx={{ fontSize: '0.75rem', py: 0, minHeight: 24 }}
+              >
+                Retry All ({errorFiles.length})
+              </Button>
+            )}
+          </Box>
+          <List dense sx={{ maxHeight: 220, overflow: 'auto', p: 0 }}>
+            {errorFiles.map((file) => (
+              <ListItem
+                key={file.id}
+                sx={{
+                  px: 1,
+                  py: 0.5,
+                  borderBottom: '1px solid #f0f0f0',
+                  '&:last-child': { borderBottom: 'none' },
+                  bgcolor: 'error.50'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                  <ErrorIcon color="error" fontSize="small" />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" noWrap sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                      {file.name}
+                    </Typography>
+                    <Typography variant="caption" color="error" sx={{ fontSize: '0.75rem' }}>
+                      {errorMessages[file.id] || file.error?.message || 'Upload failed'}
+                    </Typography>
+                  </Box>
+                  <Tooltip title="Retry upload">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRetryFile(file.id)}
+                      sx={{ p: 0.5 }}
+                      color="primary"
+                    >
+                      <ReplayIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Remove file">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveFile(file.id)}
+                      sx={{ p: 0.5 }}
+                    >
+                      <CancelIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+        </>
+      )}
     </Box>
   );
 };
@@ -155,12 +227,14 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
       headers: headers,
       limit: 50, // Increased concurrent uploads from 25 to 50
       timeout: 15 * 60 * 1000, // 15 minutes timeout
-      onAfterResponse: (response) => {
-        // Track actual HTTP completion
-        if (response.status === 200 || response.status === 201) {
+      // onAfterResponse is called after fetch completes but BEFORE Uppy processes the response.
+      // If we throw here, the error message will be used instead of Uppy's generic "network error".
+      // This is the only way to extract error messages from non-2xx responses in Uppy v5.
+      onAfterResponse: (xhr) => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // Success - track completion and refresh the list
           refresh();
 
-          // Update state to track actual HTTP completion
           setUploadState(prev => {
             const newState = {
               ...prev,
@@ -168,15 +242,34 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
               successfulFiles: prev.successfulFiles + 1
             };
 
-            // Check if all files are actually complete
             if (newState.completedFiles === newState.totalFiles && newState.totalFiles > 0) {
-              setTimeout(() => showSummaryNotification(newState), 500); // Small delay to ensure all processing is done
+              setTimeout(() => showSummaryNotification(newState), 500);
             }
 
             return newState;
           });
         } else {
-          // Track HTTP failure
+          // Error - parse the response body and throw with the actual error message
+          let errorMessage = `Upload failed (HTTP ${xhr.status})`;
+          try {
+            const json = JSON.parse(xhr.responseText);
+            if (json.message && json.error) {
+              errorMessage = `${json.message}: ${json.error}`;
+            } else if (json.message) {
+              errorMessage = json.message;
+            } else if (json.error) {
+              errorMessage = json.error;
+            }
+          } catch (e) {
+            // If not JSON, use responseText or statusText
+            if (xhr.responseText) {
+              errorMessage = xhr.responseText;
+            } else if (xhr.statusText) {
+              errorMessage = `${xhr.statusText} (HTTP ${xhr.status})`;
+            }
+          }
+
+          // Track the failure
           setUploadState(prev => {
             const newState = {
               ...prev,
@@ -184,13 +277,15 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
               failedFiles: prev.failedFiles + 1
             };
 
-            // Check if all files are complete (including failures)
             if (newState.completedFiles === newState.totalFiles && newState.totalFiles > 0) {
               setTimeout(() => showSummaryNotification(newState), 500);
             }
 
             return newState;
           });
+
+          // Throw the error so Uppy uses our message instead of the generic "network error"
+          throw new Error(errorMessage);
         }
       },
     })
@@ -208,6 +303,24 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
       failedFiles: 0,
       isUploading: true
     });
+  });
+
+  // Capture HTTP error messages from failed uploads
+  // The error message is extracted from the JSON response body in onAfterResponse
+  uppy.on("upload-error", (file, error) => {
+    // The error.message should now contain the actual server error message
+    // If it's still the generic NetworkError message, try to get the cause
+    let errorMessage = error?.message || 'Upload failed';
+
+    // NetworkError wraps the actual error in .cause
+    if (error?.cause?.message) {
+      errorMessage = error.cause.message;
+    }
+
+    // Store the error message for display in the file list
+    if (uppy.__updateErrorMessage && file) {
+      uppy.__updateErrorMessage(file.id, errorMessage);
+    }
   });
 
   
@@ -428,9 +541,9 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
       {/* Action button - positioned between drop area and file list */}
       {actionButton}
 
-      {/* Simple file list for uploads */}
+      {/* Upload status - shows success count and error details only */}
       <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
-        <UppyFileList uppy={uppy} />
+        <UppyFileList uppy={uppy} uploadState={uploadState} />
       </Box>
     </Box>
   );
