@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
 import './ShowcaseOverlay.css';
 
 // Showcase examples data with all the layer parameters and descriptions
@@ -223,7 +223,7 @@ const ShowcaseOverlay = () => {
     return () => clearInterval(intervalId);
   }, [showcaseMode, isPaused, setShowcaseIndex, applyShowcaseExample]);
 
-  // Exit showcase mode
+  // Exit showcase mode and clear selections (fresh start)
   const handleStartBrowsing = useCallback(() => {
     // Clear the map layer first, before clearing selections
     setLayerName(null);
@@ -240,6 +240,12 @@ const ShowcaseOverlay = () => {
     setShowcaseMode(false);
     setActivePanel('info');
   }, [setShowcaseMode, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable, setLayerName, setActivePanel]);
+
+  // Exit showcase mode but keep current layer (explore this map)
+  const handleExploreCurrentMap = useCallback(() => {
+    setShowcaseMode(false);
+    setActivePanel('info');
+  }, [setShowcaseMode, setActivePanel]);
 
   if (!showcaseMode) return null;
 
@@ -268,7 +274,14 @@ const ShowcaseOverlay = () => {
 
         {/* Content */}
         <div className="showcase-content">
-          <h2 className="showcase-title">{currentExample.title}</h2>
+          <h2
+            className="showcase-title showcase-title-clickable"
+            onClick={handleExploreCurrentMap}
+            title="Click to explore this map"
+          >
+            {currentExample.title}
+            <FontAwesomeIcon icon={faUpRightFromSquare} className="showcase-title-icon" />
+          </h2>
           <p className="showcase-description">{currentExample.description}</p>
 
           {/* Dot indicators */}

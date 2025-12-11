@@ -110,6 +110,27 @@
   letter-spacing: 0.5px;
 }
 
+.showcase-title-clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.showcase-title-clickable:hover {
+  color: #e8c896;
+}
+
+.showcase-title-icon {
+  font-size: 0.55em;
+  margin-left: 6px;
+  opacity: 0.5;
+  vertical-align: super;
+  transition: all 0.2s ease;
+}
+
+.showcase-title-clickable:hover .showcase-title-icon {
+  opacity: 1;
+}
+
 .showcase-description {
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 0.9rem;
@@ -119,6 +140,7 @@
   max-width: 580px;
   margin-left: auto;
   margin-right: auto;
+  min-height: 4.5em; /* Reserve space for ~3 lines to prevent panel resizing */
 }
 
 /* Dot indicators */
