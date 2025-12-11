@@ -227,19 +227,19 @@ const DownloadPanel = ({ clearLayers }) => {
                 <Button
                     variant="outlined"
                     fullWidth
-                    onClick={boundingBox ? handleDownloadClick : handleSelectArea}
-                    disabled={!currentLayer}
+                    onClick={handleSelectArea}
+                    disabled={!currentLayer || enableSelection || boundingBox}
                     sx={{
-                        borderColor: boundingBox ? '#4caf50' : '#d1a766',
-                        color: boundingBox ? '#4caf50' : '#d1a766',
-                        backgroundColor: boundingBox ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                        borderColor: '#d1a766',
+                        color: '#d1a766',
+                        backgroundColor: 'transparent',
                         textTransform: 'none',
                         justifyContent: 'flex-start',
                         fontSize: '0.875rem',
                         padding: '8px 16px',
                         '&:hover': {
-                            backgroundColor: boundingBox ? 'rgba(76, 175, 80, 0.2)' : 'rgba(209, 167, 102, 0.08)',
-                            borderColor: boundingBox ? '#4caf50' : '#d1a766',
+                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
+                            borderColor: '#d1a766',
                         },
                         '&.Mui-disabled': {
                             borderColor: 'rgba(209, 167, 102, 0.3)',
@@ -247,7 +247,7 @@ const DownloadPanel = ({ clearLayers }) => {
                         }
                     }}
                 >
-                    {boundingBox ? "Download Selection (GeoTIFF)" : enableSelection ? "Select region on map" : "Selection (GeoTIFF)"}
+                    {boundingBox ? "Selection active - use map button" : enableSelection ? "Drawing selection..." : "Select Area (GeoTIFF)"}
                 </Button>
             </Box>
 

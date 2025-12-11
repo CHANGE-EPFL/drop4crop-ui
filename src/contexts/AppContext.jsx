@@ -25,6 +25,7 @@ export const AppProvider = ({ children }) => {
     });
     const [boundingBox, setBoundingBox] = useState(null);
     const [enableSelection, setEnableSelection] = useState(false);
+    const [isEditingBoundingBox, setIsEditingBoundingBox] = useState(false);
     const [countryAverages, setCountryAverages] = useState(false);
     const [crops, setCrops] = useState([]);
     const [globalWaterModels, setGlobalWaterModels] = useState([]);
@@ -79,6 +80,8 @@ export const AppProvider = ({ children }) => {
         setBoundingBox,
         enableSelection,
         setEnableSelection,
+        isEditingBoundingBox,
+        setIsEditingBoundingBox,
         countryAverages,
         setCountryAverages,
         crops,

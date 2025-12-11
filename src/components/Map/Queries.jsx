@@ -127,6 +127,8 @@ export const MapClickHandler = () => {
         countryAverageValues,
         enableSelection,
         setEnableSelection,
+        isEditingBoundingBox,
+        boundingBox,
         selectedCrop,
         selectedVariable,
         selectedCropVariable,
@@ -170,8 +172,12 @@ export const MapClickHandler = () => {
     }, [map]);
 
     useMapEvent('click', (e) => {
-        if (enableSelection) {
-            setEnableSelection(false);
+        // Don't show popup when in selection mode (drawing bounding box) or editing bounding box
+        if (enableSelection || isEditingBoundingBox) {
+            return;
+        }
+        // Don't show popup if a bounding box exists (user is interacting with selection)
+        if (boundingBox) {
             return;
         }
         // Close existing popup and open new one at clicked location
