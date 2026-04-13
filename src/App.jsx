@@ -1,6 +1,7 @@
 import React from 'react';
 import FrontendApp from './frontend/App';
 import AdminApp from './admin/App.jsx';
+import SplashPage from './pages/SplashPage';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
 const App = () => {
@@ -8,6 +9,10 @@ const App = () => {
         [
             {
                 path: "/",
+                element: <SplashPage />,
+            },
+            {
+                path: "/project/project1",
                 element: <FrontendApp />,
             },
             {
