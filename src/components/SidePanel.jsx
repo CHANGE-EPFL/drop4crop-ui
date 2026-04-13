@@ -1,9 +1,10 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWheatAwn, faWater, faCloudSun, faCogs,
-  faCog, faInfoCircle, faLayerGroup,
+  faCog, faInfoCircle, faLayerGroup, faHome,
 } from '@fortawesome/free-solid-svg-icons';
 import './SidePanel.css';
 import GrassIcon from '@mui/icons-material/Grass';
@@ -164,6 +165,13 @@ const SidePanel = ({ clearLayers }) => {
         </div>
       )}
       <div className="button-group top">
+        <Link to="/" className="home-button" title="Back to projects">
+          <div className="button-content">
+            <FontAwesomeIcon icon={faHome} size="lg" />
+            <span>Projects</span>
+          </div>
+        </Link>
+
         <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
           <div className="button-content">
             <GrassIcon />

@@ -6,9 +6,10 @@ import SidePanel from '../components/SidePanel';
 import BottomBar from '../components/BottomBar';
 import ShowcaseOverlay from '../components/ShowcaseOverlay';
 import './App.css';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome } from '@fortawesome/free-solid-svg-icons';
+import { ProjectProvider } from '../contexts/ProjectContext';
 import {
   cropItems,
   globalWaterModelsItems,
@@ -20,14 +21,17 @@ import {
 
 
 const FrontendApp = () => {
+  const { slug } = useParams();
   const boundingBoxSelectionRef = useRef(null);
 
   return (
-    <AppProvider>
-      <LayerManagerProvider>
-        <FrontendAppContent boundingBoxSelectionRef={boundingBoxSelectionRef} />
-      </LayerManagerProvider>
-    </AppProvider>
+    <ProjectProvider slug={slug}>
+      <AppProvider>
+        <LayerManagerProvider>
+          <FrontendAppContent boundingBoxSelectionRef={boundingBoxSelectionRef} />
+        </LayerManagerProvider>
+      </AppProvider>
+    </ProjectProvider>
   );
 };
 
@@ -172,38 +176,40 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
           )}
           <MapView ref={boundingBoxSelectionRef} />
 
-          {/* Home button */}
-          <Link
-            to="/"
-            style={{
-              position: 'absolute',
-              top: 15,
-              left: showcaseMode ? 15 : 115,
-              zIndex: 1200,
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'rgba(51, 51, 51, 0.9)',
-              border: '1px solid rgba(209, 167, 102, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#d3d3d3',
-              textDecoration: 'none',
-              transition: 'all 0.3s ease',
-            }}
-            title="Back to projects"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#d1a766';
-              e.currentTarget.style.color = '#d1a766';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(209, 167, 102, 0.3)';
-              e.currentTarget.style.color = '#d3d3d3';
-            }}
-          >
-            <FontAwesomeIcon icon={faHome} size="sm" />
-          </Link>
+          {/* Home button only visible during showcase mode (sidebar hidden) */}
+          {showcaseMode && (
+            <Link
+              to="/"
+              style={{
+                position: 'absolute',
+                top: 15,
+                left: 15,
+                zIndex: 1200,
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(51, 51, 51, 0.9)',
+                border: '1px solid rgba(209, 167, 102, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#d1a766',
+                textDecoration: 'none',
+                transition: 'all 0.3s ease',
+              }}
+              title="Back to projects"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#d1a766';
+                e.currentTarget.style.background = 'rgba(51, 51, 51, 1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(209, 167, 102, 0.3)';
+                e.currentTarget.style.background = 'rgba(51, 51, 51, 0.9)';
+              }}
+            >
+              <FontAwesomeIcon icon={faHome} size="sm" />
+            </Link>
+          )}
 
           {/* Show BottomBar only when not in showcase mode and layer is configured */}
           {!showcaseMode && (

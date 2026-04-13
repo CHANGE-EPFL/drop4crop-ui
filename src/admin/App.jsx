@@ -9,6 +9,7 @@ import { keycloakAuthProvider } from "./authProvider";
 import Layout from "./Layout";
 import styles from "./styles";
 import layers from "./layers";
+import projects from "./projects";
 import statistics from "./statistics";
 import cache from "./cache";
 import axios from "axios";
@@ -167,6 +168,13 @@ const App = () => {
       width: 150, // The default value is 240
     },
   };
+  const darkTheme = {
+    ...defaultTheme,
+    palette: { mode: "dark" },
+    sidebar: {
+      width: 150,
+    },
+  };
   return (
     <Admin
       authProvider={authProvider.current}
@@ -174,6 +182,7 @@ const App = () => {
       title="Drop4Crop: Admin"
       layout={Layout}
       theme={theme}
+      darkTheme={darkTheme}
       dashboard={Dashboard}
     >
       {(permissions) => (
@@ -182,6 +191,7 @@ const App = () => {
             <>
               {permissions === "admin" ? (
                 <>
+                  <Resource name="projects" {...projects} />
                   <Resource name="layers" {...layers} />
                   <Resource name="styles" {...styles} />
                   <Resource name="statistics" {...statistics} />

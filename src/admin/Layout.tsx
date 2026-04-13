@@ -8,12 +8,18 @@ const CustomAppBar = () => (
         <TitlePortal />
         <Box flex={1} />
         <Button
-            color="inherit"
+            variant="contained"
             href="/"
             startIcon={<MapIcon />}
             sx={{
                 textTransform: 'none',
                 marginRight: 2,
+                backgroundColor: '#d1a766',
+                color: '#1e2127',
+                fontWeight: 600,
+                '&:hover': {
+                    backgroundColor: '#e8c896',
+                },
             }}
         >
             Go to Map

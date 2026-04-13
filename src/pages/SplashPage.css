@@ -83,6 +83,13 @@
   filter: brightness(1.5);
 }
 
+/* Leaflet map inside the card visual */
+.splash-card-visual .leaflet-container {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 /* Gradient overlay on visual — just a bottom fade into the card body */
 .splash-card-visual::after {
   content: '';

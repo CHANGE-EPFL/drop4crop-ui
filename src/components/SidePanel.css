@@ -19,6 +19,44 @@
 }
 
 
+.home-button {
+    width: 100%;
+    height: 50px;
+    background-color: #333;
+    color: #d1a766;
+    border: none;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    padding: 4px;
+    box-sizing: border-box;
+    text-decoration: none;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+.home-button:hover {
+    background-color: #3a3a3a;
+    color: #e8c896;
+}
+
+.home-button .button-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.home-button .button-content span {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 .button-group {
     width: 100%;
 }

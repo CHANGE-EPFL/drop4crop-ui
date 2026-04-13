@@ -12,7 +12,7 @@ const App = () => {
                 element: <SplashPage />,
             },
             {
-                path: "/project/project1",
+                path: "/projects/:slug",
                 element: <FrontendApp />,
             },
             {
