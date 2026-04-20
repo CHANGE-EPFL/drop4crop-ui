@@ -241,27 +241,20 @@
     /* Reduced gap between sections */
 }
 
-/*
 /* Thinner divider line */
 .button-divider {
     width: 60%;
     height: 1px;
     background-color: #555;
-    /* Slightly lighter for subtle separation */
     margin: 10px auto;
-    /* Reduced margin */
 }
 
 /* Variable buttons with a slight color distinction */
 .button-group .variable-button {
     background-color: #555;
-    /* Slightly different background color */
 }
 
 .button-group .variable-button:hover,
 .button-group .variable-button.active {
     background-color: #666;
-    /* Slightly darker on hover/active */
 }
-
-*/
