@@ -279,14 +279,13 @@ const createLegendContainer = (
   return legendContainer;
 };
 
-// Helper to format variable abbreviation with subscript as HTML
+// Helper to format variable abbreviation with subscript as HTML.
+// Renders strictly from variable properties: abbreviation + optional subscript + unit.
 const formatAbbreviationHtml = (variable) => {
   if (!variable) return "Legend";
-  // Use 'name' for crop-specific variables (e.g., "Total Area" instead of "MircaAreaTotal")
-  // Use abbreviation with subscript for climate variables (e.g., "Rb" for Renewability Rate Blue)
   const displayName = variable.subscript
     ? `${variable.abbreviation}<sub>${variable.subscript}</sub>`
-    : (variable.name || variable.abbreviation);
+    : variable.abbreviation;
   return `${displayName} [${variable.unit}]`;
 };
 
