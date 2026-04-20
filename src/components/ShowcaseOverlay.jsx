@@ -190,7 +190,10 @@ const ShowcaseOverlay = () => {
     };
   }, [showcaseMode]);
 
-  // Apply the current showcase example to the state
+  // Apply the current showcase example to the state. `showcaseExamples` is
+  // a derived value that changes after the API resolves and after the project
+  // config filter runs — it MUST be in this hook's deps so the callback
+  // doesn't close over a stale (often empty) array.
   const applyShowcaseExample = useCallback((index) => {
     const example = showcaseExamples[index];
     if (!example) return;
@@ -202,7 +205,7 @@ const ShowcaseOverlay = () => {
     setSelectedScenario(example.scenario);
     setSelectedTime(example.year);
     setSelectedCropVariable(example.cropVariable);
-  }, [setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable]);
+  }, [showcaseExamples, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable]);
 
   // Apply initial example when groups are loaded
   useEffect(() => {
@@ -224,20 +227,25 @@ const ShowcaseOverlay = () => {
     applyShowcaseExample(index);
   }, [setShowcaseIndex, applyShowcaseExample]);
 
-  // Handle next/previous navigation
+  // Handle next/previous navigation. `showcaseExamples.length` has to be in
+  // the dep array — without it the memoized callback captures the initial
+  // empty list (length 0), so `(n + 1) % 0 === NaN` and clicks become no-ops.
   const goToNext = useCallback(() => {
+    if (showcaseExamples.length === 0) return;
     const nextIndex = (indexRef.current + 1) % showcaseExamples.length;
     goToSlide(nextIndex);
-  }, [goToSlide]);
+  }, [goToSlide, showcaseExamples.length]);
 
   const goToPrev = useCallback(() => {
+    if (showcaseExamples.length === 0) return;
     const prevIndex = (indexRef.current - 1 + showcaseExamples.length) % showcaseExamples.length;
     goToSlide(prevIndex);
-  }, [goToSlide]);
+  }, [goToSlide, showcaseExamples.length]);
 
   // Auto-rotation with progress tracking - simple interval that always runs
   useEffect(() => {
     if (!showcaseMode) return;
+    if (showcaseExamples.length === 0) return;
 
     const intervalId = setInterval(() => {
       if (isPaused) return; // Skip update when paused but keep interval running
@@ -257,7 +265,7 @@ const ShowcaseOverlay = () => {
     }, 100);
 
     return () => clearInterval(intervalId);
-  }, [showcaseMode, isPaused, setShowcaseIndex, applyShowcaseExample]);
+  }, [showcaseMode, isPaused, showcaseExamples.length, setShowcaseIndex, applyShowcaseExample]);
 
   // Exit showcase mode and clear selections (fresh start)
   const handleStartBrowsing = useCallback(() => {
