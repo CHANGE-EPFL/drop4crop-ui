@@ -6,70 +6,6 @@ import { faChevronLeft, faChevronRight, faUpRightFromSquare } from '@fortawesome
 import axios from 'axios';
 import './ShowcaseOverlay.css';
 
-// Legacy hardcoded examples - used as fallback when no API data available
-const fallbackExamples = [
-  {
-    id: 1,
-    crop: { id: 'wheat', name: 'Wheat', enabled: true },
-    variable: { id: 'wf', name: 'Total', abbreviation: 'WF', unit: 'm³', enabled: true },
-    waterModel: { id: 'cwatm', name: 'CWatM', enabled: true },
-    climateModel: { id: 'gfdl-esm2m', name: 'GFDL-ESM2M', enabled: true },
-    scenario: { id: 'rcp26', name: 'RCP 2.6', enabled: true },
-    year: 2030,
-    cropVariable: null,
-    title: 'Water Footprint of Wheat',
-    description: 'Total water footprint of wheat for the year 2030 - computed with the Climate Model GFDL-ESM2M and Water Model CWatM, scenario RCP 2.6.',
-  },
-  {
-    id: 2,
-    crop: { id: 'sugarcane', name: 'Sugar Cane', enabled: true },
-    variable: { id: 'etb', name: 'Blue', abbreviation: 'ETb', unit: 'mm', enabled: true },
-    waterModel: { id: 'h08', name: 'H08', enabled: true },
-    climateModel: { id: 'miroc5', name: 'MIROC5', enabled: true },
-    scenario: { id: 'rcp60', name: 'RCP 6.0', enabled: true },
-    year: 2050,
-    cropVariable: null,
-    title: 'Blue Evapotranspiration of Sugarcane',
-    description: 'Blue evapotranspiration of sugarcane for the year 2050 - computed with the Climate Model MIROC5 and Water Model H08, under RCP 6.0.',
-  },
-  {
-    id: 3,
-    crop: { id: 'rice', name: 'Rice', enabled: true },
-    variable: { id: 'wdb', name: 'Blue', abbreviation: 'WDb', unit: 'years', enabled: true },
-    waterModel: { id: 'watergap2', name: 'WaterGAP2', enabled: true },
-    climateModel: { id: 'hadgem2-es', name: 'HadGEM2-ES', enabled: true },
-    scenario: { id: 'rcp85', name: 'RCP 8.5', enabled: true },
-    year: 2090,
-    cropVariable: null,
-    title: 'Blue Water Debt of Rice',
-    description: 'Blue water debt of rice at the end of the century (year 2090), under the worst-case scenario RCP 8.5 - computed with the Climate Model HadGEM2-ES and Water Model WaterGAP2.',
-  },
-  {
-    id: 4,
-    crop: { id: 'barley', name: 'Barley', enabled: true },
-    variable: null,
-    waterModel: null,
-    climateModel: null,
-    scenario: null,
-    year: null,
-    cropVariable: { id: 'production', name: 'Production', abbreviation: 'Production', unit: 'ton', enabled: true },
-    title: 'Global Production of Barley',
-    description: 'Global production of barley, in tons per hectares.',
-  },
-  {
-    id: 5,
-    crop: { id: 'maize', name: 'Maize', enabled: true },
-    variable: null,
-    waterModel: null,
-    climateModel: null,
-    scenario: null,
-    year: null,
-    cropVariable: { id: 'mirca_area_total', name: 'Total Area', abbreviation: 'MircaAreaTotal', unit: 'ha', enabled: true },
-    title: 'Total Harvested Area of Maize',
-    description: 'Total harvested area of maize, in hectares.',
-  },
-];
-
 const ROTATION_INTERVAL = 12000; // 12 seconds
 const PROGRESS_STEP = 100 / (ROTATION_INTERVAL / 100); // Progress increment per 100ms
 const MAP_INTERACTION_DEBOUNCE = 1500; // Resume after 1.5 seconds of no interaction
@@ -93,20 +29,22 @@ const ShowcaseOverlay = () => {
   } = useContext(AppContext);
   const project = useProject();
 
-  const [showcaseExamples, setShowcaseExamples] = useState(fallbackExamples);
+  const [showcaseExamples, setShowcaseExamples] = useState([]);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const indexRef = useRef(showcaseIndex);
   const lastClickRef = useRef(0);
   const mapInteractionTimeoutRef = useRef(null);
 
-  // Fetch showcase items from API
+  // Fetch showcase items from the API. If the project has none configured
+  // (or the request fails), exit showcase mode and drop straight to the map
+  // — no hardcoded fallback examples, the DB is the only source of truth.
   useEffect(() => {
     if (!project?.slug) return;
     axios
       .get(`/api/showcase-items/by-project/${project.slug}`)
       .then((res) => {
-        if (res.data && res.data.length > 0) {
+        if (Array.isArray(res.data) && res.data.length > 0) {
           const items = res.data.map((item, index) => ({
             id: index + 1,
             crop: item.crop ? { id: item.crop.slug, name: item.crop.name, enabled: true } : null,
@@ -124,12 +62,16 @@ const ShowcaseOverlay = () => {
             description: item.description || '',
           }));
           setShowcaseExamples(items);
+        } else {
+          // Project has no showcase items configured — go straight to the map
+          setShowcaseMode(false);
         }
       })
       .catch((err) => {
-        console.error('Failed to fetch showcase items, using fallback:', err);
+        console.error('Failed to fetch showcase items:', err);
+        setShowcaseMode(false);
       });
-  }, [project?.slug]);
+  }, [project?.slug, setShowcaseMode]);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -283,6 +225,9 @@ const ShowcaseOverlay = () => {
   if (!showcaseMode) return null;
 
   const currentExample = showcaseExamples[showcaseIndex];
+  // Guard against the brief render window between mount and the API response
+  // resolving — no data yet means nothing to show.
+  if (!currentExample) return null;
 
   return (
     <div className="showcase-overlay">
