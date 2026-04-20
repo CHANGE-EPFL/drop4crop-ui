@@ -7,27 +7,102 @@ import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import './SplashPage.css';
 
+// Grace period before switching from skeleton to error UI. Short blips are
+// absorbed by the skeleton animation without ever showing an error.
+const ERROR_GRACE_MS = 10_000;
+const SKELETON_COUNT = 3;
+
 const SplashPage = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Only flip to the error UI if the request fails OR hasn't returned within
+    // the grace period. Until then, the skeleton cards keep pulsing.
+    const graceTimer = setTimeout(() => {
+      if (!cancelled) setFailed(true);
+    }, ERROR_GRACE_MS);
+
+    setLoading(true);
+    setFailed(false);
+
     axios
       .get('/api/projects/active')
       .then((res) => {
+        if (cancelled) return;
+        clearTimeout(graceTimer);
+        // Guard against a 200 that didn't actually carry the expected payload
+        // (e.g. the Vite dev server falls back to serving index.html when the
+        // API is off, so res.data arrives as an HTML string, not an array).
+        if (!Array.isArray(res.data)) {
+          console.error('Unexpected /api/projects/active response:', res.data);
+          setProjects([]);
+          setLoading(false);
+          setFailed(true);
+          return;
+        }
         setProjects(res.data);
         setLoading(false);
+        setFailed(false);
       })
       .catch((err) => {
+        if (cancelled) return;
+        clearTimeout(graceTimer);
         console.error('Failed to fetch projects:', err);
+        setProjects([]);
         setLoading(false);
+        setFailed(true);
       });
-  }, []);
 
-  if (loading) {
+    return () => {
+      cancelled = true;
+      clearTimeout(graceTimer);
+    };
+  }, [attempt]);
+
+  if (loading && !failed) {
     return (
       <div className="splash-page">
-        <div style={{ color: '#8a8a8a', fontSize: '1rem' }}>Loading projects...</div>
+        <div className="splash-grid splash-grid-skeleton" aria-busy="true" aria-label="Loading projects">
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => {
+            const isLast = SKELETON_COUNT % 2 === 1 && i === SKELETON_COUNT - 1;
+            return (
+              <div key={i} className={`splash-card splash-card-skeleton ${isLast ? 'centered' : ''}`}>
+                <div className="splash-card-visual splash-skeleton-shimmer" />
+                <div className="splash-card-body">
+                  <div className="splash-skeleton-bar splash-skeleton-bar-title splash-skeleton-shimmer" />
+                  <div className="splash-skeleton-bar splash-skeleton-bar-desc splash-skeleton-shimmer" />
+                  <div className="splash-skeleton-bar splash-skeleton-bar-desc-short splash-skeleton-shimmer" />
+                  <div className="splash-skeleton-bar splash-skeleton-bar-btn splash-skeleton-shimmer" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="splash-page">
+        <div className="splash-unavailable">
+          <h1 className="splash-unavailable-title">We'll be right back</h1>
+          <p className="splash-unavailable-body">
+            Drop4Crop is momentarily unavailable. Please try again in a few moments.
+          </p>
+          <button
+            type="button"
+            className="splash-card-btn explore splash-unavailable-retry"
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
