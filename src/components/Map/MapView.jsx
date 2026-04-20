@@ -137,7 +137,7 @@ const MapView = forwardRef((props, ref) => {
         <MapOverlay layerName={layerName} loading={loadingLayer} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-          attribution="© Data and content by: F. Bassani, Q. Sun, S. Bonetti | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors | &copy; <a href='https://carto.com/attributions'>CARTO</a>"
+          attribution="&copy; <a href='https://www.epfl.ch/labs/change/' target='_blank' rel='noopener noreferrer'>CHANGE Lab.</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors | &copy; <a href='https://carto.com/attributions'>CARTO</a>"
           subdomains="abcd"
           maxZoom={20}
           noWrap={true}

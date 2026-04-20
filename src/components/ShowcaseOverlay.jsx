@@ -273,14 +273,12 @@ const ShowcaseOverlay = () => {
     setSelectedCropVariable(null);
 
     setShowcaseMode(false);
-    setActivePanel('info');
-  }, [setShowcaseMode, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable, setLayerName, setActivePanel]);
+  }, [setShowcaseMode, setSelectedCrop, setSelectedVariable, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedTime, setSelectedCropVariable, setLayerName]);
 
   // Exit showcase mode but keep current layer (explore this map)
   const handleExploreCurrentMap = useCallback(() => {
     setShowcaseMode(false);
-    setActivePanel('info');
-  }, [setShowcaseMode, setActivePanel]);
+  }, [setShowcaseMode]);
 
   if (!showcaseMode) return null;
 

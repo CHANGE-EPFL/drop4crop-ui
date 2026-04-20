@@ -95,10 +95,10 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     const year = searchParams.get('year');
 
     if (crop || waterModel || climateModel || scenario || variable || cropVariable || year) {
-      // Disable showcase mode when URL params are present
+      // Disable showcase mode when URL params are present. Leave activePanel
+      // untouched so the map opens without the Info & Attribution popup —
+      // user opens it on demand.
       setShowcaseMode(false);
-      // Show info panel when loading from URL
-      setActivePanel('info');
 
       // Look up the full objects from context arrays
       if (crop) {
