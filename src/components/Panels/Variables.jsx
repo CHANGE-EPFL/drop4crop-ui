@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Typography from '@mui/material/Typography';
 import PanelTitleWithTooltip from './Title';
 
 // Helper to render variable label with subscript
@@ -29,8 +26,6 @@ const VariablePanel = ({
     setSelectedCropVariable,
     setLayerName,
 }) => {
-    const [showCropSpecific, setShowCropSpecific] = useState(false);
-
     const handleClose = () => {
         setActivePanel(null);
     };
@@ -49,6 +44,21 @@ const VariablePanel = ({
             setActivePanel(null);
         }
     };
+
+    // Dynamically group variables by group_name
+    const groups = useMemo(() => {
+        const result = {};
+        variables.forEach(v => {
+            const group = v.group_name || 'Other';
+            if (!result[group]) result[group] = [];
+            result[group].push(v);
+        });
+        // Sort variables within each group by sort_order
+        Object.values(result).forEach(groupVars => {
+            groupVars.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        });
+        return result;
+    }, [variables]);
 
     return (
         <div className="popup">
@@ -81,124 +91,23 @@ const VariablePanel = ({
             </div>
 
             <>
-
-                <div className="chips-group">
-                    <h5>Evapotranspiration [mm]</h5>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['etb', 'etg'].includes(variable.id))
-                            .sort((a, b) => {
-                                const order = ['etb', 'etg'];
-                                return order.indexOf(a.id) - order.indexOf(b.id);
-                            })
-                            .map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={renderVariableLabel(variable)}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="chips-group">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <h5>Renewability Rates [mm]</h5>
-                            <Tooltip
-                                title="Blue renewability rate indicates the sum of surface runoff and groundwater recharge. The green renewability rate corresponds to the root zone soil moisture."
-                                placement="right"
-                                disableFocusListener disableTouchListener enterDelay={10}
-                                arrow
-                                style={{ marginLeft: '5px', marginBottom: '4px' }}
-                            >
-                                <HelpOutlineIcon sx={{ fontSize: '1rem', color: '#d1a766' }} />
-                            </Tooltip>
+                {Object.entries(groups).map(([groupName, groupVars]) => (
+                    <div className="chips-group" key={groupName}>
+                        <h5>{groupName}</h5>
+                        <div className="chips-list">
+                            {groupVars.map(variable => (
+                                <Chip
+                                    key={variable.id}
+                                    label={renderVariableLabel(variable)}
+                                    clickable
+                                    className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                                    disabled={!variable.enabled}
+                                    onClick={() => handleChipClick(variable)}
+                                />
+                            ))}
                         </div>
                     </div>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['rb', 'rg'].includes(variable.id))
-                            .sort((a, b) => {
-                                const order = ['rb', 'rg'];
-                                return order.indexOf(a.id) - order.indexOf(b.id);
-                            })
-                            .map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={renderVariableLabel(variable)}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="chips-group">
-                    <h5>Virtual Water Content [m³ ton⁻¹]</h5>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['vwcb', 'vwcg', 'vwc'].includes(variable.id))
-                            .sort((a, b) => {
-                                const order = ['vwcb', 'vwcg', 'vwc'];
-                                return order.indexOf(a.id) - order.indexOf(b.id);
-                            })
-                            .map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={renderVariableLabel(variable)}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="chips-group">
-                    <h5>Water Footprint [m³]</h5>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['wfb', 'wfg', 'wf'].includes(variable.id))
-                            .sort((a, b) => {
-                                const order = ['wfb', 'wfg', 'wf'];
-                                return order.indexOf(a.id) - order.indexOf(b.id);
-                            })
-                            .map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={renderVariableLabel(variable)}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="chips-group">
-                    <h5>Water Debt [years]</h5>
-                    <div className="chips-list">
-                        {variables.filter(variable => ['wdb', 'wdg'].includes(variable.id))
-                            .sort((a, b) => {
-                                const order = ['wdb', 'wdg'];
-                                return order.indexOf(a.id) - order.indexOf(b.id);
-                            })
-                            .map(variable => (
-                            <Chip
-                                key={variable.id}
-                                label={renderVariableLabel(variable)}
-                                clickable
-                                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                disabled={!variable.enabled}
-                                onClick={() => handleChipClick(variable)}
-                            />
-                        ))}
-                    </div>
-                </div>
+                ))}
             </>
 
         </div>

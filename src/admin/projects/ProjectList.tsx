@@ -24,11 +24,12 @@ const CardGrid = () => {
                 gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: '28px',
                 maxWidth: 780,
+                mx: 'auto',
                 mt: 4,
                 mb: 2,
                 p: 3,
                 borderRadius: 2,
-                background: '#1e2127',
+                background: 'background.default',
             }}
         >
             {sorted.map((project, index) => {
@@ -59,7 +60,7 @@ const CardGrid = () => {
 
 const ProjectList = () => {
     return (
-        <List sort={{ field: 'sort_order', order: 'ASC' }} storeKey={false}>
+        <List sort={{ field: 'sort_order', order: 'ASC' }} storeKey={false} perPage={25}>
             <>
                 <Datagrid rowClick="show">
                     <TextField source="title" />

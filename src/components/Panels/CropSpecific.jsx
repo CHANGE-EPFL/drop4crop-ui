@@ -65,10 +65,7 @@ const CropSpecificPanel = ({
             />
             <div className="chips-group">
                 <div className="chips-list">
-                    {cropVariables.filter(cropVariable => [
-                        'mirca_area_irrigated', 'mirca_area_total', 'mirca_rainfed',
-                        'yield', 'production',
-                    ].includes(cropVariable.id)).map(cropVariable => (
+                    {cropVariables.map(cropVariable => (
                         <Chip
                             key={cropVariable.id}
                             label={`${cropVariable.name} [${cropVariable.unit}]`}

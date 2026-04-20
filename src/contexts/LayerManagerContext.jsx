@@ -1,15 +1,8 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AppContext } from './AppContext';
+import { useProject } from './ProjectContext';
 import { useSearchParams } from 'react-router-dom';
-import {
-    cropItems,
-    globalWaterModelsItems,
-    climateModelsItems,
-    scenariosItems,
-    variablesItems,
-    cropVariablesItems,
-} from '../variables';
 
 const LayerManagerContext = createContext();
 
@@ -19,6 +12,7 @@ export const useLayerManager = () => {
 
 export const LayerManagerProvider = ({ children }) => {
     const [searchParams] = useSearchParams();
+    const project = useProject();
     const {
         setCrops,
         setGlobalWaterModels,
@@ -56,7 +50,8 @@ export const LayerManagerProvider = ({ children }) => {
             // Build STAC search parameters
             const params = {
                 crop: props.crop,
-                limit: 1  // We only need one result
+                limit: 1,  // We only need one result
+                ...(project?.slug ? { project: project.slug } : {}),
             };
 
             if (props.crop_variable) {
@@ -203,15 +198,20 @@ export const LayerManagerProvider = ({ children }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('/api/layers/groups');
+                const groupsUrl = project?.slug
+                    ? `/api/layers/groups?project=${project.slug}`
+                    : '/api/layers/groups';
+                const response = await axios.get(groupsUrl);
                 const { crop, water_model, climate_model, scenario, variable, year } = response.data;
 
-                setCrops(cropItems.map(c => ({ ...c, enabled: crop.includes(c.id) })));
-                setGlobalWaterModels(globalWaterModelsItems.map(m => ({ ...m, enabled: water_model.includes(m.id) })));
-                setClimateModels(climateModelsItems.map(m => ({ ...m, enabled: climate_model.includes(m.id) })));
-                setScenarios(scenariosItems.map(s => ({ ...s, enabled: scenario.includes(s.id) })));
-                setVariables(variablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
-                setCropVariables(cropVariablesItems.map(v => ({ ...v, enabled: variable.includes(v.id) })));
+                setCrops(crop.map(c => ({ ...c, id: c.slug, enabled: true })));
+                setGlobalWaterModels(water_model.map(m => ({ ...m, id: m.slug, enabled: true })));
+                setClimateModels(climate_model.map(m => ({ ...m, id: m.slug, enabled: true })));
+                setScenarios(scenario.map(s => ({ ...s, id: s.slug, enabled: true })));
+
+                const allVars = variable;
+                setVariables(allVars.filter(v => !v.is_crop_specific).map(v => ({ ...v, id: v.slug, enabled: true })));
+                setCropVariables(allVars.filter(v => v.is_crop_specific).map(v => ({ ...v, id: v.slug, enabled: true })));
 
                 // Filter out null values and sort years chronologically
                 const validYears = year.filter(y => y !== null).sort((a, b) => a - b);

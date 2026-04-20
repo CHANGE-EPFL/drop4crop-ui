@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
+import { useProject } from '../contexts/ProjectContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight, faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 import './ShowcaseOverlay.css';
 
-// Showcase examples data with all the layer parameters and descriptions
-const showcaseExamples = [
+// Legacy hardcoded examples - used as fallback when no API data available
+const fallbackExamples = [
   {
     id: 1,
     crop: { id: 'wheat', name: 'Wheat', enabled: true },
@@ -89,12 +91,45 @@ const ShowcaseOverlay = () => {
     setActivePanel,
     loadingGroups,
   } = useContext(AppContext);
+  const project = useProject();
 
+  const [showcaseExamples, setShowcaseExamples] = useState(fallbackExamples);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const indexRef = useRef(showcaseIndex);
   const lastClickRef = useRef(0);
   const mapInteractionTimeoutRef = useRef(null);
+
+  // Fetch showcase items from API
+  useEffect(() => {
+    if (!project?.slug) return;
+    axios
+      .get(`/api/showcase-items/by-project/${project.slug}`)
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          const items = res.data.map((item, index) => ({
+            id: index + 1,
+            crop: item.crop ? { id: item.crop.slug, name: item.crop.name, enabled: true } : null,
+            variable: item.variable && !item.variable.is_crop_specific
+              ? { id: item.variable.slug, name: item.variable.name, abbreviation: item.variable.abbreviation, subscript: item.variable.subscript, unit: item.variable.unit, enabled: true }
+              : null,
+            waterModel: item.water_model ? { id: item.water_model.slug, name: item.water_model.name, enabled: true } : null,
+            climateModel: item.climate_model ? { id: item.climate_model.slug, name: item.climate_model.name, enabled: true } : null,
+            scenario: item.scenario ? { id: item.scenario.slug, name: item.scenario.name, enabled: true } : null,
+            year: item.year,
+            cropVariable: item.variable && item.variable.is_crop_specific
+              ? { id: item.variable.slug, name: item.variable.name, abbreviation: item.variable.abbreviation, unit: item.variable.unit, enabled: true }
+              : null,
+            title: item.title,
+            description: item.description || '',
+          }));
+          setShowcaseExamples(items);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch showcase items, using fallback:', err);
+      });
+  }, [project?.slug]);
 
   // Keep ref in sync with state
   useEffect(() => {

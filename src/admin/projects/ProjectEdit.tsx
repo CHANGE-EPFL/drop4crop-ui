@@ -7,6 +7,7 @@ import {
     required,
 } from 'react-admin';
 import MapPreview from './MapPreview';
+import ProjectConfigEditor from './ProjectConfigEditor';
 
 const ProjectEdit = () => {
     return (
@@ -30,6 +31,7 @@ const ProjectEdit = () => {
                     max={18}
                     helperText="Map zoom level for splash page preview (1-18)"
                 />
+                <ProjectConfigEditor />
                 <BooleanInput source="enabled" />
                 <NumberInput
                     source="sort_order"

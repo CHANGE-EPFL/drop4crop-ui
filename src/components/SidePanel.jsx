@@ -4,7 +4,7 @@ import { AppContext } from '../contexts/AppContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWheatAwn, faWater, faCloudSun, faCogs,
-  faCog, faInfoCircle, faLayerGroup, faHome,
+  faCog, faInfoCircle, faLayerGroup, faHome, faChevronLeft,
 } from '@fortawesome/free-solid-svg-icons';
 import './SidePanel.css';
 import GrassIcon from '@mui/icons-material/Grass';
@@ -165,13 +165,6 @@ const SidePanel = ({ clearLayers }) => {
         </div>
       )}
       <div className="button-group top">
-        <Link to="/" className="home-button" title="Back to projects">
-          <div className="button-content">
-            <FontAwesomeIcon icon={faHome} size="lg" />
-            <span>Projects</span>
-          </div>
-        </Link>
-
         <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
           <div className="button-content">
             <GrassIcon />
@@ -241,6 +234,15 @@ const SidePanel = ({ clearLayers }) => {
             <span>Info</span>
           </div>
         </button>
+        <Link to="/" className="projects-back-button" title="Back to projects">
+          <div className="button-content">
+            <span className="projects-back-icons">
+              <FontAwesomeIcon icon={faChevronLeft} size="xs" />
+              <FontAwesomeIcon icon={faHome} size="lg" />
+            </span>
+            <span>Projects</span>
+          </div>
+        </Link>
       </div>
 
       {activePanel === 'crops' && (

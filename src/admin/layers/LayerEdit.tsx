@@ -22,6 +22,9 @@ const LayerEdit = () => {
         <Edit>
             <SimpleForm>
                 <TextInput disabled label="Id" source="id" />
+                <ReferenceInput source="project_id" reference="projects">
+                    <AutocompleteInput optionText="title" />
+                </ReferenceInput>
                 <TextInput source="layer_name" disabled />
                 <SelectInput source="crop" choices={cropItems} required />
                 <SelectInput source="water_model" choices={globalWaterModelsItems} />
@@ -31,7 +34,7 @@ const LayerEdit = () => {
                 <SelectInput source="year" choices={yearItems} />
                 <BooleanInput source="enabled" />
                 <ReferenceInput source="style_id" reference="styles" >
-                    <SelectInput />
+                    <AutocompleteInput optionText="name" />
                 </ReferenceInput>
             </SimpleForm>
         </Edit>

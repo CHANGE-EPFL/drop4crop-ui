@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Layout, AppBar, TitlePortal } from 'react-admin';
 import { CssBaseline, Button, Box } from '@mui/material';
 import MapIcon from '@mui/icons-material/Map';
+import { MyMenu } from './layout/AppMenu';
 
 const CustomAppBar = () => (
     <AppBar>
@@ -30,6 +31,6 @@ const CustomAppBar = () => (
 export default props => (
     <>
         <CssBaseline />
-        <Layout {...props} appBar={CustomAppBar} />
+        <Layout {...props} appBar={CustomAppBar} menu={MyMenu} />
     </>
 );

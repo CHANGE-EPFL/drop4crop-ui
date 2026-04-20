@@ -28,6 +28,7 @@ import {
     Button,
     useListFilterContext,
     ReferenceInput,
+    ReferenceField,
     AutocompleteInput,
 } from "react-admin";
 import { useState, createContext, useContext, useEffect } from 'react';
@@ -1283,6 +1284,9 @@ export const LayerList = () => {
                         }
                     }}
                 >
+                    <ReferenceField source="project_id" reference="projects" link="show" label="Project">
+                        <TextField source="title" />
+                    </ReferenceField>
                     <FunctionField
                         label="Crop"
                         render={record => (

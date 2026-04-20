@@ -122,7 +122,7 @@ const InterpolationTypeField = () => {
 
 export const StyleList = () => {
     return (
-        <List storeKey={false}>
+        <List storeKey={false} perPage={25}>
             <Datagrid rowClick="show">
                 <TextField source="name" />
                 <ReferenceManyCount

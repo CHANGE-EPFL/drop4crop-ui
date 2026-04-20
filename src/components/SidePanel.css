@@ -19,13 +19,13 @@
 }
 
 
-.home-button {
+.projects-back-button {
     width: 100%;
-    height: 50px;
-    background-color: #333;
-    color: #d1a766;
+    height: 70px;
+    background-color: #4a4a4a;
+    color: #d3d3d3;
     border: none;
-    border-bottom: 1px solid #444;
+    border-top: 1px solid #444;
     cursor: pointer;
     transition: background-color 0.3s;
     display: flex;
@@ -38,23 +38,26 @@
     font-family: 'Arial', 'Helvetica', sans-serif;
 }
 
-.home-button:hover {
-    background-color: #3a3a3a;
-    color: #e8c896;
+.projects-back-button:hover {
+    background-color: #5a5a5a;
+    color: #d1a766;
 }
 
-.home-button .button-content {
+.projects-back-button .button-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
 }
 
-.home-button .button-content span {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+.projects-back-button .button-content span {
+    font-size: 12px;
+}
+
+.projects-back-icons {
+    display: flex;
+    align-items: center;
+    gap: 3px;
 }
 
 .button-group {

@@ -10,14 +10,6 @@ import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome } from '@fortawesome/free-solid-svg-icons';
 import { ProjectProvider } from '../contexts/ProjectContext';
-import {
-  cropItems,
-  globalWaterModelsItems,
-  climateModelsItems,
-  scenariosItems,
-  variablesItems,
-  cropVariablesItems,
-} from '../variables';
 
 
 const FrontendApp = () => {
@@ -56,6 +48,12 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     showcaseMode,
     setShowcaseMode,
     setActivePanel,
+    crops,
+    globalWaterModels,
+    climateModels,
+    scenarios,
+    variables,
+    cropVariables,
   } = useContext(AppContext);
   const [searchParams] = useSearchParams();
   const [urlParamsApplied, setUrlParamsApplied] = useState(false);
@@ -102,19 +100,19 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
       // Show info panel when loading from URL
       setActivePanel('info');
 
-      // Look up the full objects from the variables file
+      // Look up the full objects from context arrays
       if (crop) {
-        const cropObj = cropItems.find(c => c.id === crop);
+        const cropObj = crops.find(c => c.id === crop);
         if (cropObj) {
-          setSelectedCrop({ ...cropObj, enabled: true });
+          setSelectedCrop(cropObj);
         }
       }
 
       // Handle crop-specific variable
       if (cropVariable) {
-        const cropVariableObj = cropVariablesItems.find(v => v.id === cropVariable);
+        const cropVariableObj = cropVariables.find(v => v.id === cropVariable);
         if (cropVariableObj) {
-          setSelectedCropVariable({ ...cropVariableObj, enabled: true });
+          setSelectedCropVariable(cropVariableObj);
         }
         // Clear climate layer parameters when loading crop-specific layer
         setSelectedGlobalWaterModel(null);
@@ -128,27 +126,27 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
         setSelectedCropVariable(null);
 
         if (waterModel) {
-          const waterModelObj = globalWaterModelsItems.find(w => w.id === waterModel);
+          const waterModelObj = globalWaterModels.find(w => w.id === waterModel);
           if (waterModelObj) {
-            setSelectedGlobalWaterModel({ ...waterModelObj, enabled: true });
+            setSelectedGlobalWaterModel(waterModelObj);
           }
         }
         if (climateModel) {
-          const climateModelObj = climateModelsItems.find(c => c.id === climateModel);
+          const climateModelObj = climateModels.find(c => c.id === climateModel);
           if (climateModelObj) {
-            setSelectedClimateModel({ ...climateModelObj, enabled: true });
+            setSelectedClimateModel(climateModelObj);
           }
         }
         if (scenario) {
-          const scenarioObj = scenariosItems.find(s => s.id === scenario);
+          const scenarioObj = scenarios.find(s => s.id === scenario);
           if (scenarioObj) {
-            setSelectedScenario({ ...scenarioObj, enabled: true });
+            setSelectedScenario(scenarioObj);
           }
         }
         if (variable) {
-          const variableObj = variablesItems.find(v => v.id === variable);
+          const variableObj = variables.find(v => v.id === variable);
           if (variableObj) {
-            setSelectedVariable({ ...variableObj, enabled: true });
+            setSelectedVariable(variableObj);
           }
         }
         if (year) {
@@ -159,7 +157,7 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
       // Mark that we've applied URL params
       setUrlParamsApplied(true);
     }
-  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime, setShowcaseMode, setActivePanel]);
+  }, [searchParams, loadingGroups, urlParamsApplied, setSelectedCrop, setSelectedGlobalWaterModel, setSelectedClimateModel, setSelectedScenario, setSelectedVariable, setSelectedCropVariable, setSelectedTime, setShowcaseMode, setActivePanel, crops, globalWaterModels, climateModels, scenarios, variables, cropVariables]);
 
   return (
       <div style={{

@@ -12,8 +12,14 @@ import layers from "./layers";
 import projects from "./projects";
 import statistics from "./statistics";
 import cache from "./cache";
+import crops from "./crops";
+import waterModels from "./water-models";
+import climateModels from "./climate-models";
+import scenarios from "./scenarios";
+import variables from "./variables";
+import showcaseItems from "./showcase-items";
 import axios from "axios";
-import { defaultTheme } from "react-admin";
+import { defaultTheme, defaultDarkTheme } from "react-admin";
 import Dashboard from "./Dashboard";
 
 const initOptions = {
@@ -165,14 +171,13 @@ const App = () => {
   const theme = {
     ...defaultTheme,
     sidebar: {
-      width: 150, // The default value is 240
+      width: 220,
     },
   };
   const darkTheme = {
-    ...defaultTheme,
-    palette: { mode: "dark" },
+    ...defaultDarkTheme,
     sidebar: {
-      width: 150,
+      width: 220,
     },
   };
   return (
@@ -192,6 +197,12 @@ const App = () => {
               {permissions === "admin" ? (
                 <>
                   <Resource name="projects" {...projects} />
+                  <Resource name="crops" {...crops} />
+                  <Resource name="water-models" {...waterModels} />
+                  <Resource name="climate-models" {...climateModels} />
+                  <Resource name="scenarios" {...scenarios} />
+                  <Resource name="variables" {...variables} />
+                  <Resource name="showcase-items" {...showcaseItems} />
                   <Resource name="layers" {...layers} />
                   <Resource name="styles" {...styles} />
                   <Resource name="statistics" {...statistics} />
