@@ -1,21 +1,13 @@
 /* eslint react/jsx-key: off */
 import {
+    AutocompleteInput,
     BooleanInput,
     Edit,
+    NumberInput,
     ReferenceInput,
-    SelectInput,
     SimpleForm,
     TextInput,
-    required
 } from 'react-admin';
-import {
-    globalWaterModelsItems,
-    climateModelsItems,
-    cropItems,
-    scenariosItems,
-    variablesItems,
-    yearItems
-} from '../options';
 
 const LayerEdit = () => {
     return (
@@ -26,19 +18,29 @@ const LayerEdit = () => {
                     <AutocompleteInput optionText="title" />
                 </ReferenceInput>
                 <TextInput source="layer_name" disabled />
-                <SelectInput source="crop" choices={cropItems} required />
-                <SelectInput source="water_model" choices={globalWaterModelsItems} />
-                <SelectInput source="climate_model" choices={climateModelsItems} />
-                <SelectInput source="scenario" choices={scenariosItems} />
-                <SelectInput source="variable" choices={variablesItems} />
-                <SelectInput source="year" choices={yearItems} />
+                <ReferenceInput source="crop_id" reference="crops" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                    <AutocompleteInput optionText="name" />
+                </ReferenceInput>
+                <ReferenceInput source="water_model_id" reference="water-models" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                    <AutocompleteInput optionText="name" />
+                </ReferenceInput>
+                <ReferenceInput source="climate_model_id" reference="climate-models" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                    <AutocompleteInput optionText="name" />
+                </ReferenceInput>
+                <ReferenceInput source="scenario_id" reference="scenarios" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                    <AutocompleteInput optionText="name" />
+                </ReferenceInput>
+                <ReferenceInput source="variable_id" reference="variables" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                    <AutocompleteInput optionText="name" />
+                </ReferenceInput>
+                <NumberInput source="year" />
                 <BooleanInput source="enabled" />
-                <ReferenceInput source="style_id" reference="styles" >
+                <ReferenceInput source="style_id" reference="styles">
                     <AutocompleteInput optionText="name" />
                 </ReferenceInput>
             </SimpleForm>
         </Edit>
-    )
+    );
 };
 
 export default LayerEdit;

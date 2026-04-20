@@ -15,6 +15,7 @@ const VariableList = () => {
                 <TextField source="abbreviation" />
                 <TextField source="unit" />
                 <BooleanField source="is_crop_specific" />
+                <BooleanField source="has_time" label="Has time" />
                 <TextField source="group_name" />
                 <NumberField source="sort_order" />
             </Datagrid>

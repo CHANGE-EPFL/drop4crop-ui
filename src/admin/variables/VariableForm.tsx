@@ -14,6 +14,11 @@ const VariableForm = ({ isEdit = false }: VariableFormProps) => {
             <TextInput source="subscript" fullWidth helperText="Optional subscript (e.g., b for blue, g for green)" />
             <TextInput source="unit" validate={[required()]} fullWidth />
             <BooleanInput source="is_crop_specific" defaultValue={false} />
+            <BooleanInput
+                source="has_time"
+                defaultValue={true}
+                helperText="Whether this variable varies over time. Controls the year slider in the public UI."
+            />
             <TextInput source="group_name" fullWidth helperText="UI grouping name (e.g., Water Footprint, Evapotranspiration)" />
             <NumberInput source="sort_order" defaultValue={0} />
         </>

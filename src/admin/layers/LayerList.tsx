@@ -1,17 +1,12 @@
 import {
     List,
     TextField,
-    BooleanField,
     BulkDeleteButton,
     Datagrid,
-    BulkUpdateButton,
     useGetList,
     Loading,
     Pagination,
     TopToolbar,
-    CreateButton,
-    ExportButton,
-    useUpdateMany,
     useListContext,
     useNotify,
     useRefresh,
@@ -19,17 +14,13 @@ import {
     useRecordContext,
     FilterButton,
     SearchInput,
-    SaveButton,
     FunctionField,
-    TextInput,
-    BooleanInput,
     SelectInput,
+    BooleanInput,
     useDataProvider,
     Button,
-    useListFilterContext,
     ReferenceInput,
     ReferenceField,
-    AutocompleteInput,
 } from "react-admin";
 import { useState, createContext, useContext, useEffect } from 'react';
 import { createStyleGradient } from '../../utils/styleUtils';
@@ -37,18 +28,30 @@ import { createStyleGradient } from '../../utils/styleUtils';
 // Context to share preloaded styles data across components
 const StylesContext = createContext<{ styles: any[], stylesMap: Map<string, any> }>({ styles: [], stylesMap: new Map() });
 
-import { FilterList, FilterListItem } from 'react-admin';
-import { Card, CardContent, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Button as MuiButton } from '@mui/material';
-import CategoryIcon from '@mui/icons-material/LocalOffer';
-import {
-    globalWaterModelsItems,
-    climateModelsItems,
-    cropItems,
-    scenariosItems,
-    variablesItems,
-    yearItems,
-    cropTypeItems
-} from '../options';
+// Context to share preloaded reference-table data (crops, water models, etc.)
+type RefMaps = {
+    crops: Map<string, any>;
+    waterModels: Map<string, any>;
+    climateModels: Map<string, any>;
+    scenarios: Map<string, any>;
+    variables: Map<string, any>;
+};
+const RefContext = createContext<RefMaps>({
+    crops: new Map(),
+    waterModels: new Map(),
+    climateModels: new Map(),
+    scenarios: new Map(),
+    variables: new Map(),
+});
+
+import { Card, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Button as MuiButton } from '@mui/material';
+
+// Year is stored as a plain integer on `layer`; the valid set is the
+// decadal points used by the climate models. Not a reference table because it
+// doesn't carry any associated metadata.
+const YEAR_CHOICES = [
+    2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090,
+].map((y) => ({ id: y, name: String(y) }));
 import { Fragment } from 'react';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -229,14 +232,36 @@ const StyleFilterableField = ({ record }) => {
     );
 };
 
-// Crop Specific field component with click-to-filter icon
-const CropSpecificFilterableField = ({ record }) => {
+// Filterable reference field: shows the referenced ref-table row's name and a
+// click-to-filter icon that pins the row's UUID onto the filter. Uses the
+// RefContext (preloaded once per list) to avoid one HTTP call per row.
+const FilterableRefField = ({
+    source,
+    refKey,
+    record,
+    transform,
+}: {
+    source: string;
+    refKey: keyof RefMaps;
+    record: any;
+    transform?: string;
+}) => {
     const { filterValues, setFilters } = useListContext();
+    const refs = useContext(RefContext);
+    const id: string | undefined = record?.[source];
 
-    const handleFilterClick = (e) => {
+    const handleFilterClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setFilters({ ...filterValues, is_crop_specific: record.is_crop_specific }, {});
+        if (!id) return;
+        setFilters({ ...filterValues, [source]: id }, {});
     };
+
+    if (!id) {
+        return <Typography variant="body2">-</Typography>;
+    }
+
+    const ref = refs[refKey].get(id);
+    const displayName = ref?.name ?? id;
 
     return (
         <Box
@@ -244,13 +269,12 @@ const CropSpecificFilterableField = ({ record }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                justifyContent: 'center',
-                '&:hover .filter-icon': {
-                    opacity: 1,
-                }
+                '&:hover .filter-icon': { opacity: 1 },
             }}
         >
-            <BooleanField source="is_crop_specific" looseValue />
+            <Typography variant="body2" sx={{ textTransform: (transform as any) || 'none' }}>
+                {displayName}
+            </Typography>
             <IconButton
                 size="small"
                 onClick={handleFilterClick}
@@ -262,9 +286,9 @@ const CropSpecificFilterableField = ({ record }) => {
                     '&:hover': {
                         backgroundColor: 'primary.light',
                         color: 'primary.main',
-                    }
+                    },
                 }}
-                title={`Filter by ${record.is_crop_specific ? 'crop-specific' : 'climate'} layers`}
+                title={`Filter by ${displayName}`}
             >
                 <FilterListIcon sx={{ fontSize: 14 }} />
             </IconButton>
@@ -1205,9 +1229,26 @@ export const LayerList = () => {
         sort: { field: 'name', order: 'ASC' }
     });
 
+    // Preload reference tables once for the whole list to avoid per-row fetches
+    // when resolving crop_id/water_model_id/... -> name/slug.
+    const refQuery = { pagination: { page: 1, perPage: 500 }, sort: { field: 'sort_order', order: 'ASC' } };
+    const { data: cropsData } = useGetList('crops', refQuery);
+    const { data: waterModelsData } = useGetList('water-models', refQuery);
+    const { data: climateModelsData } = useGetList('climate-models', refQuery);
+    const { data: scenariosData } = useGetList('scenarios', refQuery);
+    const { data: variablesData } = useGetList('variables', refQuery);
+
     // Create a Map for O(1) lookups by style ID
     const stylesMap = new Map((stylesData || []).map(style => [style.id, style]));
     const stylesContextValue = { styles: stylesData || [], stylesMap };
+
+    const refContextValue: RefMaps = {
+        crops: new Map((cropsData || []).map((r: any) => [r.id, r])),
+        waterModels: new Map((waterModelsData || []).map((r: any) => [r.id, r])),
+        climateModels: new Map((climateModelsData || []).map((r: any) => [r.id, r])),
+        scenarios: new Map((scenariosData || []).map((r: any) => [r.id, r])),
+        variables: new Map((variablesData || []).map((r: any) => [r.id, r])),
+    };
 
     const PostPagination = props => (
         <Pagination
@@ -1217,6 +1258,7 @@ export const LayerList = () => {
     );
 
     return (
+        <RefContext.Provider value={refContextValue}>
         <StylesContext.Provider value={stylesContextValue}>
             <List
                 queryOptions={{ refetchInterval: 5000 }}
@@ -1229,13 +1271,22 @@ export const LayerList = () => {
                 filters={[
                     <SearchInput source="q" alwaysOn />,
                     <BooleanInput source="enabled" label="Enabled" />,
-                    <BooleanInput source="is_crop_specific" label="Crop Specific" />,
-                    <SelectInput source="crop" label="Crop" choices={cropItems} />,
-                    <SelectInput source="water_model" label="Water Model" choices={globalWaterModelsItems} />,
-                    <SelectInput source="climate_model" label="Climate Model" choices={climateModelsItems} />,
-                    <SelectInput source="scenario" label="Scenario" choices={scenariosItems} />,
-                    <SelectInput source="variable" label="Variable" choices={variablesItems} />,
-                    <SelectInput source="year" label="Year" choices={yearItems} />,
+                    <ReferenceInput source="crop_id" reference="crops" label="Crop" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                        <SelectInput optionText="name" />
+                    </ReferenceInput>,
+                    <ReferenceInput source="water_model_id" reference="water-models" label="Water Model" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                        <SelectInput optionText="name" />
+                    </ReferenceInput>,
+                    <ReferenceInput source="climate_model_id" reference="climate-models" label="Climate Model" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                        <SelectInput optionText="name" />
+                    </ReferenceInput>,
+                    <ReferenceInput source="scenario_id" reference="scenarios" label="Scenario" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                        <SelectInput optionText="name" />
+                    </ReferenceInput>,
+                    <ReferenceInput source="variable_id" reference="variables" label="Variable" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                        <SelectInput optionText="name" />
+                    </ReferenceInput>,
+                    <SelectInput source="year" label="Year" choices={YEAR_CHOICES} />,
                     <StyleFilterInput source="style_id" label="Style" />,
                     <SelectInput source="stats_status_value" label="Stats Status" choices={[
                         { id: 'success', name: 'Success' },
@@ -1290,31 +1341,31 @@ export const LayerList = () => {
                     <FunctionField
                         label="Crop"
                         render={record => (
-                            <FilterableField source="crop" value={record.crop} transform="capitalize" />
+                            <FilterableRefField source="crop_id" refKey="crops" record={record} transform="capitalize" />
                         )}
                     />
                     <FunctionField
                         label="Water Model"
                         render={record => (
-                            <FilterableField source="water_model" value={record.water_model} />
+                            <FilterableRefField source="water_model_id" refKey="waterModels" record={record} />
                         )}
                     />
                     <FunctionField
                         label="Climate Model"
                         render={record => (
-                            <FilterableField source="climate_model" value={record.climate_model} />
+                            <FilterableRefField source="climate_model_id" refKey="climateModels" record={record} />
                         )}
                     />
                     <FunctionField
                         label="Scenario"
                         render={record => (
-                            <FilterableField source="scenario" value={record.scenario} transform="uppercase" />
+                            <FilterableRefField source="scenario_id" refKey="scenarios" record={record} transform="uppercase" />
                         )}
                     />
                     <FunctionField
                         label="Variable"
                         render={record => (
-                            <FilterableField source="variable" value={record.variable} transform="capitalize" />
+                            <FilterableRefField source="variable_id" refKey="variables" record={record} transform="capitalize" />
                         )}
                     />
                     <FunctionField
@@ -1352,70 +1403,10 @@ export const LayerList = () => {
                         render={record => <StatsStatusFilterableField record={record} />}
                     />
                     <FunctionField
-                        label="Crop Specific"
-                        render={record => <CropSpecificFilterableField record={record} />}
-                    />
-                    <FunctionField
                         label="Style"
                         render={record => <StyleFilterableField record={record} />}
                     />
-                    <FunctionField
-                        label="Views"
-                        source="total_views"
-                        sortable={true}
-                        textAlign="center"
-                        render={record => {
-                            // Construct the frontend URL with layer parameters
-                            const params = new URLSearchParams();
-                            if (record.crop) params.set('crop', record.crop);
-
-                            if (record.is_crop_specific) {
-                                // For crop-specific layers, use crop_variable parameter
-                                if (record.variable) params.set('crop_variable', record.variable);
-                            } else {
-                                // For climate layers, use all the model parameters
-                                if (record.water_model) params.set('water_model', record.water_model);
-                                if (record.climate_model) params.set('climate_model', record.climate_model);
-                                if (record.scenario) params.set('scenario', record.scenario);
-                                if (record.variable) params.set('variable', record.variable);
-                                if (record.year) params.set('year', record.year.toString());
-                            }
-                            const mapUrl = `/?${params.toString()}`;
-
-                            return (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    <Tooltip title={record.enabled ? "Open in map" : "Layer is disabled"}>
-                                        <span>
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (record.enabled) {
-                                                        window.open(mapUrl, '_blank');
-                                                    }
-                                                }}
-                                                disabled={!record.enabled}
-                                                sx={{
-                                                    color: record.enabled ? 'primary.main' : 'action.disabled',
-                                                    p: 0.25,
-                                                }}
-                                            >
-                                                <MapIcon sx={{ fontSize: '1rem' }} />
-                                            </IconButton>
-                                        </span>
-                                    </Tooltip>
-                                    <Chip
-                                        size="small"
-                                        icon={<VisibilityIcon sx={{ fontSize: '0.75rem !important' }} />}
-                                        label={(record.total_views || 0).toLocaleString()}
-                                        color="secondary"
-                                        variant="filled"
-                                        sx={{ fontSize: '0.7rem', fontWeight: 600, height: '20px' }}
-                                    />
-                                </Box>
-                            );
-                        }}
-                    />
+                    <ViewsColumn />
                 </Datagrid>
             </Card>
         </List>
@@ -1426,7 +1417,81 @@ export const LayerList = () => {
                 onClose={() => setUploadDialogOpen(false)}
             />
         </StylesContext.Provider>
+        </RefContext.Provider>
     );
 };
 
 export default LayerList;
+
+// --- ViewsColumn -----------------------------------------------------------
+// Renders the layer-in-map deep link + total views chip. Extracted so it can
+// consume the RefContext (FunctionField's render prop runs outside the
+// provider on some renders in practice, and this keeps the lookup logic in
+// one place).
+const ViewsColumn = () => (
+    <FunctionField
+        label="Views"
+        source="total_views"
+        sortable={true}
+        textAlign="center"
+        render={(record: any) => <ViewsCell record={record} />}
+    />
+);
+
+const ViewsCell = ({ record }: { record: any }) => {
+    const refs = useContext(RefContext);
+
+    // Look up slugs for URL params (frontend expects slug-based query params)
+    const cropSlug = record.crop_id ? refs.crops.get(record.crop_id)?.slug : undefined;
+    const variable = record.variable_id ? refs.variables.get(record.variable_id) : undefined;
+    const waterModelSlug = record.water_model_id ? refs.waterModels.get(record.water_model_id)?.slug : undefined;
+    const climateModelSlug = record.climate_model_id ? refs.climateModels.get(record.climate_model_id)?.slug : undefined;
+    const scenarioSlug = record.scenario_id ? refs.scenarios.get(record.scenario_id)?.slug : undefined;
+
+    const params = new URLSearchParams();
+    if (cropSlug) params.set('crop', cropSlug);
+
+    if (variable?.is_crop_specific) {
+        params.set('crop_variable', variable.slug);
+    } else {
+        if (waterModelSlug) params.set('water_model', waterModelSlug);
+        if (climateModelSlug) params.set('climate_model', climateModelSlug);
+        if (scenarioSlug) params.set('scenario', scenarioSlug);
+        if (variable?.slug) params.set('variable', variable.slug);
+        if (record.year) params.set('year', record.year.toString());
+    }
+    const mapUrl = `/?${params.toString()}`;
+
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title={record.enabled ? "Open in map" : "Layer is disabled"}>
+                <span>
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (record.enabled) {
+                                window.open(mapUrl, '_blank');
+                            }
+                        }}
+                        disabled={!record.enabled}
+                        sx={{
+                            color: record.enabled ? 'primary.main' : 'action.disabled',
+                            p: 0.25,
+                        }}
+                    >
+                        <MapIcon sx={{ fontSize: '1rem' }} />
+                    </IconButton>
+                </span>
+            </Tooltip>
+            <Chip
+                size="small"
+                icon={<VisibilityIcon sx={{ fontSize: '0.75rem !important' }} />}
+                label={(record.total_views || 0).toLocaleString()}
+                color="secondary"
+                variant="filled"
+                sx={{ fontSize: '0.7rem', fontWeight: 600, height: '20px' }}
+            />
+        </Box>
+    );
+};
