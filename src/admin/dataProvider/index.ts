@@ -347,6 +347,23 @@ const dataProvider = (
             body: JSON.stringify({ ids })
         }).then(({ json }) => ({ data: json }));
     },
+    // Full project configuration (crops, water/climate models, scenarios,
+    // variables) by slug. Routes through httpClient so Keycloak auth applies.
+    getProjectConfig: async (slug: string) => {
+        return httpClient(`${apiUrl}/projects/config/${slug}`).then(({ json }) => ({ data: json }));
+    },
+    // Replace the list of IDs associated with a project for a given relation
+    // (crops, water-models, climate-models, scenarios, variables). Auth-required.
+    updateProjectRelation: async (
+        projectId: string,
+        path: 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables',
+        ids: string[]
+    ) => {
+        return httpClient(`${apiUrl}/projects/${projectId}/${path}`, {
+            method: 'PUT',
+            body: JSON.stringify(ids),
+        }).then(({ json }) => ({ data: json }));
+    },
 });
 
 

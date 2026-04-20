@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { AppContext } from '../contexts/AppContext';
 import { useProject } from '../contexts/ProjectContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,6 +9,29 @@ import './ShowcaseOverlay.css';
 const ROTATION_INTERVAL = 12000; // 12 seconds
 const PROGRESS_STEP = 100 / (ROTATION_INTERVAL / 100); // Progress increment per 100ms
 const MAP_INTERACTION_DEBOUNCE = 1500; // Resume after 1.5 seconds of no interaction
+
+// Check whether a showcase example can actually render against the current
+// project configuration. Climate examples need crop + variable + all three
+// model/scenario axes to be in the project's config. Crop-specific examples
+// only need crop + cropVariable. An example that fails this check would send
+// the map into an unrenderable state — we exclude it from the carousel.
+const isExampleRenderable = (ex, configSlugs) => {
+  if (!configSlugs) return true; // config still loading — assume valid for now
+  const { crops, variables, waterModels, climateModels, scenarios } = configSlugs;
+  if (!ex.crop || !crops.has(ex.crop.id)) return false;
+
+  if (ex.cropVariable) {
+    // Crop-specific: only crop + cropVariable matter.
+    return variables.has(ex.cropVariable.id);
+  }
+  // Climate-style: every axis must be in scope.
+  return (
+    ex.variable && variables.has(ex.variable.id) &&
+    ex.waterModel && waterModels.has(ex.waterModel.id) &&
+    ex.climateModel && climateModels.has(ex.climateModel.id) &&
+    ex.scenario && scenarios.has(ex.scenario.id)
+  );
+};
 
 const ShowcaseOverlay = () => {
   const {
@@ -29,12 +52,32 @@ const ShowcaseOverlay = () => {
   } = useContext(AppContext);
   const project = useProject();
 
-  const [showcaseExamples, setShowcaseExamples] = useState([]);
+  const [rawExamples, setRawExamples] = useState([]);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const indexRef = useRef(showcaseIndex);
   const lastClickRef = useRef(0);
   const mapInteractionTimeoutRef = useRef(null);
+
+  // Sets of slugs allowed by the current project config. Built once per
+  // config change; used to filter out showcase items that point at a crop /
+  // variable / model that the project doesn't expose.
+  const configSlugs = useMemo(() => {
+    const cfg = project?.config;
+    if (!cfg) return null;
+    return {
+      crops: new Set((cfg.crops || []).map((c) => c.slug)),
+      variables: new Set((cfg.variables || []).map((v) => v.slug)),
+      waterModels: new Set((cfg.water_models || []).map((w) => w.slug)),
+      climateModels: new Set((cfg.climate_models || []).map((c) => c.slug)),
+      scenarios: new Set((cfg.scenarios || []).map((s) => s.slug)),
+    };
+  }, [project?.config]);
+
+  const showcaseExamples = useMemo(() => {
+    if (!configSlugs) return rawExamples; // before config loads, show everything
+    return rawExamples.filter((ex) => isExampleRenderable(ex, configSlugs));
+  }, [rawExamples, configSlugs]);
 
   // Fetch showcase items from the API. If the project has none configured
   // (or the request fails), exit showcase mode and drop straight to the map
@@ -61,17 +104,33 @@ const ShowcaseOverlay = () => {
             title: item.title,
             description: item.description || '',
           }));
-          setShowcaseExamples(items);
+          setRawExamples(items);
         } else {
-          // Project has no showcase items configured — go straight to the map
+          setRawExamples([]);
           setShowcaseMode(false);
         }
       })
       .catch((err) => {
         console.error('Failed to fetch showcase items:', err);
+        setRawExamples([]);
         setShowcaseMode(false);
       });
   }, [project?.slug, setShowcaseMode]);
+
+  // Once the filtered list is known, drop out of showcase mode if nothing is
+  // renderable and keep the active index inside the valid range.
+  useEffect(() => {
+    if (!configSlugs) return; // still waiting on config
+    if (rawExamples.length === 0) return; // fetch hasn't resolved yet
+    if (showcaseExamples.length === 0) {
+      setShowcaseMode(false);
+      return;
+    }
+    if (showcaseIndex >= showcaseExamples.length) {
+      setShowcaseIndex(0);
+      indexRef.current = 0;
+    }
+  }, [configSlugs, rawExamples.length, showcaseExamples.length, showcaseIndex, setShowcaseIndex, setShowcaseMode]);
 
   // Keep ref in sync with state
   useEffect(() => {

@@ -8,6 +8,7 @@ import {
 } from 'react-admin';
 import { Box, Typography, Link as MuiLink } from '@mui/material';
 import ProjectCardPreview from './ProjectCardPreview';
+import ProjectConfigEditor from './ProjectConfigEditor';
 
 const CardPreviewField = () => {
     const record = useRecordContext();
@@ -50,6 +51,7 @@ const ProjectShow = () => {
                 <BooleanField source="enabled" />
                 <NumberField source="sort_order" label="Sort Order" />
                 <CardPreviewField />
+                <ProjectConfigEditor readOnly />
             </SimpleShowLayout>
         </Show>
     );

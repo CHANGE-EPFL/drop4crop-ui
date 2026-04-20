@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useRecordContext, useGetList, useNotify } from 'react-admin';
+import { useRecordContext, useGetList, useNotify, useDataProvider } from 'react-admin';
 import {
     Box,
     Typography,
@@ -22,6 +22,8 @@ interface RefItem {
     sort_order?: number;
 }
 
+type RelationPath = 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables';
+
 const ConfigSectionPanel = ({
     label,
     items,
@@ -29,6 +31,7 @@ const ConfigSectionPanel = ({
     onToggle,
     onSelectAll,
     onDeselectAll,
+    readOnly,
 }: {
     label: string;
     items: RefItem[];
@@ -36,11 +39,16 @@ const ConfigSectionPanel = ({
     onToggle: (id: string) => void;
     onSelectAll: () => void;
     onDeselectAll: () => void;
+    readOnly?: boolean;
 }) => {
     const sorted = [...items].sort((a, b) => {
         if (a.sort_order != null && b.sort_order != null) return a.sort_order - b.sort_order;
         return a.name.localeCompare(b.name);
     });
+
+    // In read-only mode we hide un-selected rows entirely — the section
+    // becomes a compact "what this project exposes" summary for the Show page.
+    const visible = readOnly ? sorted.filter((i) => selectedIds.has(i.id)) : sorted;
 
     return (
         <Box sx={{ mb: 2 }}>
@@ -49,52 +57,69 @@ const ConfigSectionPanel = ({
                     {label}
                 </Typography>
                 <Chip
-                    label={`${selectedIds.size} / ${items.length}`}
+                    label={readOnly ? `${selectedIds.size}` : `${selectedIds.size} / ${items.length}`}
                     size="small"
                     color={selectedIds.size > 0 ? 'primary' : 'default'}
                     variant="outlined"
                 />
-                <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
-                    <Button size="small" onClick={onSelectAll}>
-                        Select All
-                    </Button>
-                    <Button size="small" onClick={onDeselectAll}>
-                        Clear
-                    </Button>
-                </Box>
+                {!readOnly && (
+                    <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
+                        <Button size="small" onClick={onSelectAll}>
+                            Select All
+                        </Button>
+                        <Button size="small" onClick={onDeselectAll}>
+                            Clear
+                        </Button>
+                    </Box>
+                )}
             </Box>
-            <FormGroup row sx={{ gap: 0.5 }}>
-                {sorted.map((item) => (
-                    <FormControlLabel
-                        key={item.id}
-                        control={
-                            <Checkbox
-                                checked={selectedIds.has(item.id)}
-                                onChange={() => onToggle(item.id)}
-                                size="small"
-                            />
-                        }
-                        label={item.name}
-                        sx={{
-                            border: '1px solid',
-                            borderColor: selectedIds.has(item.id) ? 'primary.main' : 'divider',
-                            borderRadius: 1,
-                            px: 1,
-                            py: 0,
-                            m: 0,
-                            backgroundColor: selectedIds.has(item.id) ? 'primary.50' : 'transparent',
-                            '&:hover': { borderColor: 'primary.main' },
-                        }}
-                    />
-                ))}
-            </FormGroup>
+            {readOnly ? (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {visible.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">
+                            None selected.
+                        </Typography>
+                    ) : (
+                        visible.map((item) => (
+                            <Chip key={item.id} label={item.name} size="small" variant="outlined" />
+                        ))
+                    )}
+                </Box>
+            ) : (
+                <FormGroup row sx={{ gap: 0.5 }}>
+                    {visible.map((item) => (
+                        <FormControlLabel
+                            key={item.id}
+                            control={
+                                <Checkbox
+                                    checked={selectedIds.has(item.id)}
+                                    onChange={() => onToggle(item.id)}
+                                    size="small"
+                                />
+                            }
+                            label={item.name}
+                            sx={{
+                                border: '1px solid',
+                                borderColor: selectedIds.has(item.id) ? 'primary.main' : 'divider',
+                                borderRadius: 1,
+                                px: 1,
+                                py: 0,
+                                m: 0,
+                                backgroundColor: selectedIds.has(item.id) ? 'primary.50' : 'transparent',
+                                '&:hover': { borderColor: 'primary.main' },
+                            }}
+                        />
+                    ))}
+                </FormGroup>
+            )}
         </Box>
     );
 };
 
-const ProjectConfigEditor = () => {
+const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) => {
     const record = useRecordContext();
     const notify = useNotify();
+    const dataProvider = useDataProvider();
 
     const [selections, setSelections] = useState<Record<string, Set<string>>>({
         crops: new Set(),
@@ -107,7 +132,7 @@ const ProjectConfigEditor = () => {
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
 
-    // Fetch all reference items via useGetList
+    // Reference lists — fetched via the authenticated data provider.
     const { data: cropsData, isLoading: cropsLoading } = useGetList('crops', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
@@ -129,17 +154,16 @@ const ProjectConfigEditor = () => {
         sort: { field: 'sort_order', order: 'ASC' },
     });
 
-    // Fetch current config via the public config endpoint
+    // Fetch current project config. Goes through the data provider so the
+    // Keycloak bearer is attached; otherwise the request is unauthenticated
+    // and mutation endpoints rejected the caller with 403.
     useEffect(() => {
         if (!record?.slug) return;
 
         setConfigLoading(true);
-        fetch(`/api/projects/config/${record.slug}`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Failed to fetch config');
-                return res.json();
-            })
-            .then((data) => {
+        dataProvider
+            .getProjectConfig(record.slug)
+            .then(({ data }: { data: any }) => {
                 setSelections({
                     crops: new Set((data.crops || []).map((c: any) => c.id)),
                     'water-models': new Set((data.water_models || []).map((w: any) => w.id)),
@@ -149,12 +173,11 @@ const ProjectConfigEditor = () => {
                 });
                 setDirty(false);
             })
-            .catch((err) => {
+            .catch((err: any) => {
                 console.warn('Could not load project config:', err);
-                // Not critical -- sections just start empty
             })
             .finally(() => setConfigLoading(false));
-    }, [record?.slug]);
+    }, [record?.slug, dataProvider]);
 
     const handleToggle = useCallback((endpoint: string, id: string) => {
         setSelections((prev) => {
@@ -190,7 +213,7 @@ const ProjectConfigEditor = () => {
 
         setSaving(true);
         try {
-            const endpoints = [
+            const endpoints: Array<{ key: string; path: RelationPath }> = [
                 { key: 'crops', path: 'crops' },
                 { key: 'water-models', path: 'water-models' },
                 { key: 'climate-models', path: 'climate-models' },
@@ -200,20 +223,18 @@ const ProjectConfigEditor = () => {
 
             await Promise.all(
                 endpoints.map(({ key, path }) =>
-                    fetch(`/api/projects/${record.id}/${path}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(Array.from(selections[key])),
-                    }).then((res) => {
-                        if (!res.ok) throw new Error(`Failed to update ${path}`);
-                    })
+                    dataProvider.updateProjectRelation(
+                        record.id as string,
+                        path,
+                        Array.from(selections[key])
+                    )
                 )
             );
 
             notify('Project configuration saved', { type: 'success' });
             setDirty(false);
         } catch (err: any) {
-            notify(`Error saving configuration: ${err.message}`, { type: 'error' });
+            notify(`Error saving configuration: ${err.message || err}`, { type: 'error' });
         } finally {
             setSaving(false);
         }
@@ -251,14 +272,16 @@ const ProjectConfigEditor = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <SettingsIcon color="primary" />
                 <Typography variant="h6">Project Configuration</Typography>
-                {dirty && (
+                {dirty && !readOnly && (
                     <Chip label="Unsaved changes" color="warning" size="small" sx={{ ml: 1 }} />
                 )}
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Select which crops, water models, climate models, scenarios, and variables are
-                available for this project. Changes are saved separately from the project form above.
-            </Typography>
+            {!readOnly && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Select which crops, water models, climate models, scenarios, and variables are
+                    available for this project. Changes are saved separately from the project form above.
+                </Typography>
+            )}
             <Divider sx={{ mb: 2 }} />
 
             {sectionData.map(({ label, endpoint, items }) => (
@@ -270,19 +293,22 @@ const ProjectConfigEditor = () => {
                     onToggle={(id) => handleToggle(endpoint, id)}
                     onSelectAll={() => handleSelectAll(endpoint, items.map((i) => i.id))}
                     onDeselectAll={() => handleDeselectAll(endpoint)}
+                    readOnly={readOnly}
                 />
             ))}
 
-            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                <Button
-                    variant="contained"
-                    startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-                    onClick={handleSave}
-                    disabled={saving || !dirty}
-                >
-                    {saving ? 'Saving...' : 'Save Configuration'}
-                </Button>
-            </Box>
+            {!readOnly && (
+                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="contained"
+                        startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
+                        onClick={handleSave}
+                        disabled={saving || !dirty}
+                    >
+                        {saving ? 'Saving...' : 'Save Configuration'}
+                    </Button>
+                </Box>
+            )}
         </Paper>
     );
 };
