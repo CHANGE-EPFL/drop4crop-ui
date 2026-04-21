@@ -27,7 +27,7 @@ const renderAbbreviation = (variable) => {
   return variable.abbreviation;
 };
 
-const SidePanel = ({ clearLayers }) => {
+const SidePanel = ({ clearLayers, backdrop = false }) => {
   const [isFirstTimeInfo, setIsFirstTimeInfo] = useState(true);
   const mountedRef = useRef(false);
 
@@ -53,13 +53,25 @@ const SidePanel = ({ clearLayers }) => {
     setLayerName,
   } = useContext(AppContext);
 
+  // A category is only "next to select" if the project actually exposes it —
+  // otherwise we'd be pointing the hint arrow at a button that no longer
+  // renders after the project-config filter drops empty groups.
+  // In backdrop mode (splash page) force all buttons to render so the layout
+  // reads as a complete map UI regardless of any loaded project data.
+  const hasCrops = backdrop || crops.length > 0;
+  const hasCropVariables = backdrop || cropVariables.length > 0;
+  const hasVariables = backdrop || variables.length > 0;
+  const hasGlobalWaterModels = backdrop || globalWaterModels.length > 0;
+  const hasClimateModels = backdrop || climateModels.length > 0;
+  const hasScenarios = backdrop || scenarios.length > 0;
+
   const getNextUnselected = () => {
-    if (!selectedCrop) return 'crops';
-    if (!selectedCropVariable && !selectedVariable) return 'cropSpecific';
-    if (!selectedVariable) return 'variables';
-    if (!selectedGlobalWaterModel) return 'globalWaterModels';
-    if (!selectedClimateModel) return 'climateModels';
-    if (!selectedScenario) return 'scenarios';
+    if (hasCrops && !selectedCrop) return 'crops';
+    if (hasCropVariables && !selectedCropVariable && !selectedVariable) return 'cropSpecific';
+    if (hasVariables && !selectedVariable) return 'variables';
+    if (hasGlobalWaterModels && !selectedGlobalWaterModel) return 'globalWaterModels';
+    if (hasClimateModels && !selectedClimateModel) return 'climateModels';
+    if (hasScenarios && !selectedScenario) return 'scenarios';
     return null;
   };
 
@@ -134,7 +146,7 @@ const SidePanel = ({ clearLayers }) => {
     }
   }, [isFirstTimeInfo, activePanel]);
 
-  const showArrows = (
+  const showArrows = !backdrop && (
     nextUnselected !== null && (nextUnselected !== 'variables'
       || !(selectedCropVariable && selectedCrop)
       || (selectedVariable && (!selectedGlobalWaterModel || !selectedClimateModel || !selectedScenario)))
@@ -165,59 +177,76 @@ const SidePanel = ({ clearLayers }) => {
         </div>
       )}
       <div className="button-group top">
-        <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
-          <div className="button-content">
-            <GrassIcon />
-            <span>Crop</span>
-            <span className="current-selection">{selectedCrop ? selectedCrop.name : ''}</span>
-          </div>
-        </button>
-
-        <div className="button-divider"></div>
-
-        <div className="variable-buttons">
-          <button onClick={() => handlePanelClick('cropSpecific')} className={`variable-button ${activePanel === 'cropSpecific' ? 'active' : ''}`}>
+        {hasCrops && (
+          <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
             <div className="button-content">
               <GrassIcon />
-              <span>Crop Specific</span>
-              <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
+              <span>Crop</span>
+              <span className="current-selection">{selectedCrop ? selectedCrop.name : ''}</span>
             </div>
           </button>
+        )}
 
-          <button onClick={() => handlePanelClick('variables')} className={`variable-button ${activePanel === 'variables' ? 'active' : ''}`}>
+        {hasCrops && (hasCropVariables || hasVariables) && <div className="button-divider"></div>}
+
+        {(hasCropVariables || hasVariables) && (
+          <div className="variable-buttons">
+            {hasCropVariables && (
+              <button onClick={() => handlePanelClick('cropSpecific')} className={`variable-button ${activePanel === 'cropSpecific' ? 'active' : ''}`}>
+                <div className="button-content">
+                  <GrassIcon />
+                  <span>Crop Specific</span>
+                  <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
+                </div>
+              </button>
+            )}
+
+            {hasVariables && (
+              <button onClick={() => handlePanelClick('variables')} className={`variable-button ${activePanel === 'variables' ? 'active' : ''}`}>
+                <div className="button-content">
+                  <FontAwesomeIcon icon={faLayerGroup} size="xl" />
+                  <span>Variable</span>
+                  <span className="current-selection">{selectedVariable ? renderAbbreviation(selectedVariable) : ''}</span>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
+        {(hasCropVariables || hasVariables) &&
+          (hasGlobalWaterModels || hasClimateModels || hasScenarios) && (
+            <div className="button-divider"></div>
+          )}
+
+        {hasGlobalWaterModels && (
+          <button onClick={() => handlePanelClick('globalWaterModels')} className={activePanel === 'globalWaterModels' ? 'active' : ''}>
             <div className="button-content">
-              <FontAwesomeIcon icon={faLayerGroup} size="xl" />
-              <span>Variable</span>
-              <span className="current-selection">{selectedVariable ? renderAbbreviation(selectedVariable) : ''}</span>
+              <FontAwesomeIcon icon={faWater} size="xl" />
+              <span>Water Model</span>
+              <span className="current-selection">{selectedGlobalWaterModel ? selectedGlobalWaterModel.name : ''}</span>
             </div>
           </button>
-        </div>
+        )}
 
-        <div className="button-divider"></div>
+        {hasClimateModels && (
+          <button onClick={() => handlePanelClick('climateModels')} className={activePanel === 'climateModels' ? 'active' : ''}>
+            <div className="button-content">
+              <FontAwesomeIcon icon={faCloudSun} size="xl" />
+              <span>Climate Model</span>
+              <span className="current-selection">{selectedClimateModel ? selectedClimateModel.name : ''}</span>
+            </div>
+          </button>
+        )}
 
-        <button onClick={() => handlePanelClick('globalWaterModels')} className={activePanel === 'globalWaterModels' ? 'active' : ''}>
-          <div className="button-content">
-            <FontAwesomeIcon icon={faWater} size="xl" />
-            <span>Water Model</span>
-            <span className="current-selection">{selectedGlobalWaterModel ? selectedGlobalWaterModel.name : ''}</span>
-          </div>
-        </button>
-
-        <button onClick={() => handlePanelClick('climateModels')} className={activePanel === 'climateModels' ? 'active' : ''}>
-          <div className="button-content">
-            <FontAwesomeIcon icon={faCloudSun} size="xl" />
-            <span>Climate Model</span>
-            <span className="current-selection">{selectedClimateModel ? selectedClimateModel.name : ''}</span>
-          </div>
-        </button>
-
-        <button onClick={() => handlePanelClick('scenarios')} className={activePanel === 'scenarios' ? 'active' : ''}>
-          <div className="button-content">
-            <FontAwesomeIcon icon={faCogs} size="xl" />
-            <span>Scenario</span>
-            <span className="current-selection">{selectedScenario ? selectedScenario.name : ''}</span>
-          </div>
-        </button>
+        {hasScenarios && (
+          <button onClick={() => handlePanelClick('scenarios')} className={activePanel === 'scenarios' ? 'active' : ''}>
+            <div className="button-content">
+              <FontAwesomeIcon icon={faCogs} size="xl" />
+              <span>Scenario</span>
+              <span className="current-selection">{selectedScenario ? selectedScenario.name : ''}</span>
+            </div>
+          </button>
+        )}
       </div>
 
       <div className="button-group bottom">

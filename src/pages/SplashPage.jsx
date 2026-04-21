@@ -1,16 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock } from '@fortawesome/free-solid-svg-icons';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
+import { AppProvider } from '../contexts/AppContext';
+import SidePanel from '../components/SidePanel';
 import './SplashPage.css';
 
 // Grace period before switching from skeleton to error UI. Short blips are
 // absorbed by the skeleton animation without ever showing an error.
 const ERROR_GRACE_MS = 10_000;
 const SKELETON_COUNT = 3;
+
+// Renders a generic, empty map UI (bare CARTO basemap + SidePanel with all
+// six category buttons forced on via `backdrop` mode) as a faded, frozen
+// backdrop behind the splash cards. No ProjectProvider / LayerManagerProvider
+// — we deliberately skip any project-specific data fetch so the backdrop
+// doesn't trigger showcase overlays, layer loads, or country polygons.
+// Zoom is computed from the container width the same way MapView does it
+// (256px per world tile) so the backdrop framing matches the real MapView.
+const SplashBackground = () => {
+  const containerRef = useRef(null);
+  const [computedZoom, setComputedZoom] = useState(null);
+
+  useEffect(() => {
+    const update = () => {
+      if (!containerRef.current) return;
+      const width = containerRef.current.clientWidth;
+      // +0.4 crops the empty polar ocean the real MapView hides via its
+      // maxBounds interaction with dragging; splashes looks too zoomed-out
+      // without this nudge.
+      if (width > 0) setComputedZoom(Math.log2(width / 256) + 0.4);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return (
+    <div className="splash-background" aria-hidden="true">
+      <AppProvider>
+        <div className="splash-backdrop-layout">
+          <SidePanel backdrop />
+          <div className="splash-backdrop-map" ref={containerRef}>
+            {computedZoom !== null && (
+              <MapContainer
+                center={[0, 0]}
+                zoom={computedZoom}
+                style={{ width: '100%', height: '100%' }}
+                zoomControl={false}
+                attributionControl={false}
+                dragging={false}
+                scrollWheelZoom={false}
+                doubleClickZoom={false}
+                touchZoom={false}
+                keyboard={false}
+                boxZoom={false}
+                maxBounds={[[-85, -180], [85, 180]]}
+                worldCopyJump={false}
+              >
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+                  subdomains="abcd"
+                  noWrap
+                />
+              </MapContainer>
+            )}
+          </div>
+        </div>
+      </AppProvider>
+    </div>
+  );
+};
 
 const SplashPage = () => {
   const [projects, setProjects] = useState([]);
@@ -64,51 +127,44 @@ const SplashPage = () => {
     };
   }, [attempt]);
 
+  let content;
   if (loading && !failed) {
-    return (
-      <div className="splash-page">
-        <div className="splash-grid splash-grid-skeleton" aria-busy="true" aria-label="Loading projects">
-          {Array.from({ length: SKELETON_COUNT }).map((_, i) => {
-            const isLast = SKELETON_COUNT % 2 === 1 && i === SKELETON_COUNT - 1;
-            return (
-              <div key={i} className={`splash-card splash-card-skeleton ${isLast ? 'centered' : ''}`}>
-                <div className="splash-card-visual splash-skeleton-shimmer" />
-                <div className="splash-card-body">
-                  <div className="splash-skeleton-bar splash-skeleton-bar-title splash-skeleton-shimmer" />
-                  <div className="splash-skeleton-bar splash-skeleton-bar-desc splash-skeleton-shimmer" />
-                  <div className="splash-skeleton-bar splash-skeleton-bar-desc-short splash-skeleton-shimmer" />
-                  <div className="splash-skeleton-bar splash-skeleton-bar-btn splash-skeleton-shimmer" />
-                </div>
+    content = (
+      <div className="splash-grid splash-grid-skeleton" aria-busy="true" aria-label="Loading projects">
+        {Array.from({ length: SKELETON_COUNT }).map((_, i) => {
+          const isLast = SKELETON_COUNT % 2 === 1 && i === SKELETON_COUNT - 1;
+          return (
+            <div key={i} className={`splash-card splash-card-skeleton ${isLast ? 'centered' : ''}`}>
+              <div className="splash-card-visual splash-skeleton-shimmer" />
+              <div className="splash-card-body">
+                <div className="splash-skeleton-bar splash-skeleton-bar-title splash-skeleton-shimmer" />
+                <div className="splash-skeleton-bar splash-skeleton-bar-desc splash-skeleton-shimmer" />
+                <div className="splash-skeleton-bar splash-skeleton-bar-desc-short splash-skeleton-shimmer" />
+                <div className="splash-skeleton-bar splash-skeleton-bar-btn splash-skeleton-shimmer" />
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     );
-  }
-
-  if (failed) {
-    return (
-      <div className="splash-page">
-        <div className="splash-unavailable">
-          <h1 className="splash-unavailable-title">We'll be right back</h1>
-          <p className="splash-unavailable-body">
-            Drop4Crop is momentarily unavailable. Please try again in a few moments.
-          </p>
-          <button
-            type="button"
-            className="splash-card-btn explore splash-unavailable-retry"
-            onClick={() => setAttempt((n) => n + 1)}
-          >
-            Try again
-          </button>
-        </div>
+  } else if (failed) {
+    content = (
+      <div className="splash-unavailable">
+        <h1 className="splash-unavailable-title">We'll be right back</h1>
+        <p className="splash-unavailable-body">
+          Drop4Crop is momentarily unavailable. Please try again in a few moments.
+        </p>
+        <button
+          type="button"
+          className="splash-card-btn explore splash-unavailable-retry"
+          onClick={() => setAttempt((n) => n + 1)}
+        >
+          Try again
+        </button>
       </div>
     );
-  }
-
-  return (
-    <div className="splash-page">
+  } else {
+    content = (
       <div className="splash-grid">
         {projects.map((project, index) => {
           const isLast = projects.length > 2 && projects.length % 2 === 1 && index === projects.length - 1;
@@ -174,7 +230,15 @@ const SplashPage = () => {
           );
         })}
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      <SplashBackground />
+      <div className="splash-overlay" aria-hidden="true" />
+      <div className="splash-page">{content}</div>
+    </>
   );
 };
 

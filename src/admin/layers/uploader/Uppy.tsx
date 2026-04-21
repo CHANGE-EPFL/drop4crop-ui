@@ -191,7 +191,7 @@ const UppyFileList = ({ uppy, uploadState }) => {
   );
 };
 
-export const UppyUploader = ({ onUploadProgress, actionButton }) => {
+export const UppyUploader = ({ onUploadProgress, actionButton, projectId }) => {
   const refresh = useRefresh();
   const notify = useNotify();
   const pondRef = useRef(null);
@@ -208,10 +208,16 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
   // Get the token using the auth provider
   const token = authProvider?.getToken() || "dev-token";
   const instructionText =
-    "Format: {crop}_{watermodel}_{climatemodel}_{scenario}_{variable}_{year}.tif (e.g., rice_pcr-globwb_miroc5_rcp60_rg_2080)";
+    "Format: {crop}_{watermodel}_{climatemodel}_{scenario}_{variable}_{year}.tif (e.g., rice_pcr-globwb_miroc5_rcp60_rg_2080). Use null (case-insensitive) in any of water/climate/scenario slots that don't apply.";
   const headers = {
     authorization: `Bearer ${token}`,
   };
+
+  // Append the project UUID so every uploaded layer is bound to the current project.
+  // Caller is responsible for passing projectId (the global upload entry has been removed).
+  const uploadEndpoint = projectId
+    ? `/api/layers/uploads?project_id=${encodeURIComponent(projectId)}`
+    : "/api/layers/uploads";
 
   const [uppy] = useState(() =>
     new Uppy({
@@ -223,7 +229,7 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
       autoProceed: true,
       debug: true, // Enable debug mode
     }).use(XHR, {
-      endpoint: "/api/layers/uploads",
+      endpoint: uploadEndpoint,
       headers: headers,
       limit: 50, // Increased concurrent uploads from 25 to 50
       timeout: 15 * 60 * 1000, // 15 minutes timeout
@@ -521,6 +527,18 @@ export const UppyUploader = ({ onUploadProgress, actionButton }) => {
                 </Typography>
                 <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
                   • rice_lpjml_gfdl-esm4_historical_yield_perc_2020.tif
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1.5, mb: 1 }}>
+                  <strong>Projects Without Some Axes (use null):</strong>
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • barley_null_null_rcp26_vwc_2070.tif
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                  • soy_NULL_NULL_ssp2_yield_2050.tif
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                  `null` is case-insensitive and may be used in any of water_model, climate_model, or scenario slots.
                 </Typography>
                 <Typography variant="caption" sx={{ display: 'block', mt: 1.5, fontStyle: 'italic' }}>
                   Format: {'{crop}_{variable}.tif'} OR {'{crop}_{water_model}_{climate_model}_{scenario}_{variable}_{year}.tif'}

@@ -55,7 +55,6 @@ const YEAR_CHOICES = [
 import { Fragment } from 'react';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import { UppyUploader } from "./uploader/Uppy";
 import {
     faWater, faCloudSun, faCogs, faLayerGroup, faCalendarAlt,
 } from '@fortawesome/free-solid-svg-icons';
@@ -63,7 +62,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import GrassIcon from '@mui/icons-material/Grass';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MapIcon from '@mui/icons-material/Map';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -1079,7 +1077,7 @@ const RecalculateAllButton = () => {
     );
 };
 
-const ListActions = ({ setUploadDialogOpen }) => {
+const ListActions = () => {
     const { selectedIds, filterValues, setFilters } = useListContext();
     const hasFilters = Object.keys(filterValues).filter(key => key !== 'q').length > 0;
 
@@ -1129,99 +1127,12 @@ const ListActions = ({ setUploadDialogOpen }) => {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <RecalculateAllButton />
-                <IconButton
-                    color="primary"
-                    onClick={() => setUploadDialogOpen(true)}
-                    sx={{
-                        backgroundColor: 'primary.main',
-                        color: 'white',
-                        borderRadius: 1,
-                        '&:hover': {
-                            backgroundColor: 'primary.dark',
-                        }
-                    }}
-                >
-                    <CloudUploadIcon />
-                </IconButton>
             </Box>
         </TopToolbar>
     );
 };
 
-// Upload Dialog with UppyUploader
-const UploadDialog = ({ open, onClose }) => {
-    const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0, isUploading: false });
-
-    const isComplete = uploadProgress.completed === uploadProgress.total && uploadProgress.total > 0;
-    const isUploading = uploadProgress.isUploading && uploadProgress.total > 0;
-
-    return (
-        <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
-            <DialogTitle sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-            }}>
-                {isComplete ? (
-                    <CheckCircleIcon color="success" />
-                ) : isUploading ? (
-                    <CloudUploadIcon color="primary" />
-                ) : (
-                    <CloudUploadIcon />
-                )}
-                <Typography variant="h6">
-                    Upload New Layer
-                </Typography>
-            </DialogTitle>
-            <DialogContent sx={{ pb: 3 }}>
-                <UppyUploader
-                    onUploadProgress={setUploadProgress}
-                    actionButton={
-                        <Box sx={{ textAlign: 'center', my: 2 }}>
-                            <Button
-                                onClick={onClose}
-                                variant="outlined"
-                                color="inherit"
-                                size="small"
-                                sx={{
-                                    width: 280,
-                                    height: 48,
-                                    py: 1,
-                                    px: 2,
-                                    fontSize: '0.875rem',
-                                    fontWeight: 500,
-                                    bgcolor: isComplete ? '#e8f5e8' : isUploading ? '#e3f2fd' : '#f5f5f5',
-                                    border: isComplete ? '2px solid #4caf50' : isUploading ? '1px solid #2196f3' : '1px solid #ccc',
-                                    '&:hover': {
-                                        bgcolor: isComplete ? 'success.main' : isUploading ? 'primary.main' : 'grey.200',
-                                        color: 'white',
-                                        transform: 'scale(1.02)'
-                                    },
-                                    transition: 'all 0.2s ease-in-out'
-                                }}
-                            >
-                                {isUploading ? (
-                                    `📤 Uploading ${uploadProgress.completed} of ${uploadProgress.total} files...`
-                                ) : uploadProgress.total > 0 ? (
-                                    `✅ Uploaded ${uploadProgress.completed} of ${uploadProgress.total} files`
-                                ) : (
-                                    'Close'
-                                )}
-                            </Button>
-                        </Box>
-                    }
-                    isComplete={isComplete}
-                    isUploading={isUploading}
-                    uploadProgress={uploadProgress}
-                />
-            </DialogContent>
-        </Dialog>
-    );
-};
-
 export const LayerList = () => {
-    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-
     // Preload all styles once for the entire list - this data is shared via context
     // and refreshes with the list, ensuring style changes are immediately visible
     const { data: stylesData, isLoading: stylesLoading } = useGetList('styles', {
@@ -1265,12 +1176,15 @@ export const LayerList = () => {
                 storeKey={false}
                 perPage={25}
                 pagination={<PostPagination />}
-                actions={<ListActions setUploadDialogOpen={setUploadDialogOpen} />}
+                actions={<ListActions />}
                 sort={{ field: 'uploaded_at', order: 'DESC' }}
                 empty={false}
                 filters={[
                     <SearchInput source="q" alwaysOn />,
                     <BooleanInput source="enabled" label="Enabled" />,
+                    <ReferenceInput source="project_id" reference="projects" label="Project" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
+                        <SelectInput optionText="title" />
+                    </ReferenceInput>,
                     <ReferenceInput source="crop_id" reference="crops" label="Crop" sort={{ field: 'sort_order', order: 'ASC' }} perPage={500}>
                         <SelectInput optionText="name" />
                     </ReferenceInput>,
@@ -1312,7 +1226,11 @@ export const LayerList = () => {
                     sx={{
                         '& .RaDatagrid-headerCell': {
                             fontWeight: 600,
-                            backgroundColor: 'grey.50',
+                            backgroundColor: (theme) =>
+                                theme.palette.mode === 'dark'
+                                    ? theme.palette.grey[900]
+                                    : theme.palette.grey[50],
+                            color: 'text.primary',
                             py: 0.25,
                             px: 0.5,
                             fontSize: '0.75rem',
@@ -1410,12 +1328,6 @@ export const LayerList = () => {
                 </Datagrid>
             </Card>
         </List>
-
-            {/* Upload Dialog */}
-            <UploadDialog
-                open={uploadDialogOpen}
-                onClose={() => setUploadDialogOpen(false)}
-            />
         </StylesContext.Provider>
         </RefContext.Provider>
     );

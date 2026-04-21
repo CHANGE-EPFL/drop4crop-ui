@@ -1,12 +1,63 @@
 .splash-page {
   min-height: 100vh;
-  background: #1e2127;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+/* Full-viewport faded map UI (bare SidePanel + CARTO basemap) behind the
+   splash content. The wrapper is itself a solid dark base (so fading the
+   children can't wash the page out to grey), and opacity is applied only
+   to the map tiles and sidebar chrome — not the whole backdrop. */
+.splash-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #1e2127;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.splash-background .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #1e2127;
+  opacity: 0.35;
+}
+
+.splash-background .side-panel {
+  opacity: 0.35;
+}
+
+.splash-backdrop-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.splash-backdrop-map {
+  flex: 1;
+  height: 100%;
+}
+
+/* Sibling overlay — sits above the faded backdrop but below the splash
+   content so card text stays readable. Kept light; the backdrop's map and
+   sidebar already fade into the dark base. */
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(30, 33, 39, 0.15) 0%,
+    rgba(30, 33, 39, 0.45) 100%
+  );
 }
 
 /* Logo */

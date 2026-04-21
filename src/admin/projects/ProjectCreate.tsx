@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import {
     Create,
     SimpleForm,
@@ -5,10 +6,17 @@ import {
     NumberInput,
     BooleanInput,
     required,
+    useDataProvider,
+    useNotify,
+    useRedirect,
 } from 'react-admin';
 import { Box, Tooltip, Typography } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MapPreview from './MapPreview';
+import {
+    ProjectConfigCreateSection,
+    ProjectConfigCreateSectionHandle,
+} from './ProjectConfigEditor';
 
 const YEAR_AXIS_TOOLTIP =
     'Used to draw the year bar in the public UI. Leave empty if no variable in ' +
@@ -22,9 +30,52 @@ const transform = (data: any) => {
     return { ...data, year_axis: { mode: 'range', ...ya } };
 };
 
+type RelationPath = 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables';
+
 const ProjectCreate = () => {
+    const configRef = useRef<ProjectConfigCreateSectionHandle>(null);
+    const dataProvider = useDataProvider();
+    const notify = useNotify();
+    const redirect = useRedirect();
+
+    // After the project row is created, fan out five PUTs to seed the junction
+    // tables from the config section's selections. If any fail we still land
+    // the user on the Show page; they can re-open the Edit form to retry.
+    const onSuccess = async (record: any) => {
+        const selections = configRef.current?.getSelections();
+        if (selections && record?.id) {
+            const pairs: RelationPath[] = [
+                'crops',
+                'water-models',
+                'climate-models',
+                'scenarios',
+                'variables',
+            ];
+            try {
+                await Promise.all(
+                    pairs.map((path) =>
+                        (dataProvider as any).updateProjectRelation(
+                            record.id as string,
+                            path,
+                            Array.from(selections[path]),
+                        ),
+                    ),
+                );
+                notify('Project created', { type: 'success' });
+            } catch (err: any) {
+                notify(
+                    `Project created, but saving configuration failed: ${err?.message || err}. You can retry from the Edit page.`,
+                    { type: 'warning' },
+                );
+            }
+        } else {
+            notify('Project created', { type: 'success' });
+        }
+        redirect('show', 'projects', record.id);
+    };
+
     return (
-        <Create redirect="show" transform={transform}>
+        <Create mutationOptions={{ onSuccess }} transform={transform}>
             <SimpleForm>
                 <TextInput source="title" validate={[required()]} fullWidth />
                 <TextInput
@@ -57,6 +108,7 @@ const ProjectCreate = () => {
                         <NumberInput source="year_axis.step" label="Step" />
                     </Box>
                 </Box>
+                <ProjectConfigCreateSection ref={configRef} />
                 <BooleanInput source="enabled" defaultValue={true} />
                 <NumberInput
                     source="sort_order"

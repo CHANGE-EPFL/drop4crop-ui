@@ -202,16 +202,25 @@ export const LayerManagerProvider = ({ children }) => {
                     ? `/api/layers/groups?project=${project.slug}`
                     : '/api/layers/groups';
                 const response = await axios.get(groupsUrl);
-                const { crop, water_model, climate_model, scenario, variable, year } = response.data;
+                // Categories with no items are dropped by the API, so default
+                // each list to an empty array rather than relying on the key
+                // being present.
+                const {
+                    crop = [],
+                    water_model = [],
+                    climate_model = [],
+                    scenario = [],
+                    variable = [],
+                    year = [],
+                } = response.data || {};
 
                 setCrops(crop.map(c => ({ ...c, id: c.slug, enabled: true })));
                 setGlobalWaterModels(water_model.map(m => ({ ...m, id: m.slug, enabled: true })));
                 setClimateModels(climate_model.map(m => ({ ...m, id: m.slug, enabled: true })));
                 setScenarios(scenario.map(s => ({ ...s, id: s.slug, enabled: true })));
 
-                const allVars = variable;
-                setVariables(allVars.filter(v => !v.is_crop_specific).map(v => ({ ...v, id: v.slug, enabled: true })));
-                setCropVariables(allVars.filter(v => v.is_crop_specific).map(v => ({ ...v, id: v.slug, enabled: true })));
+                setVariables(variable.filter(v => !v.is_crop_specific).map(v => ({ ...v, id: v.slug, enabled: true })));
+                setCropVariables(variable.filter(v => v.is_crop_specific).map(v => ({ ...v, id: v.slug, enabled: true })));
 
                 // Filter out null values and sort years chronologically
                 const validYears = year.filter(y => y !== null).sort((a, b) => a - b);

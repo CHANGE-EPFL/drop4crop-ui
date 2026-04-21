@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useRecordContext, useGetList, useNotify, useDataProvider } from 'react-admin';
 import {
     Box,
@@ -23,6 +23,38 @@ interface RefItem {
 }
 
 type RelationPath = 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables';
+
+type SelectionsMap = Record<RelationPath, Set<string>>;
+
+const emptySelections = (): SelectionsMap => ({
+    crops: new Set(),
+    'water-models': new Set(),
+    'climate-models': new Set(),
+    scenarios: new Set(),
+    variables: new Set(),
+});
+
+// Shared reducer helpers so both the edit and the create surfaces behave identically.
+const toggleSelection = (prev: SelectionsMap, endpoint: RelationPath, id: string): SelectionsMap => {
+    const next = new Set(prev[endpoint]);
+    if (next.has(id)) {
+        next.delete(id);
+    } else {
+        next.add(id);
+    }
+    return { ...prev, [endpoint]: next };
+};
+
+const setAllSelection = (
+    prev: SelectionsMap,
+    endpoint: RelationPath,
+    allIds: string[],
+): SelectionsMap => ({ ...prev, [endpoint]: new Set(allIds) });
+
+const clearSelection = (prev: SelectionsMap, endpoint: RelationPath): SelectionsMap => ({
+    ...prev,
+    [endpoint]: new Set<string>(),
+});
 
 const ConfigSectionPanel = ({
     label,
@@ -116,23 +148,10 @@ const ConfigSectionPanel = ({
     );
 };
 
-const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) => {
-    const record = useRecordContext();
-    const notify = useNotify();
-    const dataProvider = useDataProvider();
-
-    const [selections, setSelections] = useState<Record<string, Set<string>>>({
-        crops: new Set(),
-        'water-models': new Set(),
-        'climate-models': new Set(),
-        scenarios: new Set(),
-        variables: new Set(),
-    });
-    const [configLoading, setConfigLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [dirty, setDirty] = useState(false);
-
-    // Reference lists — fetched via the authenticated data provider.
+// Fetches the five reference lists admins can pick from. Both the edit and the
+// create surfaces iterate the same sections, so centralising the fetch avoids
+// drift if a new reference type is added.
+const useReferenceSections = () => {
     const { data: cropsData, isLoading: cropsLoading } = useGetList('crops', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
@@ -153,6 +172,31 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
     });
+
+    const listsLoading = cropsLoading || wmLoading || cmLoading || scLoading || varLoading;
+
+    const sections: Array<{ label: string; endpoint: RelationPath; items: RefItem[] }> = [
+        { label: 'Crops', endpoint: 'crops', items: (cropsData || []) as RefItem[] },
+        { label: 'Water Models', endpoint: 'water-models', items: (waterModelsData || []) as RefItem[] },
+        { label: 'Climate Models', endpoint: 'climate-models', items: (climateModelsData || []) as RefItem[] },
+        { label: 'Scenarios', endpoint: 'scenarios', items: (scenariosData || []) as RefItem[] },
+        { label: 'Variables', endpoint: 'variables', items: (variablesData || []) as RefItem[] },
+    ];
+
+    return { sections, listsLoading };
+};
+
+const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) => {
+    const record = useRecordContext();
+    const notify = useNotify();
+    const dataProvider = useDataProvider();
+
+    const [selections, setSelections] = useState<SelectionsMap>(emptySelections);
+    const [configLoading, setConfigLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [dirty, setDirty] = useState(false);
+
+    const { sections, listsLoading } = useReferenceSections();
 
     // Fetch current project config. Goes through the data provider so the
     // Keycloak bearer is attached; otherwise the request is unauthenticated
@@ -179,32 +223,18 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
             .finally(() => setConfigLoading(false));
     }, [record?.slug, dataProvider]);
 
-    const handleToggle = useCallback((endpoint: string, id: string) => {
-        setSelections((prev) => {
-            const next = new Set(prev[endpoint]);
-            if (next.has(id)) {
-                next.delete(id);
-            } else {
-                next.add(id);
-            }
-            return { ...prev, [endpoint]: next };
-        });
+    const handleToggle = useCallback((endpoint: RelationPath, id: string) => {
+        setSelections((prev) => toggleSelection(prev, endpoint, id));
         setDirty(true);
     }, []);
 
-    const handleSelectAll = useCallback((endpoint: string, allIds: string[]) => {
-        setSelections((prev) => ({
-            ...prev,
-            [endpoint]: new Set(allIds),
-        }));
+    const handleSelectAll = useCallback((endpoint: RelationPath, allIds: string[]) => {
+        setSelections((prev) => setAllSelection(prev, endpoint, allIds));
         setDirty(true);
     }, []);
 
-    const handleDeselectAll = useCallback((endpoint: string) => {
-        setSelections((prev) => ({
-            ...prev,
-            [endpoint]: new Set<string>(),
-        }));
+    const handleDeselectAll = useCallback((endpoint: RelationPath) => {
+        setSelections((prev) => clearSelection(prev, endpoint));
         setDirty(true);
     }, []);
 
@@ -242,8 +272,6 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
 
     if (!record) return null;
 
-    const listsLoading = cropsLoading || wmLoading || cmLoading || scLoading || varLoading;
-
     if (configLoading || listsLoading) {
         return (
             <Paper variant="outlined" sx={{ p: 3, my: 2, textAlign: 'center' }}>
@@ -254,18 +282,6 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
             </Paper>
         );
     }
-
-    const sectionData: Array<{
-        label: string;
-        endpoint: string;
-        items: RefItem[];
-    }> = [
-        { label: 'Crops', endpoint: 'crops', items: (cropsData || []) as RefItem[] },
-        { label: 'Water Models', endpoint: 'water-models', items: (waterModelsData || []) as RefItem[] },
-        { label: 'Climate Models', endpoint: 'climate-models', items: (climateModelsData || []) as RefItem[] },
-        { label: 'Scenarios', endpoint: 'scenarios', items: (scenariosData || []) as RefItem[] },
-        { label: 'Variables', endpoint: 'variables', items: (variablesData || []) as RefItem[] },
-    ];
 
     return (
         <Paper variant="outlined" sx={{ p: 3, my: 2 }}>
@@ -284,7 +300,7 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
             )}
             <Divider sx={{ mb: 2 }} />
 
-            {sectionData.map(({ label, endpoint, items }) => (
+            {sections.map(({ label, endpoint, items }) => (
                 <ConfigSectionPanel
                     key={endpoint}
                     label={label}
@@ -312,5 +328,73 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
         </Paper>
     );
 };
+
+// Create-mode surface. Uses the same panels and state shape as the editor but
+// has no fetch (there's no record yet) and no save button (the parent Create
+// form triggers the five PUTs after the project row is persisted).
+export interface ProjectConfigCreateSectionHandle {
+    getSelections: () => SelectionsMap;
+}
+
+export const ProjectConfigCreateSection = forwardRef<ProjectConfigCreateSectionHandle>(
+    (_props, ref) => {
+        const [selections, setSelections] = useState<SelectionsMap>(emptySelections);
+        const { sections, listsLoading } = useReferenceSections();
+
+        useImperativeHandle(ref, () => ({ getSelections: () => selections }), [selections]);
+
+        const handleToggle = useCallback((endpoint: RelationPath, id: string) => {
+            setSelections((prev) => toggleSelection(prev, endpoint, id));
+        }, []);
+
+        const handleSelectAll = useCallback((endpoint: RelationPath, allIds: string[]) => {
+            setSelections((prev) => setAllSelection(prev, endpoint, allIds));
+        }, []);
+
+        const handleDeselectAll = useCallback((endpoint: RelationPath) => {
+            setSelections((prev) => clearSelection(prev, endpoint));
+        }, []);
+
+        if (listsLoading) {
+            return (
+                <Paper variant="outlined" sx={{ p: 3, my: 2, textAlign: 'center' }}>
+                    <CircularProgress size={24} sx={{ mr: 1 }} />
+                    <Typography variant="body2" component="span">
+                        Loading reference data...
+                    </Typography>
+                </Paper>
+            );
+        }
+
+        return (
+            <Paper variant="outlined" sx={{ p: 3, my: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <SettingsIcon color="primary" />
+                    <Typography variant="h6">Project Configuration</Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Select which crops, water models, climate models, scenarios, and variables this
+                    project will expose in the public UI. Any category left empty will not show a
+                    button in the map view. You can change these later from the Edit page.
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+
+                {sections.map(({ label, endpoint, items }) => (
+                    <ConfigSectionPanel
+                        key={endpoint}
+                        label={label}
+                        items={items}
+                        selectedIds={selections[endpoint]}
+                        onToggle={(id) => handleToggle(endpoint, id)}
+                        onSelectAll={() => handleSelectAll(endpoint, items.map((i) => i.id))}
+                        onDeselectAll={() => handleDeselectAll(endpoint)}
+                    />
+                ))}
+            </Paper>
+        );
+    },
+);
+
+ProjectConfigCreateSection.displayName = 'ProjectConfigCreateSection';
 
 export default ProjectConfigEditor;

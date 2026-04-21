@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import {
     Show,
     SimpleShowLayout,
     TextField,
     BooleanField,
     NumberField,
+    TopToolbar,
+    EditButton,
     useRecordContext,
 } from 'react-admin';
-import { Box, Typography, Link as MuiLink } from '@mui/material';
+import { Box, Typography, Button, Link as MuiLink } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ProjectCardPreview from './ProjectCardPreview';
 import ProjectConfigEditor from './ProjectConfigEditor';
+import UploadDialog from '../layers/uploader/UploadDialog';
 
 const CardPreviewField = () => {
     const record = useRecordContext();
@@ -37,9 +42,46 @@ const CardPreviewField = () => {
     );
 };
 
+// Project-scoped upload action. `record.id` is passed straight to the uploader,
+// which appends it as ?project_id= on every XHR — so every layer uploaded here
+// lands with project_id already set (no global/unassigned uploads anymore).
+const ProjectUploadAction = () => {
+    const record = useRecordContext();
+    const [open, setOpen] = useState(false);
+    if (!record?.id) return null;
+
+    return (
+        <>
+            <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => setOpen(true)}
+                sx={{ textTransform: 'none' }}
+            >
+                Upload Layers
+            </Button>
+            <UploadDialog
+                open={open}
+                onClose={() => setOpen(false)}
+                projectId={record.id}
+                projectTitle={record.title}
+            />
+        </>
+    );
+};
+
+const ShowActions = () => (
+    <TopToolbar sx={{ gap: 1 }}>
+        <ProjectUploadAction />
+        <EditButton />
+    </TopToolbar>
+);
+
 const ProjectShow = () => {
     return (
-        <Show>
+        <Show actions={<ShowActions />}>
             <SimpleShowLayout>
                 <TextField source="id" />
                 <TextField source="title" />
