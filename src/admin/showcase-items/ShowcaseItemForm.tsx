@@ -23,6 +23,27 @@ interface ShowcaseItemFormProps {
 // dropdown and the sidebar preview fills in the richer details.
 const layerOptionText = (record: any) => record?.layer_name ?? '';
 
+const ProjectScopedLayerInput = () => {
+    const projectId: string | undefined = useWatch({ name: 'project_id' });
+    return (
+        <ReferenceInput
+            source="layer_id"
+            reference="layers"
+            perPage={25}
+            filter={projectId ? { project_id: projectId } : { project_id: '00000000-0000-0000-0000-000000000000' }}
+            fullWidth
+        >
+            <AutocompleteInput
+                optionText={layerOptionText}
+                validate={[required()]}
+                filterToQuery={(q) => ({ q })}
+                helperText={projectId ? "Type to search layers in this project" : "Select a project first"}
+                disabled={!projectId}
+            />
+        </ReferenceInput>
+    );
+};
+
 const ShowcaseItemForm = ({ isEdit = false }: ShowcaseItemFormProps) => {
     return (
         <Box sx={{ display: 'flex', gap: 3, width: '100%' }}>
@@ -35,19 +56,7 @@ const ShowcaseItemForm = ({ isEdit = false }: ShowcaseItemFormProps) => {
                         filterToQuery={(q) => ({ q })}
                     />
                 </ReferenceInput>
-                <ReferenceInput
-                    source="layer_id"
-                    reference="layers"
-                    perPage={25}
-                    fullWidth
-                >
-                    <AutocompleteInput
-                        optionText={layerOptionText}
-                        validate={[required()]}
-                        filterToQuery={(q) => ({ q })}
-                        helperText="Type to search layers by name"
-                    />
-                </ReferenceInput>
+                <ProjectScopedLayerInput />
                 <TextInput source="title" validate={[required()]} fullWidth />
                 <TextInput source="description" multiline rows={3} fullWidth />
                 <NumberInput source="sort_order" defaultValue={0} />

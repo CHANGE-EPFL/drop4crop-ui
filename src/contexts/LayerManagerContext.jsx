@@ -126,9 +126,11 @@ export const LayerManagerProvider = ({ children }) => {
             const hasScenarios = (scenarios?.length ?? 0) > 0;
             const hasVariables = (variables?.length ?? 0) > 0;
             const hasCropVariables = (cropVariables?.length ?? 0) > 0;
+            const projectHasTime = project?.config?.project?.year_axis != null;
+            const variableNeedsTime = projectHasTime && selectedVariable?.has_time !== false;
             const hasYears =
-                (typeof selectedTime !== 'undefined' && selectedTime !== null) ||
-                !hasClimateModels; // years are only meaningful for climate-style layers
+                !variableNeedsTime ||
+                (typeof selectedTime !== 'undefined' && selectedTime !== null);
 
             const isStandardScenarioValid =
                 hasVariables &&
@@ -157,7 +159,7 @@ export const LayerManagerProvider = ({ children }) => {
                 scenario: selectedLayer.scenario,
                 variable: selectedLayer.variable,
                 crop_variable: selectedLayer.crop_variable,
-                year: selectedTime
+                year: variableNeedsTime ? selectedTime : undefined
             });
 
             // Check if this effect was cancelled while we were waiting for the API

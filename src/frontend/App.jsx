@@ -9,7 +9,7 @@ import './App.css';
 import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome } from '@fortawesome/free-solid-svg-icons';
-import { ProjectProvider } from '../contexts/ProjectContext';
+import { ProjectProvider, useProject } from '../contexts/ProjectContext';
 
 
 const FrontendApp = () => {
@@ -55,6 +55,8 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     variables,
     cropVariables,
   } = useContext(AppContext);
+  const { config } = useProject() || {};
+  const projectHasTime = config?.project?.year_axis != null;
   const [searchParams] = useSearchParams();
   const [urlParamsApplied, setUrlParamsApplied] = useState(false);
 
@@ -209,13 +211,8 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
             </Link>
           )}
 
-          {/* Show BottomBar only when not in showcase mode and layer is configured */}
-          {!showcaseMode && (
-            selectedLayer.crop
-            && selectedLayer.water_model
-            && selectedLayer.climate_model
-            && selectedLayer.scenario
-          ) ? (
+          {/* Show BottomBar only when not in showcase mode and project has a time axis */}
+          {!showcaseMode && projectHasTime && selectedLayer.variable ? (
             <>
               <BottomBar />
               {/* <CountryPolygonSwitch /> */}
