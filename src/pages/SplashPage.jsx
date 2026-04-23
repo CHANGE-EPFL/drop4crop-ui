@@ -5,8 +5,6 @@ import { faClock } from '@fortawesome/free-solid-svg-icons';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
-import { AppProvider } from '../contexts/AppContext';
-import SidePanel from '../components/SidePanel';
 import './SplashPage.css';
 
 // Grace period before switching from skeleton to error UI. Short blips are
@@ -14,13 +12,8 @@ import './SplashPage.css';
 const ERROR_GRACE_MS = 10_000;
 const SKELETON_COUNT = 3;
 
-// Renders a generic, empty map UI (bare CARTO basemap + SidePanel with all
-// six category buttons forced on via `backdrop` mode) as a faded, frozen
-// backdrop behind the splash cards. No ProjectProvider / LayerManagerProvider
-// — we deliberately skip any project-specific data fetch so the backdrop
-// doesn't trigger showcase overlays, layer loads, or country polygons.
-// Zoom is computed from the container width the same way MapView does it
-// (256px per world tile) so the backdrop framing matches the real MapView.
+// Renders a faded dark CARTO basemap as a frozen backdrop behind the splash
+// cards. Zoom is computed from the container width (256px per world tile).
 const SplashBackground = () => {
   const containerRef = useRef(null);
   const [computedZoom, setComputedZoom] = useState(null);
@@ -29,10 +22,7 @@ const SplashBackground = () => {
     const update = () => {
       if (!containerRef.current) return;
       const width = containerRef.current.clientWidth;
-      // +0.4 crops the empty polar ocean the real MapView hides via its
-      // maxBounds interaction with dragging; splashes looks too zoomed-out
-      // without this nudge.
-      if (width > 0) setComputedZoom(Math.log2(width / 256) + 0.4);
+      if (width > 0) setComputedZoom(Math.ceil(Math.log2(width / 256)));
     };
     update();
     window.addEventListener('resize', update);
@@ -40,37 +30,30 @@ const SplashBackground = () => {
   }, []);
 
   return (
-    <div className="splash-background" aria-hidden="true">
-      <AppProvider>
-        <div className="splash-backdrop-layout">
-          <SidePanel backdrop />
-          <div className="splash-backdrop-map" ref={containerRef}>
-            {computedZoom !== null && (
-              <MapContainer
-                center={[0, 0]}
-                zoom={computedZoom}
-                style={{ width: '100%', height: '100%' }}
-                zoomControl={false}
-                attributionControl={false}
-                dragging={false}
-                scrollWheelZoom={false}
-                doubleClickZoom={false}
-                touchZoom={false}
-                keyboard={false}
-                boxZoom={false}
-                maxBounds={[[-85, -180], [85, 180]]}
-                worldCopyJump={false}
-              >
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-                  subdomains="abcd"
-                  noWrap
-                />
-              </MapContainer>
-            )}
-          </div>
-        </div>
-      </AppProvider>
+    <div className="splash-background" aria-hidden="true" ref={containerRef}>
+      {computedZoom !== null && (
+        <MapContainer
+          center={[0, 0]}
+          zoom={computedZoom}
+          style={{ width: '100%', height: '100%' }}
+          zoomControl={false}
+          attributionControl={false}
+          dragging={false}
+          scrollWheelZoom={false}
+          doubleClickZoom={false}
+          touchZoom={false}
+          keyboard={false}
+          boxZoom={false}
+          maxBounds={[[-85, -180], [85, 180]]}
+          worldCopyJump={false}
+        >
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+            subdomains="abcd"
+            noWrap
+          />
+        </MapContainer>
+      )}
     </div>
   );
 };
