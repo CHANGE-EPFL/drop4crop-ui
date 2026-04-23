@@ -110,18 +110,40 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
 
   const nextUnselected = getNextUnselected();
 
-  const arrowPositions = {
-    crops: { id: 0, name: 'crop', offset: 0 },
-    cropSpecific: { id: 1, name: 'crop specific variable', offset: 20 },
-    variables: { id: 2, name: 'variable', offset: 20 },
-    globalWaterModels: { id: 3, name: 'water model', offset: 40 },
-    climateModels: { id: 4, name: 'climate model', offset: 40 },
-    scenarios: { id: 5, name: 'scenario', offset: 40 },
+  const arrowNames = {
+    crops: 'crop',
+    cropSpecific: 'crop specific variable',
+    variables: 'variable',
+    globalWaterModels: 'water model',
+    climateModels: 'climate model',
+    scenarios: 'scenario',
   };
 
-  const arrowPositionStyle = nextUnselected ? {
-    top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + ${arrowPositions[nextUnselected].offset}px)`,
-  } : {};
+  const getArrowTop = (key, extra = 0) => {
+    const visibleButtons = [];
+    if (hasCrops) visibleButtons.push('crops');
+    if (hasCropVariables) visibleButtons.push('cropSpecific');
+    if (hasVariables) visibleButtons.push('variables');
+    if (hasGlobalWaterModels) visibleButtons.push('globalWaterModels');
+    if (hasClimateModels) visibleButtons.push('climateModels');
+    if (hasScenarios) visibleButtons.push('scenarios');
+
+    const idx = visibleButtons.indexOf(key);
+    if (idx === -1) return '0px';
+
+    const sections = { crops: 0, cropSpecific: 1, variables: 1, globalWaterModels: 2, climateModels: 2, scenarios: 2 };
+    const section = sections[key];
+    const d1 = hasCrops && (hasCropVariables || hasVariables);
+    const d2 = (hasCropVariables || hasVariables) && (hasGlobalWaterModels || hasClimateModels || hasScenarios);
+
+    let offset = extra;
+    if (section >= 1 && d1) offset += 20;
+    if (section >= 2 && d2) offset += 20;
+
+    return `calc(${idx} * 70px + 35px + ${offset}px)`;
+  };
+
+  const arrowPositionStyle = nextUnselected ? { top: getArrowTop(nextUnselected) } : {};
 
   // Mark as mounted after a short delay to avoid catching the click that opened the panel
   useEffect(() => {
@@ -159,17 +181,17 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
         <div>
           {!showTwoArrows ? (
             <div className="arrow-note" style={arrowPositionStyle}>
-              <span>{`Select a ${arrowPositions[nextUnselected].name}`}</span>
+              <span>{`Select a ${arrowNames[nextUnselected]}`}</span>
             </div>
           ) : (
             <>
-              <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px' }}>
+              <div className="arrow-note" style={{ right: '-120px', top: getArrowTop('cropSpecific') }}>
                 <span>Crop specific variable</span>
               </div>
-              <div className="variable-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 35px)` }}>
+              <div className="variable-note" style={{ right: '-120px', top: getArrowTop('cropSpecific', 35) }}>
                 <span>Select one option from either</span>
               </div>
-              <div className="arrow-note" style={{ ...arrowPositionStyle, right: '-120px', top: `calc(${arrowPositions[nextUnselected].id} * 70px + 35px + 20px + 70px)` }}>
+              <div className="arrow-note" style={{ right: '-120px', top: getArrowTop('cropSpecific', 70) }}>
                 <span>Time-based variable</span>
               </div>
             </>

@@ -9,15 +9,14 @@ export const MyMenu = () => (
         <Menu.ResourceItem name="projects" />
         <Menu.ResourceItem name="showcase-items" />
         <hr style={{ width: '70%' }} />
+        <Menu.ResourceItem name="layers" />
         <SubMenu text="Layer Attributes" icon={<ExpandMore />}>
-            <Menu.ResourceItem name="layers" />
             <Menu.ResourceItem name="crops" />
             <Menu.ResourceItem name="water-models" />
             <Menu.ResourceItem name="climate-models" />
             <Menu.ResourceItem name="scenarios" />
             <Menu.ResourceItem name="variables" />
         </SubMenu>
-        <hr style={{ width: '70%' }} />
         <Menu.ResourceItem name="styles" />
         <hr style={{ width: '70%' }} />
         <Menu.ResourceItem name="statistics" />
