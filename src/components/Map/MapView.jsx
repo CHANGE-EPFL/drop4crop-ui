@@ -3,7 +3,6 @@ import {
   MapContainer,
   TileLayer,
   ZoomControl,
-  GeoJSON,
   useMap
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -66,8 +65,6 @@ const MapView = forwardRef((props, ref) => {
     setBoundingBox,
     enableSelection,
     setEnableSelection,
-    countryAverages,
-    countryPolygons,
     globalAverage,
     layerStyle,
     interpolationType,
@@ -149,9 +146,6 @@ const MapView = forwardRef((props, ref) => {
             maxZoom={20}
             noWrap={true}
           />
-        )}
-        {countryAverages && (
-          <GeoJSON data={countryPolygons} />
         )}
         <ZoomControl position="bottomright" />
         <ScaleControl imperial={false} maxWidth={250} />

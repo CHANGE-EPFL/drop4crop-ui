@@ -24,13 +24,9 @@ export const LayerManagerProvider = ({ children }) => {
         setSelectedTime,
         loadingGroups,
         setLoadingGroups,
-        setCountryPolygons,
-        loadingCountries,
-        setLoadingCountries,
         setLoadingAll,
         selectedLayer,
         setLayerName,
-        setCountryAverageValues,
         setGlobalAverage,
         setLayerStyle,
         setInterpolationType,
@@ -87,7 +83,6 @@ export const LayerManagerProvider = ({ children }) => {
                 // Transform STAC item to match old format for compatibility
                 return {
                     layer_name: stacItem.id,
-                    country_values: stacItem.properties.country_values || null,
                     global_average: stacItem.properties.global_average || null,
                     style: stacItem.properties.style || [],
                     interpolation_type: stacItem.properties.interpolation_type || 'linear',
@@ -169,7 +164,6 @@ export const LayerManagerProvider = ({ children }) => {
 
             if (response === null) {
                 setLayerName(null);
-                setCountryAverageValues(null);
                 setGlobalAverage(null);
                 setLayerStyle([]);
                 setInterpolationType('linear');
@@ -177,7 +171,6 @@ export const LayerManagerProvider = ({ children }) => {
                 setLabelCount(5);
             } else {
                 setLayerName(response.layer_name);
-                setCountryAverageValues(response.country_values);
                 setGlobalAverage(response.global_average);
                 setLayerStyle(response.style || []);
                 setInterpolationType(response.interpolation_type || 'linear');
@@ -211,7 +204,6 @@ export const LayerManagerProvider = ({ children }) => {
         selectedLayer.crop_variable,
         selectedTime,
         setLayerName,
-        setCountryAverageValues,
         setGlobalAverage,
         setLayerStyle,
         setInterpolationType,
@@ -288,26 +280,12 @@ export const LayerManagerProvider = ({ children }) => {
     ]);
 
     useEffect(() => {
-        const fetchCountries = async () => {
-            try {
-                const response = await axios.get("/api/countries");
-                setCountryPolygons(response.data);
-                setLoadingCountries(false);
-            } catch (error) {
-                console.error("Error fetching countries:", error);
-            }
-        };
-
-        fetchCountries();
-    }, [setCountryPolygons, setLoadingCountries]);
-
-    useEffect(() => {
-        if (loadingGroups === false && loadingCountries === false) {
+        if (loadingGroups === false) {
             setLoadingAll(false);
         } else {
             setLoadingAll(true);
         }
-    }, [loadingGroups, loadingCountries, setLoadingAll]);
+    }, [loadingGroups, setLoadingAll]);
 
     return (
         <LayerManagerContext.Provider value={{}}>

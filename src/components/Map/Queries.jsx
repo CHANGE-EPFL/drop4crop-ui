@@ -2,10 +2,6 @@ import { useMap, useMapEvent } from 'react-leaflet';
 import axios from 'axios';
 import L from 'leaflet';
 import { useEffect, useState, useRef, useContext } from 'react';
-import Tooltip from '@mui/material/Tooltip';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppContext } from '../../contexts/AppContext';
@@ -42,65 +38,6 @@ const LayerInfoHeader = ({ crop, variable, cropVariable, year }) => {
     );
 };
 
-const CountryPopupContent = ({ country, countryAverage, onClose }) => {
-    const handleClosePopup = () => {
-        map.closePopup();
-    };
-
-    return (
-        <div style={{ ...popupBoxStyle, width: '250px', height: '200px', padding: '10px', color: 'white', position: 'relative' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '1em' }}>
-                <b>{country.properties.name}</b>
-                <Tooltip
-                    title={(<>Country-scale values computed as detailed in [<i>future link to our publication</i>].</>)}
-                    placement="right"
-                    enterDelay={10}
-                    arrow
-                >
-                    <HelpOutlineIcon style={{ fontSize: '1rem', marginLeft: '5px', cursor: 'pointer', color: '#d1a766' }} />
-                </Tooltip>
-            </span>
-            <br />
-            <table style={{ marginTop: '10px', lineHeight: '1.2em', textAlign: 'left', width: '100%' }}>
-                <tbody>
-                    <tr>
-                        <td>WF [m3]</td>
-                        <td>{countryAverage?.var_wf.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>WFb [m3]</td>
-                        <td>{countryAverage?.var_wfb.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>WFg [m3]</td>
-                        <td>{countryAverage?.var_wfg.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>VWC [m3 ton-1]</td>
-                        <td>{countryAverage?.var_vwc.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>VWCb [m3 ton-1]</td>
-                        <td>{countryAverage?.var_vwcb.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>VWCg [m3 ton-1]</td>
-                        <td>{countryAverage?.var_vwcg.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>WDb [years]</td>
-                        <td>{countryAverage?.var_wdb.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                    <tr>
-                        <td>WDg [years]</td>
-                        <td>{countryAverage?.var_wdg.toFixed(3) || 'n/a'}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div >
-    );
-};
-
 const PopupContentContainer = () => {
     const containerRef = useRef(document.createElement('div'));
 
@@ -121,10 +58,6 @@ const PopupContentContainer = () => {
 export const MapClickHandler = () => {
     const {
         layerName,
-        countryAverages,
-        highlightedFeature,
-        countryPolygons,
-        countryAverageValues,
         enableSelection,
         setEnableSelection,
         isEditingBoundingBox,
@@ -209,46 +142,6 @@ export const MapClickHandler = () => {
         if (!clickPosition || !layerName) return;
 
         const fetchData = async () => {
-            if (countryAverages && countryPolygons) {
-                if (!highlightedFeature) {
-                    return;
-                }
-                const country = countryPolygons.features.find(
-                    (feature) => feature.properties.name === highlightedFeature.properties.name
-                );
-
-                const countryAverage = countryAverageValues.find(
-                    (average) => average.country.name === country.properties.name
-                );
-                if (!rootRef.current) {
-                    rootRef.current = createRoot(container);
-                }
-                rootRef.current.render(
-                    <CountryPopupContent
-                        country={country}
-                        countryAverage={countryAverage}
-                        onClose={handleClosePopup}
-                    />
-                );
-
-                // Only create popup if it doesn't exist
-                if (!popupRef.current) {
-                    requestAnimationFrame(() => {
-                        popupRef.current = L.popup({
-                            closeButton: true,
-                            autoClose: false,
-                            closeOnClick: false,
-                            className: 'custom-leaflet-popup'
-                        })
-                            .setLatLng(clickPosition)
-                            .setContent(container)
-                            .openOn(map);
-                    });
-                }
-
-                return;
-            }
-
             try {
                 const pixelValue = await fetchPixelValue(clickPosition.lat, clickPosition.lng, layerName);
                 if (!rootRef.current) {
@@ -293,7 +186,7 @@ export const MapClickHandler = () => {
         };
 
         fetchData();
-    }, [clickPosition, layerName, selectedCrop, selectedVariable, selectedCropVariable, selectedTime, highlightedFeature, countryAverages, countryPolygons, countryAverageValues, map, container]);
+    }, [clickPosition, layerName, selectedCrop, selectedVariable, selectedCropVariable, selectedTime, map, container]);
 
     useEffect(() => {
         return () => {

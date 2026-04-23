@@ -5,12 +5,10 @@ export const AppProvider = ({ children }) => {
     const APIServerURL = window.location.origin + '/api';
 
     const [loadingGroups, setLoadingGroups] = useState(true);
-    const [loadingCountries, setLoadingCountries] = useState(true);
     const [loadingLayer, setloadingLayer] = useState(false);
     const [loadingAll, setLoadingAll] = useState(true);
     const [layerName, setLayerName] = useState(undefined);
     const [globalAverage, setGlobalAverage] = useState(undefined);
-    const [countryAverageValues, setCountryAverageValues] = useState(undefined);
     const [layerStyle, setLayerStyle] = useState([]);
     const [interpolationType, setInterpolationType] = useState('linear');
     const [labelDisplayMode, setLabelDisplayMode] = useState('auto');
@@ -26,7 +24,6 @@ export const AppProvider = ({ children }) => {
     const [boundingBox, setBoundingBox] = useState(null);
     const [enableSelection, setEnableSelection] = useState(false);
     const [isEditingBoundingBox, setIsEditingBoundingBox] = useState(false);
-    const [countryAverages, setCountryAverages] = useState(false);
     const [crops, setCrops] = useState([]);
     const [globalWaterModels, setGlobalWaterModels] = useState([]);
     const [climateModels, setClimateModels] = useState([]);
@@ -47,15 +44,12 @@ export const AppProvider = ({ children }) => {
     const [selectedCropVariable, setSelectedCropVariable] = useState(null);
     const [selectedTime, setSelectedTime] = useState(null);
     const [variableForLegend, setVariableForLegend] = useState(undefined);
-    const [countryPolygons, setCountryPolygons] = useState(null);
 
     // Memoize context value to prevent unnecessary re-renders
     const contextValue = useMemo(() => ({
         APIServerURL,
         loadingGroups,
         setLoadingGroups,
-        loadingCountries,
-        setLoadingCountries,
         loadingLayer,
         setloadingLayer,
         loadingAll,
@@ -64,8 +58,6 @@ export const AppProvider = ({ children }) => {
         setLayerName,
         globalAverage,
         setGlobalAverage,
-        countryAverageValues,
-        setCountryAverageValues,
         layerStyle,
         setLayerStyle,
         interpolationType,
@@ -82,8 +74,6 @@ export const AppProvider = ({ children }) => {
         setEnableSelection,
         isEditingBoundingBox,
         setIsEditingBoundingBox,
-        countryAverages,
-        setCountryAverages,
         crops,
         setCrops,
         globalWaterModels,
@@ -120,19 +110,17 @@ export const AppProvider = ({ children }) => {
         setSelectedTime,
         variableForLegend,
         setVariableForLegend,
-        countryPolygons,
-        setCountryPolygons,
     }), [
-        loadingGroups, loadingCountries, loadingLayer, loadingAll,
-        layerName, globalAverage, countryAverageValues, layerStyle, interpolationType,
+        loadingGroups, loadingLayer, loadingAll,
+        layerName, globalAverage, layerStyle, interpolationType,
         labelDisplayMode, labelCount,
-        selectedLayer, boundingBox, enableSelection, countryAverages,
+        selectedLayer, boundingBox, enableSelection,
         crops, globalWaterModels, climateModels, scenarios,
         variables, cropVariables, availableYears, activePanel,
         showcaseMode, showcaseIndex,
         selectedCrop, selectedGlobalWaterModel, selectedClimateModel,
         selectedScenario, selectedVariable, selectedCropVariable,
-        selectedTime, variableForLegend, countryPolygons
+        selectedTime, variableForLegend,
     ]);
 
     return (

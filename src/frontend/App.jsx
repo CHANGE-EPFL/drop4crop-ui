@@ -213,10 +213,7 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
 
           {/* Show BottomBar only when not in showcase mode and project has a time axis */}
           {!showcaseMode && projectHasTime && selectedLayer.variable ? (
-            <>
-              <BottomBar />
-              {/* <CountryPolygonSwitch /> */}
-            </>
+            <BottomBar />
           ) : null}
 
           {/* Showcase overlay */}

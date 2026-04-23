@@ -24,13 +24,12 @@ const isExampleRenderable = (ex, configSlugs) => {
     // Crop-specific: only crop + cropVariable matter.
     return variables.has(ex.cropVariable.id);
   }
-  // Climate-style: every axis must be in scope.
-  return (
-    ex.variable && variables.has(ex.variable.id) &&
-    ex.waterModel && waterModels.has(ex.waterModel.id) &&
-    ex.climateModel && climateModels.has(ex.climateModel.id) &&
-    ex.scenario && scenarios.has(ex.scenario.id)
-  );
+  if (!ex.variable || !variables.has(ex.variable.id)) return false;
+  // Only require model/scenario axes when the project actually has them.
+  if (waterModels.size > 0 && (!ex.waterModel || !waterModels.has(ex.waterModel.id))) return false;
+  if (climateModels.size > 0 && (!ex.climateModel || !climateModels.has(ex.climateModel.id))) return false;
+  if (scenarios.size > 0 && (!ex.scenario || !scenarios.has(ex.scenario.id))) return false;
+  return true;
 };
 
 const ShowcaseOverlay = () => {
