@@ -1,5 +1,6 @@
-import React, { useRef, useState, useContext } from "react";
+import React, { useRef, useState, useContext, useEffect } from "react";
 import { useNotify, useRefresh, AuthContext } from "react-admin";
+import axios from "axios";
 import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton, Tooltip, Button } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -191,7 +192,7 @@ const UppyFileList = ({ uppy, uploadState }) => {
   );
 };
 
-export const UppyUploader = ({ onUploadProgress, actionButton, projectId }) => {
+export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projectSlug }) => {
   const refresh = useRefresh();
   const notify = useNotify();
   const pondRef = useRef(null);
@@ -204,11 +205,92 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId }) => {
     failedFiles: 0,
     isUploading: false
   });
+  const [projectConfig, setProjectConfig] = useState<any>(null);
+
+  // Pull the project's enabled axes so the filename guidance matches what the
+  // project actually exposes — a crops-only project shouldn't see the full
+  // 6-part climate-style format.
+  useEffect(() => {
+    if (!projectSlug) return;
+    axios
+      .get(`/api/projects/config/${projectSlug}`)
+      .then((res) => setProjectConfig(res.data))
+      .catch((err) => console.error('Failed to fetch project config for upload hints:', err));
+  }, [projectSlug]);
+
+  const exampleOr = (arr: any[] | undefined, fallback: string) =>
+    arr && arr.length > 0 ? arr[0].slug : fallback;
+
+  const { formatString, exampleString, supportsCropForm, supportsClimateForm } = React.useMemo(() => {
+    // Default: legacy full format (no project config available yet).
+    if (!projectConfig) {
+      return {
+        formatString:
+          '{crop}_{watermodel}_{climatemodel}_{scenario}_{variable}_{year}.tif',
+        exampleString: 'rice_pcr-globwb_miroc5_rcp60_rg_2080.tif',
+        supportsCropForm: true,
+        supportsClimateForm: true,
+      };
+    }
+    const cropVariables = (projectConfig.variables || []).filter((v: any) => v.is_crop_specific);
+    const generalVariables = (projectConfig.variables || []).filter((v: any) => !v.is_crop_specific);
+    const hasCrops = (projectConfig.crops || []).length > 0;
+    const hasWaterModels = (projectConfig.water_models || []).length > 0;
+    const hasClimateModels = (projectConfig.climate_models || []).length > 0;
+    const hasScenarios = (projectConfig.scenarios || []).length > 0;
+
+    const supportsCropForm = hasCrops && cropVariables.length > 0;
+    const supportsClimateForm = hasCrops && generalVariables.length > 0;
+
+    const cropForm = '{crop}_{crop_variable}.tif';
+    const cropExample = `${exampleOr(projectConfig.crops, 'crop')}_${exampleOr(cropVariables, 'variable')}.tif`;
+
+    const climateForm = [
+      '{crop}',
+      hasWaterModels ? '{water_model}' : 'null',
+      hasClimateModels ? '{climate_model}' : 'null',
+      hasScenarios ? '{scenario}' : 'null',
+      '{variable}',
+      '{year}',
+    ].join('_') + '.tif';
+    const climateExample = [
+      exampleOr(projectConfig.crops, 'crop'),
+      hasWaterModels ? exampleOr(projectConfig.water_models, 'wm') : 'null',
+      hasClimateModels ? exampleOr(projectConfig.climate_models, 'cm') : 'null',
+      hasScenarios ? exampleOr(projectConfig.scenarios, 'scn') : 'null',
+      exampleOr(generalVariables, 'variable'),
+      '2080',
+    ].join('_') + '.tif';
+
+    if (supportsCropForm && !supportsClimateForm) {
+      return { formatString: cropForm, exampleString: cropExample, supportsCropForm, supportsClimateForm };
+    }
+    if (!supportsCropForm && supportsClimateForm) {
+      return { formatString: climateForm, exampleString: climateExample, supportsCropForm, supportsClimateForm };
+    }
+    if (supportsCropForm && supportsClimateForm) {
+      return {
+        formatString: `${cropForm}  OR  ${climateForm}`,
+        exampleString: `${cropExample}  or  ${climateExample}`,
+        supportsCropForm,
+        supportsClimateForm,
+      };
+    }
+    // Project has nothing configured yet — keep a harmless placeholder.
+    return {
+      formatString: 'No upload format available — configure the project first.',
+      exampleString: '',
+      supportsCropForm: false,
+      supportsClimateForm: false,
+    };
+  }, [projectConfig]);
+
+  const instructionText = exampleString
+    ? `Format: ${formatString} (e.g., ${exampleString})`
+    : formatString;
 
   // Get the token using the auth provider
   const token = authProvider?.getToken() || "dev-token";
-  const instructionText =
-    "Format: {crop}_{watermodel}_{climatemodel}_{scenario}_{variable}_{year}.tif (e.g., rice_pcr-globwb_miroc5_rcp60_rg_2080). Use null (case-insensitive) in any of water/climate/scenario slots that don't apply.";
   const headers = {
     authorization: `Bearer ${token}`,
   };
@@ -499,50 +581,36 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId }) => {
             title={
               <Box sx={{ p: 1 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                  Filename Examples:
+                  Filename Examples for this project:
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 1.5 }}>
-                  <strong>Crop-Specific Layers (2 parts):</strong>
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • maize_yield.tif
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • wheat_production.tif
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • rice_mirca_area_irrigated.tif
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 1.5 }}>
-                  • soy_mirca_area_total.tif
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>General/Climate Layers (6-7 parts):</strong>
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • barley_pcr-globwb_hadgem2-es_rcp26_vwc_2080.tif
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • wheat_lpjml_gfdl-esm4_historical_yield_2020.tif
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • rice_lpjml_gfdl-esm4_historical_yield_perc_2020.tif
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1.5, mb: 1 }}>
-                  <strong>Projects Without Some Axes (use null):</strong>
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • barley_null_null_rcp26_vwc_2070.tif
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                  • soy_NULL_NULL_ssp2_yield_2050.tif
-                </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                  `null` is case-insensitive and may be used in any of water_model, climate_model, or scenario slots.
-                </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mt: 1.5, fontStyle: 'italic' }}>
-                  Format: {'{crop}_{variable}.tif'} OR {'{crop}_{water_model}_{climate_model}_{scenario}_{variable}_{year}.tif'}
-                </Typography>
+                {supportsCropForm && (
+                  <>
+                    <Typography variant="body2" sx={{ mb: 1.5 }}>
+                      <strong>Crop-Specific Layers (2 parts):</strong>
+                    </Typography>
+                    <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                      • {`{crop}_{crop_variable}.tif`}
+                    </Typography>
+                  </>
+                )}
+                {supportsClimateForm && (
+                  <>
+                    <Typography variant="body2" sx={{ mt: supportsCropForm ? 1.5 : 0, mb: 1 }}>
+                      <strong>General/Climate Layers (6-7 parts):</strong>
+                    </Typography>
+                    <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                      • {formatString.includes(' OR ') ? formatString.split(' OR ')[1] : formatString}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                      Slots shown as <code>null</code> above are fixed — this project does not use that axis. The remaining bracketed slots are filled from its enabled selections.
+                    </Typography>
+                  </>
+                )}
+                {!supportsCropForm && !supportsClimateForm && (
+                  <Typography variant="body2">
+                    This project has no crops + variables enabled yet. Configure the project first.
+                  </Typography>
+                )}
               </Box>
             }
             arrow

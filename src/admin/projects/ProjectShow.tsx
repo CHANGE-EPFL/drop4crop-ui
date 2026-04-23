@@ -66,6 +66,7 @@ const ProjectUploadAction = () => {
                 open={open}
                 onClose={() => setOpen(false)}
                 projectId={record.id}
+                projectSlug={record.slug}
                 projectTitle={record.title}
             />
         </>

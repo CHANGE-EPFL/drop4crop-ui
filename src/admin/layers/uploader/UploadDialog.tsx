@@ -15,10 +15,11 @@ interface UploadDialogProps {
     open: boolean;
     onClose: () => void;
     projectId: string;
+    projectSlug?: string;
     projectTitle?: string;
 }
 
-export const UploadDialog = ({ open, onClose, projectId, projectTitle }: UploadDialogProps) => {
+export const UploadDialog = ({ open, onClose, projectId, projectSlug, projectTitle }: UploadDialogProps) => {
     const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0, isUploading: false });
 
     const isComplete = uploadProgress.completed === uploadProgress.total && uploadProgress.total > 0;
@@ -41,6 +42,7 @@ export const UploadDialog = ({ open, onClose, projectId, projectTitle }: UploadD
             <DialogContent sx={{ pb: 3 }}>
                 <UppyUploader
                     projectId={projectId}
+                    projectSlug={projectSlug}
                     onUploadProgress={setUploadProgress}
                     actionButton={
                         <Box sx={{ textAlign: 'center', my: 2 }}>
