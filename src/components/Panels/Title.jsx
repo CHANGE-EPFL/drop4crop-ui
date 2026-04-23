@@ -3,7 +3,22 @@ import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
+import ReactMarkdown from 'react-markdown';
 
+const MarkdownTooltip = ({ children }) => (
+    <ReactMarkdown
+        components={{
+            p: ({ children }) => <span>{children}</span>,
+            a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#d1a766' }}>
+                    {children}
+                </a>
+            ),
+        }}
+    >
+        {children}
+    </ReactMarkdown>
+);
 
 const PanelTitleWithTooltip = ({ title, tooltip, onClose }) => {
     return (
@@ -44,4 +59,5 @@ const PanelTitleWithTooltip = ({ title, tooltip, onClose }) => {
     )
 };
 
+export { MarkdownTooltip };
 export default PanelTitleWithTooltip;

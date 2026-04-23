@@ -704,6 +704,7 @@ function FilenameHint({
   const hasWaterModels = config.water_models.length > 0;
   const hasClimateModels = config.climate_models.length > 0;
   const hasScenarios = config.scenarios.length > 0;
+  const hasTimeline = config.project?.year_axis != null;
   const generalVars = config.variables.filter((v) => !v.is_crop_specific);
   const cropVars = config.variables.filter((v) => v.is_crop_specific);
 
@@ -713,7 +714,7 @@ function FilenameHint({
     hasClimateModels ? firstSlug(config.climate_models) : "null",
     hasScenarios ? firstSlug(config.scenarios) : "null",
     hasGeneralVariables ? firstSlug(generalVars) : "null",
-    "2080",
+    hasTimeline ? "2080" : "null",
   ].join("_") + ".tif";
 
   const cropExample =
@@ -765,9 +766,7 @@ function FilenameHint({
         <Sep />
         <Slot used={hasGeneralVariables} label="variable" />
         <Sep />
-        <Typography component="span" color="text.secondary">
-          {"{year}"}
-        </Typography>
+        <Slot used={hasTimeline} label="year" />
         <Typography component="span" color="text.secondary">
           .tif
         </Typography>
@@ -803,6 +802,19 @@ function FilenameHint({
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
             Example: <code>{cropExample}</code>
+          </Typography>
+        </Box>
+      )}
+
+      {!hasWaterModels && !hasClimateModels && !hasScenarios && !hasTimeline && hasGeneralVariables && (
+        <Box sx={{ mt: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            Since all middle axes and year are disabled, the short form is also
+            accepted:{" "}
+            <code>{"{crop}_{variable}.tif"}</code>
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            Example: <code>{firstSlug(config.crops, "crop")}_{firstSlug(generalVars)}.tif</code>
           </Typography>
         </Box>
       )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
-import PanelTitleWithTooltip from './Title';
+import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 import Link from '@mui/material/Link';
 
 const GlobalWaterModelsPanel = ({
@@ -8,6 +8,7 @@ const GlobalWaterModelsPanel = ({
     selectedGlobalWaterModel,
     setSelectedGlobalWaterModel,
     setActivePanel,
+    tabConfig,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -24,8 +25,10 @@ const GlobalWaterModelsPanel = ({
     return (
         <div className="popup">
             <PanelTitleWithTooltip
-                title="Global Water Model"
-                tooltip={(
+                title={tabConfig?.label || "Global Water Model"}
+                tooltip={tabConfig?.help_text
+                    ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
+                    : (
                     <>
                         Potential evapotranspiration (<i>potevap</i>), total groundwater
                         recharge (<i>qr</i>), surface runoff (<i>qs</i>), soil moisture

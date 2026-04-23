@@ -1,6 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
-import PanelTitleWithTooltip from './Title';
+import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 import Link from '@mui/material/Link';
 
 const ClimateModelsPanel = ({
@@ -8,6 +8,7 @@ const ClimateModelsPanel = ({
     selectedClimateModel,
     setSelectedClimateModel,
     setActivePanel,
+    tabConfig,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -24,8 +25,10 @@ const ClimateModelsPanel = ({
     return (
         <div className="popup">
             <PanelTitleWithTooltip
-                title="Global Climate Model"
-                tooltip={(
+                title={tabConfig?.label || "Global Climate Model"}
+                tooltip={tabConfig?.help_text
+                    ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
+                    : (
                     <>
                         Precipitation data used in the crop-specific evapotranspiration
                         model (<i>future link to our publication</i>) is derived

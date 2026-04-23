@@ -5,6 +5,7 @@ import {
     TextField,
     BooleanField,
     NumberField,
+    FunctionField,
     TopToolbar,
     EditButton,
     useGetList,
@@ -12,7 +13,6 @@ import {
     List,
     Datagrid,
     ReferenceField,
-    FunctionField,
     SearchInput,
     Pagination,
     ReferenceInput,
@@ -268,12 +268,21 @@ const ProjectShowContent = () => {
                         <TextField source="id" />
                         <TextField source="title" />
                         <TextField source="slug" />
+                        <BooleanField source="enabled" />
+                        <NumberField source="sort_order" label="Sort Order" />
                         <TextField source="description" />
                         <NumberField source="latitude" />
                         <NumberField source="longitude" />
                         <NumberField source="zoom_level" label="Zoom Level" />
-                        <BooleanField source="enabled" />
-                        <NumberField source="sort_order" label="Sort Order" />
+                        <FunctionField
+                            source="year_axis"
+                            label="Year Axis (Timeline)"
+                            render={(record: any) => {
+                                if (!record?.year_axis) return 'Disabled';
+                                const ya = record.year_axis;
+                                return `${ya.min} – ${ya.max} (step ${ya.step})`;
+                            }}
+                        />
                     </SimpleShowLayout>
                 </Box>
                 <Box sx={{ width: 340, flexShrink: 0 }}>

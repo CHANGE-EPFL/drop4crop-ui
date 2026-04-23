@@ -1,6 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
-import PanelTitleWithTooltip from './Title';
+import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 import Link from '@mui/material/Link';
 
 const CropsPanel = ({
@@ -8,6 +8,7 @@ const CropsPanel = ({
     selectedCrop,
     setSelectedCrop,
     setActivePanel,
+    tabConfig,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -24,8 +25,10 @@ const CropsPanel = ({
     return (
         <div className="popup">
             <PanelTitleWithTooltip
-                title="Crop"
-                tooltip={(
+                title={tabConfig?.label || "Crop"}
+                tooltip={tabConfig?.help_text
+                    ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
+                    : (
                     <>
                         The crops are grouped according to the MIRCA2000
                         dataset (

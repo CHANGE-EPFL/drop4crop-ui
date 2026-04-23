@@ -12,6 +12,13 @@ export interface ReferenceItem {
 }
 
 export interface ProjectConfig {
+    project?: {
+        id?: string;
+        slug?: string;
+        title?: string;
+        year_axis?: { mode: string; min: number; max: number; step: number } | null;
+        enabled?: boolean;
+    };
     id?: string;
     slug?: string;
     title?: string;

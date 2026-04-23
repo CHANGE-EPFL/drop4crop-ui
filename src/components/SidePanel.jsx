@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AppContext } from '../contexts/AppContext';
+import { useProject } from '../contexts/ProjectContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWheatAwn, faWater, faCloudSun, faCogs,
@@ -30,6 +31,8 @@ const renderAbbreviation = (variable) => {
 const SidePanel = ({ clearLayers, backdrop = false }) => {
   const [isFirstTimeInfo, setIsFirstTimeInfo] = useState(true);
   const mountedRef = useRef(false);
+  const { config } = useProject() || {};
+  const tabConfig = config?.project?.tab_config || {};
 
   const {
     APIServerURL,
@@ -111,12 +114,12 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
   const nextUnselected = getNextUnselected();
 
   const arrowNames = {
-    crops: 'crop',
-    cropSpecific: 'crop specific variable',
-    variables: 'variable',
-    globalWaterModels: 'water model',
-    climateModels: 'climate model',
-    scenarios: 'scenario',
+    crops: tabConfig.crops?.label || 'crop',
+    cropSpecific: tabConfig.crop_specific?.label || 'crop specific variable',
+    variables: tabConfig.variables?.label || 'variable',
+    globalWaterModels: tabConfig.water_models?.label || 'water model',
+    climateModels: tabConfig.climate_models?.label || 'climate model',
+    scenarios: tabConfig.scenarios?.label || 'scenario',
   };
 
   const getArrowTop = (key, extra = 0) => {
@@ -186,13 +189,13 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           ) : (
             <>
               <div className="arrow-note" style={{ right: '-120px', top: getArrowTop('cropSpecific') }}>
-                <span>Crop specific variable</span>
+                <span>{tabConfig.crop_specific?.label || 'Crop specific variable'}</span>
               </div>
               <div className="variable-note" style={{ right: '-120px', top: getArrowTop('cropSpecific', 35) }}>
                 <span>Select one option from either</span>
               </div>
               <div className="arrow-note" style={{ right: '-120px', top: getArrowTop('cropSpecific', 70) }}>
-                <span>Time-based variable</span>
+                <span>{tabConfig.variables?.label || 'Time-based variable'}</span>
               </div>
             </>
           )}
@@ -203,7 +206,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           <button onClick={() => handlePanelClick('crops')} className={activePanel === 'crops' ? 'active' : ''}>
             <div className="button-content">
               <GrassIcon />
-              <span>Crop</span>
+              <span>{tabConfig.crops?.label || 'Crop'}</span>
               <span className="current-selection">{selectedCrop ? selectedCrop.name : ''}</span>
             </div>
           </button>
@@ -217,7 +220,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
               <button onClick={() => handlePanelClick('cropSpecific')} className={`variable-button ${activePanel === 'cropSpecific' ? 'active' : ''}`}>
                 <div className="button-content">
                   <GrassIcon />
-                  <span>Crop Specific</span>
+                  <span>{tabConfig.crop_specific?.label || 'Crop Specific'}</span>
                   <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
                 </div>
               </button>
@@ -227,7 +230,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
               <button onClick={() => handlePanelClick('variables')} className={`variable-button ${activePanel === 'variables' ? 'active' : ''}`}>
                 <div className="button-content">
                   <FontAwesomeIcon icon={faLayerGroup} size="xl" />
-                  <span>Variable</span>
+                  <span>{tabConfig.variables?.label || 'Variable'}</span>
                   <span className="current-selection">{selectedVariable ? renderAbbreviation(selectedVariable) : ''}</span>
                 </div>
               </button>
@@ -244,7 +247,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           <button onClick={() => handlePanelClick('globalWaterModels')} className={activePanel === 'globalWaterModels' ? 'active' : ''}>
             <div className="button-content">
               <FontAwesomeIcon icon={faWater} size="xl" />
-              <span>Water Model</span>
+              <span>{tabConfig.water_models?.label || 'Water Model'}</span>
               <span className="current-selection">{selectedGlobalWaterModel ? selectedGlobalWaterModel.name : ''}</span>
             </div>
           </button>
@@ -254,7 +257,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           <button onClick={() => handlePanelClick('climateModels')} className={activePanel === 'climateModels' ? 'active' : ''}>
             <div className="button-content">
               <FontAwesomeIcon icon={faCloudSun} size="xl" />
-              <span>Climate Model</span>
+              <span>{tabConfig.climate_models?.label || 'Climate Model'}</span>
               <span className="current-selection">{selectedClimateModel ? selectedClimateModel.name : ''}</span>
             </div>
           </button>
@@ -264,7 +267,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           <button onClick={() => handlePanelClick('scenarios')} className={activePanel === 'scenarios' ? 'active' : ''}>
             <div className="button-content">
               <FontAwesomeIcon icon={faCogs} size="xl" />
-              <span>Scenario</span>
+              <span>{tabConfig.scenarios?.label || 'Scenario'}</span>
               <span className="current-selection">{selectedScenario ? selectedScenario.name : ''}</span>
             </div>
           </button>
@@ -302,6 +305,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           selectedCrop={selectedCrop}
           setSelectedCrop={setSelectedCrop}
           setActivePanel={setActivePanel}
+          tabConfig={tabConfig.crops}
         />
       )}
 
@@ -311,6 +315,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           selectedGlobalWaterModel={selectedGlobalWaterModel}
           setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
           setActivePanel={setActivePanel}
+          tabConfig={tabConfig.water_models}
         />
       )}
 
@@ -320,6 +325,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           selectedClimateModel={selectedClimateModel}
           setSelectedClimateModel={setSelectedClimateModel}
           setActivePanel={setActivePanel}
+          tabConfig={tabConfig.climate_models}
         />
       )}
 
@@ -329,6 +335,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           selectedScenario={selectedScenario}
           setSelectedScenario={setSelectedScenario}
           setActivePanel={setActivePanel}
+          tabConfig={tabConfig.scenarios}
         />
       )}
 
@@ -341,6 +348,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           selectedCropVariable={selectedCropVariable}
           setSelectedCropVariable={setSelectedCropVariable}
           setLayerName={setLayerName}
+          tabConfig={tabConfig.variables}
         />
       )}
 
@@ -355,6 +363,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           setSelectedGlobalWaterModel={setSelectedGlobalWaterModel}
           setSelectedScenario={setSelectedScenario}
           setLayerName={setLayerName}
+          tabConfig={tabConfig.crop_specific}
         />
       )}
 

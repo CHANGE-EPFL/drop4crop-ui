@@ -1,6 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
-import PanelTitleWithTooltip from './Title';
+import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 import Link from '@mui/material/Link';
 
 const CropSpecificPanel = ({
@@ -13,6 +13,7 @@ const CropSpecificPanel = ({
     setSelectedGlobalWaterModel,
     setSelectedScenario,
     setLayerName,
+    tabConfig,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -41,8 +42,10 @@ const CropSpecificPanel = ({
     return (
         <div className="popup">
             <PanelTitleWithTooltip
-                title="Crop Specific Variable"
-                tooltip={(
+                title={tabConfig?.label || "Crop Specific Variable"}
+                tooltip={tabConfig?.help_text
+                    ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
+                    : (
                     <>
                         Crop-specific irrigated and rainfed harvested areas are taken from MIRCA2000 dataset (
                         <Link

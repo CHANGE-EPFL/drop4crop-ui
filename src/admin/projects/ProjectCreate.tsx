@@ -10,8 +10,9 @@ import {
     useNotify,
     useRedirect,
 } from 'react-admin';
-import { Box, Tooltip, Typography } from '@mui/material';
+import { Box, Divider, Paper, Tooltip, Typography } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import TuneIcon from '@mui/icons-material/Tune';
 import MapPreview from './MapPreview';
 import {
     ProjectConfigCreateSection,
@@ -22,12 +23,74 @@ const YEAR_AXIS_TOOLTIP =
     'Used to draw the year bar in the public UI. Leave empty if no variable in ' +
     'this project has has_time=true.';
 
+const TAB_KEYS = [
+    { key: 'crops', defaultLabel: 'Crop' },
+    { key: 'crop_specific', defaultLabel: 'Crop Specific' },
+    { key: 'variables', defaultLabel: 'Variable' },
+    { key: 'water_models', defaultLabel: 'Water Model' },
+    { key: 'climate_models', defaultLabel: 'Climate Model' },
+    { key: 'scenarios', defaultLabel: 'Scenario' },
+];
+
+const TabConfigSection = () => (
+    <Paper variant="outlined" sx={{ p: 3, my: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <TuneIcon color="primary" />
+            <Typography variant="h6">Tab Configuration</Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Customize the display name and help tooltip for each side panel tab.
+            Leave blank to use the default. Help text supports markdown (e.g.
+            [link text](https://...)).
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        {TAB_KEYS.map(({ key, defaultLabel }) => (
+            <Box key={key} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                    {defaultLabel}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <TextInput
+                        source={`tab_config.${key}.label`}
+                        label="Tab label"
+                        placeholder={defaultLabel}
+                        helperText={`Default: "${defaultLabel}"`}
+                        fullWidth
+                    />
+                    <TextInput
+                        source={`tab_config.${key}.help_text`}
+                        label="Help text (markdown)"
+                        placeholder="Leave blank for default"
+                        multiline
+                        rows={2}
+                        fullWidth
+                    />
+                </Box>
+            </Box>
+        ))}
+    </Paper>
+);
+
+const cleanTabConfig = (tc: any): any => {
+    if (!tc || typeof tc !== 'object') return null;
+    const result: any = {};
+    for (const [key, val] of Object.entries(tc)) {
+        if (!val || typeof val !== 'object') continue;
+        const cleaned: any = {};
+        for (const [field, v] of Object.entries(val as any)) {
+            if (typeof v === 'string' && v.trim()) cleaned[field] = v.trim();
+        }
+        if (Object.keys(cleaned).length > 0) result[key] = cleaned;
+    }
+    return Object.keys(result).length > 0 ? result : null;
+};
+
 const transform = (data: any) => {
     const ya = data.year_axis;
-    if (!ya || (ya.min == null && ya.max == null && ya.step == null)) {
-        return { ...data, year_axis: null };
-    }
-    return { ...data, year_axis: { mode: 'range', ...ya } };
+    const yearAxis = (!ya || (ya.min == null && ya.max == null && ya.step == null))
+        ? null
+        : { mode: 'range', ...ya };
+    return { ...data, year_axis: yearAxis, tab_config: cleanTabConfig(data.tab_config) };
 };
 
 type RelationPath = 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables';
@@ -95,6 +158,12 @@ const ProjectCreate = () => {
                     max={18}
                     helperText="Map zoom level for splash page preview (1-18)"
                 />
+                <BooleanInput source="enabled" defaultValue={true} />
+                <NumberInput
+                    source="sort_order"
+                    defaultValue={0}
+                    helperText="Lower numbers appear first on the splash page"
+                />
                 <Box sx={{ mt: 2, mb: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
                         <Typography variant="subtitle2">Year axis (timeline)</Typography>
@@ -109,12 +178,7 @@ const ProjectCreate = () => {
                     </Box>
                 </Box>
                 <ProjectConfigCreateSection ref={configRef} />
-                <BooleanInput source="enabled" defaultValue={true} />
-                <NumberInput
-                    source="sort_order"
-                    defaultValue={0}
-                    helperText="Lower numbers appear first on the splash page"
-                />
+                <TabConfigSection />
             </SimpleForm>
         </Create>
     );

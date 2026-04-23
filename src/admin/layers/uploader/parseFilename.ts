@@ -14,7 +14,7 @@ export type ParsedFilename =
           climate_model: string | null;
           scenario: string | null;
           variable: string | null;
-          year: number;
+          year: number | null;
       }
     | {
           ok: true;
@@ -46,9 +46,15 @@ export function parseFilename(filename: string): ParsedFilename {
     const parts = stem.split("_");
 
     if (parts.length === 6) {
-        const year = Number.parseInt(parts[5], 10);
-        if (!Number.isFinite(year) || String(year) !== parts[5]) {
-            return { ok: false, error: `Invalid year in filename: ${parts[5]}` };
+        let year: number | null;
+        if (NULLABLE_SENTINELS.has(parts[5])) {
+            year = null;
+        } else {
+            const parsed = Number.parseInt(parts[5], 10);
+            if (!Number.isFinite(parsed) || String(parsed) !== parts[5]) {
+                return { ok: false, error: `Invalid year in filename: ${parts[5]}` };
+            }
+            year = parsed;
         }
         return {
             ok: true,
@@ -76,9 +82,15 @@ export function parseFilename(filename: string): ParsedFilename {
                 error: "Cannot use `_perc` suffix with a null/nan variable slot",
             };
         }
-        const year = Number.parseInt(parts[6], 10);
-        if (!Number.isFinite(year) || String(year) !== parts[6]) {
-            return { ok: false, error: `Invalid year in filename: ${parts[6]}` };
+        let year: number | null;
+        if (NULLABLE_SENTINELS.has(parts[6])) {
+            year = null;
+        } else {
+            const parsed = Number.parseInt(parts[6], 10);
+            if (!Number.isFinite(parsed) || String(parsed) !== parts[6]) {
+                return { ok: false, error: `Invalid year in filename: ${parts[6]}` };
+            }
+            year = parsed;
         }
         return {
             ok: true,

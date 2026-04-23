@@ -1,12 +1,13 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
-import PanelTitleWithTooltip from './Title';
+import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
 const ScenarioPanel = ({
     scenarios,
     selectedScenario,
     setSelectedScenario,
     setActivePanel,
+    tabConfig,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -23,8 +24,10 @@ const ScenarioPanel = ({
     return (
         <div className="popup">
             <PanelTitleWithTooltip
-                title="Scenario"
-                tooltip={(
+                title={tabConfig?.label || "Scenario"}
+                tooltip={tabConfig?.help_text
+                    ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
+                    : (
                     <>
                         Representative Concentration Pathways (RCP) as formally
                         adopted by the Intergovernmental Panel Climate Change (IPCC).

@@ -3,7 +3,7 @@ import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
-import PanelTitleWithTooltip from './Title';
+import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
 // Helper to render variable label with subscript
 const renderVariableLabel = (variable) => {
@@ -25,6 +25,7 @@ const VariablePanel = ({
     selectedCropVariable,
     setSelectedCropVariable,
     setLayerName,
+    tabConfig,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -64,7 +65,9 @@ const VariablePanel = ({
         <div className="popup">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <PanelTitleWithTooltip title="Variable" tooltip={(
+                    <PanelTitleWithTooltip title={tabConfig?.label || "Variable"} tooltip={tabConfig?.help_text
+                        ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
+                        : (
                         <>
                             Definition and details about the listed variables can be found in [<i>future link to our publication</i>].
                         </>
