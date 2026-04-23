@@ -315,6 +315,15 @@ const MostVisitedLayersCard = ({ layers, loading, redirect, totalLayers }) => {
     const [cacheLoading, setCacheLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+    // Resolve project_id → slug so the map deep link points at /projects/<slug>.
+    const { data: projectsData } = useGetList('projects', {
+        pagination: { page: 1, perPage: 500 },
+        sort: { field: 'sort_order', order: 'ASC' },
+    });
+    const projectSlugById = new Map<string, string>(
+        (projectsData || []).map((p: any) => [p.id, p.slug]),
+    );
+
     useEffect(() => {
         const fetchCacheData = async () => {
             if (!layers || layers.length === 0) {
@@ -488,7 +497,9 @@ const MostVisitedLayersCard = ({ layers, loading, redirect, totalLayers }) => {
                 {layers && layers.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {layers.map((layer: any) => {
-                            // Build map URL
+                            // Build map URL — public map lives at /projects/<slug>
+                            // since multi-project landed; fall back to `/` for
+                            // layers not bound to a project.
                             const params = new URLSearchParams();
                             if (layer.crop) params.set('crop', layer.crop);
                             if (layer.water_model) params.set('water_model', layer.water_model);
@@ -496,7 +507,11 @@ const MostVisitedLayersCard = ({ layers, loading, redirect, totalLayers }) => {
                             if (layer.scenario) params.set('scenario', layer.scenario);
                             if (layer.variable) params.set('variable', layer.variable);
                             if (layer.year) params.set('year', layer.year.toString());
-                            const mapUrl = `/?${params.toString()}`;
+                            const projectSlug = layer.project_id ? projectSlugById.get(layer.project_id) : undefined;
+                            const qs = params.toString();
+                            const mapUrl = projectSlug
+                                ? `/projects/${projectSlug}${qs ? `?${qs}` : ''}`
+                                : `/${qs ? `?${qs}` : ''}`;
 
                             return (
                                 <Box

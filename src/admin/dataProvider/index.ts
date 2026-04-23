@@ -364,6 +364,51 @@ const dataProvider = (
             body: JSON.stringify(ids),
         }).then(({ json }) => ({ data: json }));
     },
+    // Create a reference entity (crop, variable, water-model, climate-model, scenario)
+    // via its standard REST endpoint. Returns the created record including its UUID.
+    createReferenceEntity: async (
+        resource: 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables',
+        payload: Record<string, unknown>
+    ) => {
+        return httpClient(`${apiUrl}/${resource}`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        }).then(({ json }) => ({ data: json }));
+    },
+    // Look up a reference entity by its slug. Returns the record if found, null otherwise.
+    // Used by the upload resolution flow to distinguish "exists globally but not attached
+    // to this project" from "does not exist anywhere".
+    findReferenceBySlug: async (
+        resource: 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables',
+        slug: string
+    ): Promise<{ data: { id: string; slug: string; [k: string]: unknown } | null }> => {
+        const query = stringify({ filter: JSON.stringify({ slug }), range: JSON.stringify([0, 1]) });
+        const { json } = await httpClient(`${apiUrl}/${resource}?${query}`);
+        const list = Array.isArray(json) ? json : [];
+        const match = list.find((row) => row?.slug === slug) ?? null;
+        return { data: match };
+    },
+    // Append the given UUIDs to a project's relation list, preserving existing membership
+    // and order. The underlying PUT /api/projects/{id}/{path} endpoint replaces the full
+    // list, so we fetch the current config first and send the concatenation.
+    appendProjectRelation: async (
+        projectId: string,
+        projectSlug: string,
+        relation: 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables',
+        newIds: string[]
+    ) => {
+        const { json } = await httpClient(`${apiUrl}/projects/config/${projectSlug}`);
+        // Backend returns axes keyed by `crops`, `water_models`, `climate_models`,
+        // `scenarios`, `variables` (underscore, not hyphen). Normalise.
+        const key = relation.replace(/-/g, '_');
+        const existing: { id: string }[] = (json?.[key] ?? []) as { id: string }[];
+        const existingIds = existing.map((item) => item.id);
+        const merged = [...existingIds, ...newIds.filter((id) => !existingIds.includes(id))];
+        return httpClient(`${apiUrl}/projects/${projectId}/${relation}`, {
+            method: 'PUT',
+            body: JSON.stringify(merged),
+        }).then(({ json }) => ({ data: json }));
+    },
 });
 
 

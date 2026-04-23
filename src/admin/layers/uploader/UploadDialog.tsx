@@ -6,6 +6,8 @@ import {
     Typography,
     Box,
     Button,
+    alpha,
+    useTheme,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -21,9 +23,22 @@ interface UploadDialogProps {
 
 export const UploadDialog = ({ open, onClose, projectId, projectSlug, projectTitle }: UploadDialogProps) => {
     const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0, isUploading: false });
+    const theme = useTheme();
 
     const isComplete = uploadProgress.completed === uploadProgress.total && uploadProgress.total > 0;
     const isUploading = uploadProgress.isUploading && uploadProgress.total > 0;
+
+    // Progress pill tint — uses theme palette so it stays legible in both modes.
+    const pillPalette = isComplete
+        ? theme.palette.success
+        : isUploading
+            ? theme.palette.primary
+            : theme.palette.grey;
+    const pillBg = alpha(
+        (pillPalette as { main?: string }).main ?? theme.palette.grey[500],
+        theme.palette.mode === 'dark' ? 0.2 : 0.12,
+    );
+    const pillBorder = (pillPalette as { main?: string }).main ?? theme.palette.divider;
 
     return (
         <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
@@ -58,12 +73,13 @@ export const UploadDialog = ({ open, onClose, projectId, projectSlug, projectTit
                                     px: 2,
                                     fontSize: '0.875rem',
                                     fontWeight: 500,
-                                    bgcolor: isComplete ? '#e8f5e8' : isUploading ? '#e3f2fd' : '#f5f5f5',
-                                    border: isComplete ? '2px solid #4caf50' : isUploading ? '1px solid #2196f3' : '1px solid #ccc',
+                                    bgcolor: pillBg,
+                                    borderColor: pillBorder,
+                                    borderWidth: isComplete ? 2 : 1,
+                                    color: 'text.primary',
                                     '&:hover': {
-                                        bgcolor: isComplete ? 'success.main' : isUploading ? 'primary.main' : 'grey.200',
-                                        color: 'white',
-                                        transform: 'scale(1.02)',
+                                        bgcolor: alpha(pillBorder, theme.palette.mode === 'dark' ? 0.35 : 0.2),
+                                        borderColor: pillBorder,
                                     },
                                     transition: 'all 0.2s ease-in-out',
                                 }}

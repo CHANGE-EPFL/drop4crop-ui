@@ -10,6 +10,7 @@ export const MyMenu = () => (
         <Menu.ResourceItem name="showcase-items" />
         <hr style={{ width: '70%' }} />
         <SubMenu text="Layer Attributes" icon={<ExpandMore />}>
+            <Menu.ResourceItem name="layers" />
             <Menu.ResourceItem name="crops" />
             <Menu.ResourceItem name="water-models" />
             <Menu.ResourceItem name="climate-models" />
@@ -17,7 +18,6 @@ export const MyMenu = () => (
             <Menu.ResourceItem name="variables" />
         </SubMenu>
         <hr style={{ width: '70%' }} />
-        <Menu.ResourceItem name="layers" />
         <Menu.ResourceItem name="styles" />
         <hr style={{ width: '70%' }} />
         <Menu.ResourceItem name="statistics" />

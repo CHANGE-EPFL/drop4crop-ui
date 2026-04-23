@@ -382,11 +382,22 @@ const LayerShowContent = () => {
         }
     }, [activeTab, record?.layer_name, dataProvider]);
 
+    // Resolve the owning project's slug so map deep links hit /projects/<slug>.
+    // Declared before the `record == null` early return so hook order stays stable.
+    const { data: projectRecord } = useGetOne(
+        'projects',
+        { id: record?.project_id },
+        { enabled: !!record?.project_id },
+    );
+    const projectSlug: string | undefined = projectRecord?.slug;
+
     if (!record) {
         return <div>No data available</div>;
     }
 
-    // Helper function to build the layer URL
+    // Helper function to build the layer URL.
+    // Public map is served from /projects/<slug>, so we need the owning project's
+    // slug for this layer. Fall back to `/` for layers not bound to a project.
     const buildLayerUrl = () => {
         const params = new URLSearchParams();
         if (record.crop) params.set('crop', record.crop);
@@ -404,7 +415,11 @@ const LayerShowContent = () => {
         }
 
         const baseUrl = window.location.origin;
-        return `${baseUrl}/?${params.toString()}`;
+        const qs = params.toString();
+        const path = projectSlug
+            ? `/projects/${projectSlug}${qs ? `?${qs}` : ''}`
+            : `/${qs ? `?${qs}` : ''}`;
+        return `${baseUrl}${path}`;
     };
 
     const handleCopyLink = async () => {

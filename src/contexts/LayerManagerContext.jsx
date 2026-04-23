@@ -41,27 +41,40 @@ export const LayerManagerProvider = ({ children }) => {
         selectedCropVariable,
         selectedTime,
         setVariableForLegend,
+        // The lists below are populated from /api/layers/groups; their
+        // presence tells us which axes this project actually exposes. If
+        // `globalWaterModels` is empty the project has no water-model axis,
+        // so we must NOT require a selectedLayer.water_model to display a layer.
+        crops,
+        globalWaterModels,
+        climateModels,
+        scenarios,
+        variables,
+        cropVariables,
     } = useContext(AppContext);
 
     const getLayer = async (props) => {
         try {
             const scenario = props.year === 2000 ? "historical" : props.scenario;
 
-            // Build STAC search parameters
+            // Build STAC search parameters. Only attach axis filters the project
+            // actually uses — sending water_model=undefined/null trips STAC into
+            // treating it as an explicit mismatch, and empty strings end up as
+            // `&water_model=` which the API then fails to resolve.
             const params = {
-                crop: props.crop,
                 limit: 1,  // We only need one result
                 ...(project?.slug ? { project: project.slug } : {}),
             };
+            if (props.crop) params.crop = props.crop;
 
             if (props.crop_variable) {
                 params.variable = props.crop_variable;
             } else {
-                params.variable = props.variable;
-                params.datetime = props.year;  // STAC uses datetime parameter
-                params.scenario = scenario;
-                params.water_model = props.water_model;
-                params.climate_model = props.climate_model;
+                if (props.variable) params.variable = props.variable;
+                if (props.year != null) params.datetime = props.year;
+                if (scenario) params.scenario = scenario;
+                if (props.water_model) params.water_model = props.water_model;
+                if (props.climate_model) params.climate_model = props.climate_model;
             }
 
             // Use STAC search endpoint instead of custom /api/layers/map
@@ -103,18 +116,31 @@ export const LayerManagerProvider = ({ children }) => {
         const fetchLayerData = async () => {
             setloadingLayer(true);
 
-            const isBasicFieldsFilled =
-                selectedLayer.crop &&
-                selectedLayer.water_model &&
-                selectedLayer.climate_model &&
-                selectedLayer.scenario &&
-                selectedTime;
+            // Only axes the project actually uses count as "required". A project
+            // with, e.g., no water-model axis shouldn't block the layer lookup
+            // waiting on a selection the user can't make. We derive the axis
+            // presence from the project-scoped groups lists populated below.
+            const hasCrops = (crops?.length ?? 0) > 0;
+            const hasWaterModels = (globalWaterModels?.length ?? 0) > 0;
+            const hasClimateModels = (climateModels?.length ?? 0) > 0;
+            const hasScenarios = (scenarios?.length ?? 0) > 0;
+            const hasVariables = (variables?.length ?? 0) > 0;
+            const hasCropVariables = (cropVariables?.length ?? 0) > 0;
+            const hasYears =
+                (typeof selectedTime !== 'undefined' && selectedTime !== null) ||
+                !hasClimateModels; // years are only meaningful for climate-style layers
 
             const isStandardScenarioValid =
-                isBasicFieldsFilled &&
-                selectedLayer.variable;
+                hasVariables &&
+                (!hasCrops || selectedLayer.crop) &&
+                (!hasWaterModels || selectedLayer.water_model) &&
+                (!hasClimateModels || selectedLayer.climate_model) &&
+                (!hasScenarios || selectedLayer.scenario) &&
+                selectedLayer.variable &&
+                hasYears;
 
             const isCropSpecificScenarioValid =
+                hasCropVariables &&
                 selectedLayer.crop &&
                 selectedLayer.crop_variable;
 
@@ -192,7 +218,16 @@ export const LayerManagerProvider = ({ children }) => {
         setloadingLayer,
         setVariableForLegend,
         selectedVariable,
-        selectedCropVariable
+        selectedCropVariable,
+        // Re-run when axis presence changes (e.g., groups finish loading) so
+        // a selection made pre-load doesn't stay stuck on the "use the buttons"
+        // overlay after the project's actual axis set is known.
+        crops,
+        globalWaterModels,
+        climateModels,
+        scenarios,
+        variables,
+        cropVariables,
     ]);
 
     useEffect(() => {

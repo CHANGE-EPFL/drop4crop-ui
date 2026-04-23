@@ -1,86 +1,184 @@
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, type DragEvent as ReactDragEvent } from 'react';
 import { useRecordContext, useGetList, useNotify, useDataProvider } from 'react-admin';
 import {
     Box,
     Typography,
-    Checkbox,
-    FormControlLabel,
-    FormGroup,
     Button,
     CircularProgress,
     Chip,
     Divider,
     Paper,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
 import SettingsIcon from '@mui/icons-material/Settings';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
 interface RefItem {
     id: string;
     name: string;
     slug?: string;
     sort_order?: number;
+    abbreviation?: string;
+    subscript?: string;
 }
 
 type RelationPath = 'crops' | 'water-models' | 'climate-models' | 'scenarios' | 'variables';
 
-type SelectionsMap = Record<RelationPath, Set<string>>;
-
-const emptySelections = (): SelectionsMap => ({
-    crops: new Set(),
-    'water-models': new Set(),
-    'climate-models': new Set(),
-    scenarios: new Set(),
-    variables: new Set(),
-});
-
-// Shared reducer helpers so both the edit and the create surfaces behave identically.
-const toggleSelection = (prev: SelectionsMap, endpoint: RelationPath, id: string): SelectionsMap => {
-    const next = new Set(prev[endpoint]);
-    if (next.has(id)) {
-        next.delete(id);
-    } else {
-        next.add(id);
+// Variables render as abbreviation + subscript (e.g. WFg, WFb); everything else
+// falls back to the slug as the machine-identifier subheading.
+const getSubheading = (item: RefItem, endpoint: RelationPath): string | null => {
+    if (endpoint === 'variables') {
+        const abbr = item.abbreviation?.trim();
+        if (!abbr) return null;
+        const sub = item.subscript?.trim();
+        return sub ? `${abbr}${sub}` : abbr;
     }
-    return { ...prev, [endpoint]: next };
+    return item.slug?.trim() || null;
 };
 
-const setAllSelection = (
-    prev: SelectionsMap,
-    endpoint: RelationPath,
-    allIds: string[],
-): SelectionsMap => ({ ...prev, [endpoint]: new Set(allIds) });
+// Selections are ordered arrays — the position in each array is the per-project
+// sort_order sent to the API.
+type SelectionsMap = Record<RelationPath, string[]>;
 
-const clearSelection = (prev: SelectionsMap, endpoint: RelationPath): SelectionsMap => ({
-    ...prev,
-    [endpoint]: new Set<string>(),
+const emptySelections = (): SelectionsMap => ({
+    crops: [],
+    'water-models': [],
+    'climate-models': [],
+    scenarios: [],
+    variables: [],
 });
+
+const chipLabel = (item: RefItem, sub: string | null) => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, py: 0.25 }}>
+        <Typography variant="body2" component="span">
+            {item.name}
+        </Typography>
+        {sub && (
+            <Typography
+                variant="caption"
+                component="span"
+                sx={{ fontFamily: 'monospace', fontSize: '0.7rem', opacity: 0.75 }}
+            >
+                {sub}
+            </Typography>
+        )}
+    </Box>
+);
 
 const ConfigSectionPanel = ({
     label,
+    endpoint,
     items,
-    selectedIds,
-    onToggle,
-    onSelectAll,
-    onDeselectAll,
+    selectedOrder,
+    onChange,
     readOnly,
 }: {
     label: string;
+    endpoint: RelationPath;
     items: RefItem[];
-    selectedIds: Set<string>;
-    onToggle: (id: string) => void;
-    onSelectAll: () => void;
-    onDeselectAll: () => void;
+    selectedOrder: string[];
+    // Emits the new ordered id list for this endpoint. Parent persists.
+    onChange: (orderedIds: string[]) => void;
     readOnly?: boolean;
 }) => {
-    const sorted = [...items].sort((a, b) => {
-        if (a.sort_order != null && b.sort_order != null) return a.sort_order - b.sort_order;
-        return a.name.localeCompare(b.name);
-    });
+    const byId = new Map(items.map((i) => [i.id, i]));
+    const selectedItems = selectedOrder
+        .map((id) => byId.get(id))
+        .filter((i): i is RefItem => !!i);
 
-    // In read-only mode we hide un-selected rows entirely — the section
-    // becomes a compact "what this project exposes" summary for the Show page.
-    const visible = readOnly ? sorted.filter((i) => selectedIds.has(i.id)) : sorted;
+    const unselectedItems = items
+        .filter((i) => !selectedOrder.includes(i.id))
+        .sort((a, b) => {
+            if (a.sort_order != null && b.sort_order != null) return a.sort_order - b.sort_order;
+            return a.name.localeCompare(b.name);
+        });
+
+    const [dragId, setDragId] = useState<string | null>(null);
+    const [overId, setOverId] = useState<string | null>(null);
+
+    const handleDragStart = (id: string) => (e: ReactDragEvent) => {
+        setDragId(id);
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox quirks */ }
+    };
+    const handleDragOver = (id: string) => (e: ReactDragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (overId !== id) setOverId(id);
+    };
+    const handleDragEnd = () => {
+        setDragId(null);
+        setOverId(null);
+    };
+    const handleDrop = (targetId: string) => (e: ReactDragEvent) => {
+        e.preventDefault();
+        const sourceId = dragId;
+        setDragId(null);
+        setOverId(null);
+        if (!sourceId || sourceId === targetId) return;
+        const order = [...selectedOrder];
+        const from = order.indexOf(sourceId);
+        const to = order.indexOf(targetId);
+        if (from < 0 || to < 0) return;
+        order.splice(to, 0, order.splice(from, 1)[0]);
+        onChange(order);
+    };
+
+    const handleToggleOn = (id: string) => {
+        if (selectedOrder.includes(id)) return;
+        onChange([...selectedOrder, id]);
+    };
+    const handleToggleOff = (id: string) => {
+        onChange(selectedOrder.filter((x) => x !== id));
+    };
+
+    const handleSelectAll = () => {
+        const newly = items.map((i) => i.id).filter((id) => !selectedOrder.includes(id));
+        if (newly.length === 0) return;
+        onChange([...selectedOrder, ...newly]);
+    };
+    const handleDeselectAll = () => {
+        if (selectedOrder.length === 0) return;
+        onChange([]);
+    };
+
+    const renderChip = (item: RefItem, isSelected: boolean) => {
+        const sub = getSubheading(item, endpoint);
+        const isOver = overId === item.id && dragId && dragId !== item.id;
+        const draggable = !readOnly && isSelected;
+        return (
+            <Chip
+                key={item.id}
+                label={chipLabel(item, sub)}
+                clickable={!readOnly}
+                onClick={readOnly ? undefined : () => (isSelected ? handleToggleOff(item.id) : handleToggleOn(item.id))}
+                color={isSelected ? 'primary' : 'default'}
+                variant={isSelected ? 'filled' : 'outlined'}
+                icon={draggable ? (
+                    <DragIndicatorIcon
+                        fontSize="small"
+                        sx={{ cursor: 'grab', opacity: 0.6, '&:active': { cursor: 'grabbing' } }}
+                    />
+                ) : undefined}
+                draggable={draggable}
+                onDragStart={draggable ? handleDragStart(item.id) : undefined}
+                onDragOver={draggable ? handleDragOver(item.id) : undefined}
+                onDrop={draggable ? handleDrop(item.id) : undefined}
+                onDragEnd={draggable ? handleDragEnd : undefined}
+                sx={{
+                    height: 'auto',
+                    py: 0.5,
+                    '& .MuiChip-label': { display: 'block', px: 1 },
+                    opacity: dragId === item.id ? 0.4 : (!readOnly && !isSelected ? 0.65 : 1),
+                    color: !readOnly && !isSelected ? 'text.secondary' : undefined,
+                    borderColor: !readOnly && !isSelected ? 'divider' : undefined,
+                    '&:hover': !readOnly && !isSelected ? { opacity: 0.9 } : undefined,
+                    outline: isOver ? '2px dashed' : 'none',
+                    outlineColor: 'primary.main',
+                    outlineOffset: 2,
+                }}
+            />
+        );
+    };
 
     return (
         <Box sx={{ mb: 2 }}>
@@ -89,60 +187,59 @@ const ConfigSectionPanel = ({
                     {label}
                 </Typography>
                 <Chip
-                    label={readOnly ? `${selectedIds.size}` : `${selectedIds.size} / ${items.length}`}
+                    label={readOnly ? `${selectedOrder.length}` : `${selectedOrder.length} / ${items.length}`}
                     size="small"
-                    color={selectedIds.size > 0 ? 'primary' : 'default'}
+                    color={selectedOrder.length > 0 ? 'primary' : 'default'}
                     variant="outlined"
                 />
                 {!readOnly && (
                     <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
-                        <Button size="small" onClick={onSelectAll}>
+                        <Button size="small" onClick={handleSelectAll}>
                             Select All
                         </Button>
-                        <Button size="small" onClick={onDeselectAll}>
+                        <Button size="small" onClick={handleDeselectAll}>
                             Clear
                         </Button>
                     </Box>
                 )}
             </Box>
+
             {readOnly ? (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {visible.length === 0 ? (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                    {selectedItems.length === 0 ? (
                         <Typography variant="body2" color="text.secondary">
                             None selected.
                         </Typography>
                     ) : (
-                        visible.map((item) => (
-                            <Chip key={item.id} label={item.name} size="small" variant="outlined" />
-                        ))
+                        selectedItems.map((item) => renderChip(item, true))
                     )}
                 </Box>
             ) : (
-                <FormGroup row sx={{ gap: 0.5 }}>
-                    {visible.map((item) => (
-                        <FormControlLabel
-                            key={item.id}
-                            control={
-                                <Checkbox
-                                    checked={selectedIds.has(item.id)}
-                                    onChange={() => onToggle(item.id)}
-                                    size="small"
-                                />
-                            }
-                            label={item.name}
-                            sx={{
-                                border: '1px solid',
-                                borderColor: selectedIds.has(item.id) ? 'primary.main' : 'divider',
-                                borderRadius: 1,
-                                px: 1,
-                                py: 0,
-                                m: 0,
-                                backgroundColor: selectedIds.has(item.id) ? 'primary.50' : 'transparent',
-                                '&:hover': { borderColor: 'primary.main' },
-                            }}
-                        />
-                    ))}
-                </FormGroup>
+                <>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {selectedItems.length === 0 ? (
+                            <Typography variant="caption" color="text.secondary" sx={{ py: 0.5 }}>
+                                No items selected. Click a chip below to add it.
+                            </Typography>
+                        ) : (
+                            selectedItems.map((item) => renderChip(item, true))
+                        )}
+                    </Box>
+                    {unselectedItems.length > 0 && (
+                        <>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block', mt: 1, mb: 0.5 }}
+                            >
+                                Available
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                                {unselectedItems.map((item) => renderChip(item, false))}
+                            </Box>
+                        </>
+                    )}
+                </>
             )}
         </Box>
     );
@@ -152,35 +249,41 @@ const ConfigSectionPanel = ({
 // create surfaces iterate the same sections, so centralising the fetch avoids
 // drift if a new reference type is added.
 const useReferenceSections = () => {
-    const { data: cropsData, isLoading: cropsLoading } = useGetList('crops', {
+    const crops = useGetList('crops', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
     });
-    const { data: waterModelsData, isLoading: wmLoading } = useGetList('water-models', {
+    const waterModels = useGetList('water-models', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
     });
-    const { data: climateModelsData, isLoading: cmLoading } = useGetList('climate-models', {
+    const climateModels = useGetList('climate-models', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
     });
-    const { data: scenariosData, isLoading: scLoading } = useGetList('scenarios', {
+    const scenarios = useGetList('scenarios', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
     });
-    const { data: variablesData, isLoading: varLoading } = useGetList('variables', {
+    const variables = useGetList('variables', {
         pagination: { page: 1, perPage: 500 },
         sort: { field: 'sort_order', order: 'ASC' },
     });
 
-    const listsLoading = cropsLoading || wmLoading || cmLoading || scLoading || varLoading;
+    const listsLoading =
+        crops.isLoading || waterModels.isLoading || climateModels.isLoading ||
+        scenarios.isLoading || variables.isLoading;
 
-    const sections: Array<{ label: string; endpoint: RelationPath; items: RefItem[] }> = [
-        { label: 'Crops', endpoint: 'crops', items: (cropsData || []) as RefItem[] },
-        { label: 'Water Models', endpoint: 'water-models', items: (waterModelsData || []) as RefItem[] },
-        { label: 'Climate Models', endpoint: 'climate-models', items: (climateModelsData || []) as RefItem[] },
-        { label: 'Scenarios', endpoint: 'scenarios', items: (scenariosData || []) as RefItem[] },
-        { label: 'Variables', endpoint: 'variables', items: (variablesData || []) as RefItem[] },
+    const sections: Array<{
+        label: string;
+        endpoint: RelationPath;
+        items: RefItem[];
+    }> = [
+        { label: 'Crops', endpoint: 'crops', items: (crops.data || []) as RefItem[] },
+        { label: 'Water Models', endpoint: 'water-models', items: (waterModels.data || []) as RefItem[] },
+        { label: 'Climate Models', endpoint: 'climate-models', items: (climateModels.data || []) as RefItem[] },
+        { label: 'Scenarios', endpoint: 'scenarios', items: (scenarios.data || []) as RefItem[] },
+        { label: 'Variables', endpoint: 'variables', items: (variables.data || []) as RefItem[] },
     ];
 
     return { sections, listsLoading };
@@ -193,29 +296,25 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
 
     const [selections, setSelections] = useState<SelectionsMap>(emptySelections);
     const [configLoading, setConfigLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [dirty, setDirty] = useState(false);
 
     const { sections, listsLoading } = useReferenceSections();
 
     // Fetch current project config. Goes through the data provider so the
     // Keycloak bearer is attached; otherwise the request is unauthenticated
     // and mutation endpoints rejected the caller with 403.
-    useEffect(() => {
+    const loadConfig = useCallback(() => {
         if (!record?.slug) return;
-
         setConfigLoading(true);
-        dataProvider
+        (dataProvider as any)
             .getProjectConfig(record.slug)
             .then(({ data }: { data: any }) => {
                 setSelections({
-                    crops: new Set((data.crops || []).map((c: any) => c.id)),
-                    'water-models': new Set((data.water_models || []).map((w: any) => w.id)),
-                    'climate-models': new Set((data.climate_models || []).map((c: any) => c.id)),
-                    scenarios: new Set((data.scenarios || []).map((s: any) => s.id)),
-                    variables: new Set((data.variables || []).map((v: any) => v.id)),
+                    crops: (data.crops || []).map((c: any) => c.id as string),
+                    'water-models': (data.water_models || []).map((w: any) => w.id as string),
+                    'climate-models': (data.climate_models || []).map((c: any) => c.id as string),
+                    scenarios: (data.scenarios || []).map((s: any) => s.id as string),
+                    variables: (data.variables || []).map((v: any) => v.id as string),
                 });
-                setDirty(false);
             })
             .catch((err: any) => {
                 console.warn('Could not load project config:', err);
@@ -223,52 +322,30 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
             .finally(() => setConfigLoading(false));
     }, [record?.slug, dataProvider]);
 
-    const handleToggle = useCallback((endpoint: RelationPath, id: string) => {
-        setSelections((prev) => toggleSelection(prev, endpoint, id));
-        setDirty(true);
-    }, []);
+    useEffect(() => {
+        loadConfig();
+    }, [loadConfig]);
 
-    const handleSelectAll = useCallback((endpoint: RelationPath, allIds: string[]) => {
-        setSelections((prev) => setAllSelection(prev, endpoint, allIds));
-        setDirty(true);
-    }, []);
-
-    const handleDeselectAll = useCallback((endpoint: RelationPath) => {
-        setSelections((prev) => clearSelection(prev, endpoint));
-        setDirty(true);
-    }, []);
-
-    const handleSave = async () => {
-        if (!record?.id) return;
-
-        setSaving(true);
-        try {
-            const endpoints: Array<{ key: string; path: RelationPath }> = [
-                { key: 'crops', path: 'crops' },
-                { key: 'water-models', path: 'water-models' },
-                { key: 'climate-models', path: 'climate-models' },
-                { key: 'scenarios', path: 'scenarios' },
-                { key: 'variables', path: 'variables' },
-            ];
-
-            await Promise.all(
-                endpoints.map(({ key, path }) =>
-                    dataProvider.updateProjectRelation(
-                        record.id as string,
-                        path,
-                        Array.from(selections[key])
-                    )
-                )
-            );
-
-            notify('Project configuration saved', { type: 'success' });
-            setDirty(false);
-        } catch (err: any) {
-            notify(`Error saving configuration: ${err.message || err}`, { type: 'error' });
-        } finally {
-            setSaving(false);
-        }
-    };
+    // Single auto-save path: optimistically update local state, then PUT the
+    // ordered id list. On failure, reload from the server so the UI snaps back
+    // to the authoritative state instead of lying to the admin.
+    const handleChange = useCallback(
+        async (endpoint: RelationPath, orderedIds: string[]) => {
+            if (!record?.id || readOnly) return;
+            setSelections((prev) => ({ ...prev, [endpoint]: orderedIds }));
+            try {
+                await (dataProvider as any).updateProjectRelation(
+                    record.id as string,
+                    endpoint,
+                    orderedIds,
+                );
+            } catch (err: any) {
+                notify(`Error saving ${endpoint}: ${err?.message || err}`, { type: 'error' });
+                loadConfig();
+            }
+        },
+        [record?.id, readOnly, dataProvider, notify, loadConfig],
+    );
 
     if (!record) return null;
 
@@ -288,14 +365,11 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <SettingsIcon color="primary" />
                 <Typography variant="h6">Project Configuration</Typography>
-                {dirty && !readOnly && (
-                    <Chip label="Unsaved changes" color="warning" size="small" sx={{ ml: 1 }} />
-                )}
             </Box>
             {!readOnly && (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Select which crops, water models, climate models, scenarios, and variables are
-                    available for this project. Changes are saved separately from the project form above.
+                    Click chips to include them in this project; drag selected chips to reorder how
+                    they appear in the public UI. Changes save automatically.
                 </Typography>
             )}
             <Divider sx={{ mb: 2 }} />
@@ -304,27 +378,13 @@ const ProjectConfigEditor = ({ readOnly = false }: { readOnly?: boolean } = {}) 
                 <ConfigSectionPanel
                     key={endpoint}
                     label={label}
+                    endpoint={endpoint}
                     items={items}
-                    selectedIds={selections[endpoint]}
-                    onToggle={(id) => handleToggle(endpoint, id)}
-                    onSelectAll={() => handleSelectAll(endpoint, items.map((i) => i.id))}
-                    onDeselectAll={() => handleDeselectAll(endpoint)}
+                    selectedOrder={selections[endpoint]}
+                    onChange={(orderedIds) => handleChange(endpoint, orderedIds)}
                     readOnly={readOnly}
                 />
             ))}
-
-            {!readOnly && (
-                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                    <Button
-                        variant="contained"
-                        startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-                        onClick={handleSave}
-                        disabled={saving || !dirty}
-                    >
-                        {saving ? 'Saving...' : 'Save Configuration'}
-                    </Button>
-                </Box>
-            )}
         </Paper>
     );
 };
@@ -343,16 +403,8 @@ export const ProjectConfigCreateSection = forwardRef<ProjectConfigCreateSectionH
 
         useImperativeHandle(ref, () => ({ getSelections: () => selections }), [selections]);
 
-        const handleToggle = useCallback((endpoint: RelationPath, id: string) => {
-            setSelections((prev) => toggleSelection(prev, endpoint, id));
-        }, []);
-
-        const handleSelectAll = useCallback((endpoint: RelationPath, allIds: string[]) => {
-            setSelections((prev) => setAllSelection(prev, endpoint, allIds));
-        }, []);
-
-        const handleDeselectAll = useCallback((endpoint: RelationPath) => {
-            setSelections((prev) => clearSelection(prev, endpoint));
+        const handleChange = useCallback((endpoint: RelationPath, orderedIds: string[]) => {
+            setSelections((prev) => ({ ...prev, [endpoint]: orderedIds }));
         }, []);
 
         if (listsLoading) {
@@ -374,8 +426,8 @@ export const ProjectConfigCreateSection = forwardRef<ProjectConfigCreateSectionH
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     Select which crops, water models, climate models, scenarios, and variables this
-                    project will expose in the public UI. Any category left empty will not show a
-                    button in the map view. You can change these later from the Edit page.
+                    project will expose. Drag selected chips to set their order. Saved when the
+                    project is created.
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
 
@@ -383,11 +435,10 @@ export const ProjectConfigCreateSection = forwardRef<ProjectConfigCreateSectionH
                     <ConfigSectionPanel
                         key={endpoint}
                         label={label}
+                        endpoint={endpoint}
                         items={items}
-                        selectedIds={selections[endpoint]}
-                        onToggle={(id) => handleToggle(endpoint, id)}
-                        onSelectAll={() => handleSelectAll(endpoint, items.map((i) => i.id))}
-                        onDeselectAll={() => handleDeselectAll(endpoint)}
+                        selectedOrder={selections[endpoint]}
+                        onChange={(orderedIds) => handleChange(endpoint, orderedIds)}
                     />
                 ))}
             </Paper>

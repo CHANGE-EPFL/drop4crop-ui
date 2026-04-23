@@ -1,7 +1,6 @@
-import React, { useRef, useState, useContext, useEffect } from "react";
-import { useNotify, useRefresh, AuthContext } from "react-admin";
-import axios from "axios";
-import { Box, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton, Tooltip, Button } from "@mui/material";
+import React, { useRef, useState, useContext, useEffect, useCallback } from "react";
+import { useNotify, useRefresh, AuthContext, useDataProvider } from "react-admin";
+import { Box, Chip, Stack, Typography, List, ListItem, ListItemText, CircularProgress, IconButton, Tooltip, Button, alpha, useTheme } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
@@ -10,11 +9,21 @@ import InfoIcon from "@mui/icons-material/Info";
 import ReplayIcon from "@mui/icons-material/Replay";
 
 import Uppy from "@uppy/core";
-import { Dashboard } from "@uppy/react";
 import XHR from "@uppy/xhr-upload";
 import "@uppy/core/css/style.min.css";
 import "@uppy/dashboard/css/style.min.css";
 import "./UppyUploader.css"; // Import custom CSS
+
+import { parseFilename, extractSlugs } from "./parseFilename";
+import type { ParsedFilename, SlugField } from "./parseFilename";
+import { useProjectConfig } from "./useProjectConfig";
+import type { ProjectConfig } from "./useProjectConfig";
+import {
+  classifyMissingSlugs,
+  executeResolution,
+} from "./resolveMissing";
+import type { MissingSlug, ResolutionChoice } from "./resolveMissing";
+import { ResolutionPanel } from "./ResolutionPanel";
 
 // Error-only file list component - shows success count summary and only displays errors
 const UppyFileList = ({ uppy, uploadState }) => {
@@ -95,9 +104,9 @@ const UppyFileList = ({ uppy, uploadState }) => {
   }
 
   return (
-    <Box sx={{ border: '1px solid #ddd', borderRadius: 1, bgcolor: 'background.paper' }}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
       {/* Summary header */}
-      <Box sx={{ p: 1, borderBottom: '1px solid #ddd', bgcolor: 'grey.50' }}>
+      <Box sx={{ p: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.default' }}>
         <Typography variant="subtitle2">
           Upload Status
         </Typography>
@@ -148,9 +157,11 @@ const UppyFileList = ({ uppy, uploadState }) => {
                 sx={{
                   px: 1,
                   py: 0.5,
-                  borderBottom: '1px solid #f0f0f0',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
                   '&:last-child': { borderBottom: 'none' },
-                  bgcolor: 'error.50'
+                  bgcolor: (theme) =>
+                    alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.15 : 0.08),
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
@@ -197,6 +208,8 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
   const notify = useNotify();
   const pondRef = useRef(null);
   const authProvider = useContext(AuthContext);
+  const dataProvider = useDataProvider();
+  const theme = useTheme();
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadState, setUploadState] = useState({
     totalFiles: 0,
@@ -205,89 +218,26 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
     failedFiles: 0,
     isUploading: false
   });
-  const [projectConfig, setProjectConfig] = useState<any>(null);
 
-  // Pull the project's enabled axes so the filename guidance matches what the
-  // project actually exposes — a crops-only project shouldn't see the full
-  // 6-part climate-style format.
-  useEffect(() => {
-    if (!projectSlug) return;
-    axios
-      .get(`/api/projects/config/${projectSlug}`)
-      .then((res) => setProjectConfig(res.data))
-      .catch((err) => console.error('Failed to fetch project config for upload hints:', err));
-  }, [projectSlug]);
+  // Project config drives both the filename hint AND the pre-flight check.
+  // `refetch` is called after a resolution run so newly-attached entities show up.
+  const { config: projectConfig, refetch: refetchProjectConfig } = useProjectConfig(projectSlug);
 
-  const exampleOr = (arr: any[] | undefined, fallback: string) =>
-    arr && arr.length > 0 ? arr[0].slug : fallback;
+  // Pre-flight state. Files the user drops/selects are held here until we know
+  // their slugs are all attached to the project. Files that resolve cleanly
+  // pass straight through to Uppy.
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; parsed: ParsedFilename }[]>([]);
+  const [preflightMissing, setPreflightMissing] = useState<MissingSlug[]>([]);
+  const [preflightInvalid, setPreflightInvalid] = useState<{ filename: string; error: string }[]>([]);
+  const [resolving, setResolving] = useState(false);
 
-  const { formatString, exampleString, supportsCropForm, supportsClimateForm } = React.useMemo(() => {
-    // Default: legacy full format (no project config available yet).
-    if (!projectConfig) {
-      return {
-        formatString:
-          '{crop}_{watermodel}_{climatemodel}_{scenario}_{variable}_{year}.tif',
-        exampleString: 'rice_pcr-globwb_miroc5_rcp60_rg_2080.tif',
-        supportsCropForm: true,
-        supportsClimateForm: true,
-      };
-    }
-    const cropVariables = (projectConfig.variables || []).filter((v: any) => v.is_crop_specific);
-    const generalVariables = (projectConfig.variables || []).filter((v: any) => !v.is_crop_specific);
-    const hasCrops = (projectConfig.crops || []).length > 0;
-    const hasWaterModels = (projectConfig.water_models || []).length > 0;
-    const hasClimateModels = (projectConfig.climate_models || []).length > 0;
-    const hasScenarios = (projectConfig.scenarios || []).length > 0;
-
-    const supportsCropForm = hasCrops && cropVariables.length > 0;
-    const supportsClimateForm = hasCrops && generalVariables.length > 0;
-
-    const cropForm = '{crop}_{crop_variable}.tif';
-    const cropExample = `${exampleOr(projectConfig.crops, 'crop')}_${exampleOr(cropVariables, 'variable')}.tif`;
-
-    const climateForm = [
-      '{crop}',
-      hasWaterModels ? '{water_model}' : 'null',
-      hasClimateModels ? '{climate_model}' : 'null',
-      hasScenarios ? '{scenario}' : 'null',
-      '{variable}',
-      '{year}',
-    ].join('_') + '.tif';
-    const climateExample = [
-      exampleOr(projectConfig.crops, 'crop'),
-      hasWaterModels ? exampleOr(projectConfig.water_models, 'wm') : 'null',
-      hasClimateModels ? exampleOr(projectConfig.climate_models, 'cm') : 'null',
-      hasScenarios ? exampleOr(projectConfig.scenarios, 'scn') : 'null',
-      exampleOr(generalVariables, 'variable'),
-      '2080',
-    ].join('_') + '.tif';
-
-    if (supportsCropForm && !supportsClimateForm) {
-      return { formatString: cropForm, exampleString: cropExample, supportsCropForm, supportsClimateForm };
-    }
-    if (!supportsCropForm && supportsClimateForm) {
-      return { formatString: climateForm, exampleString: climateExample, supportsCropForm, supportsClimateForm };
-    }
-    if (supportsCropForm && supportsClimateForm) {
-      return {
-        formatString: `${cropForm}  OR  ${climateForm}`,
-        exampleString: `${cropExample}  or  ${climateExample}`,
-        supportsCropForm,
-        supportsClimateForm,
-      };
-    }
-    // Project has nothing configured yet — keep a harmless placeholder.
-    return {
-      formatString: 'No upload format available — configure the project first.',
-      exampleString: '',
-      supportsCropForm: false,
-      supportsClimateForm: false,
-    };
-  }, [projectConfig]);
-
-  const instructionText = exampleString
-    ? `Format: ${formatString} (e.g., ${exampleString})`
-    : formatString;
+  // `hasCropSpecificVariables` drives whether the hint shows the 2-part form.
+  const hasCropSpecificVariables = (projectConfig?.variables ?? []).some(
+    (v) => v.is_crop_specific
+  );
+  const hasGeneralVariables = (projectConfig?.variables ?? []).some(
+    (v) => !v.is_crop_specific
+  );
 
   // Get the token using the auth provider
   const token = authProvider?.getToken() || "dev-token";
@@ -468,29 +418,134 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
     setIsDragOver(false);
   };
 
+  // Add a file to Uppy after pre-flight has approved it.
+  const pushToUppy = useCallback((file: File) => {
+    uppy.addFile({
+      name: file.name,
+      type: file.type,
+      data: file,
+      source: "Local",
+      isRemote: false,
+    });
+  }, [uppy]);
+
+  // Central intake: called from both drop and file-input handlers. Parses
+  // each filename, classifies slugs against the current project config, and
+  // routes files into Uppy (if ready) or into the resolution queue.
+  const intakeFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
+      if (!projectConfig) {
+        // Config not loaded yet — fall back to direct upload; backend will validate.
+        files.forEach(pushToUppy);
+        return;
+      }
+      const parsedFiles = files
+        .filter((f) => {
+          const name = f.name.toLowerCase();
+          if (name.endsWith(".tif") || name.endsWith(".tiff")) return true;
+          notify(`File ${f.name} is not a valid GeoTIFF file`, { type: "warning" });
+          return false;
+        })
+        .map((f) => ({ file: f, parsed: parseFilename(f.name) }));
+
+      const { invalid, ready, missing } = await classifyMissingSlugs(
+        parsedFiles.map((p) => ({ filename: p.file.name, parsed: p.parsed })),
+        projectConfig,
+        dataProvider as any,
+      );
+
+      // Files that parsed cleanly AND have all slugs in the project — upload now.
+      const readyNames = new Set(ready.map((r) => r.filename));
+      parsedFiles
+        .filter((p) => readyNames.has(p.file.name))
+        .forEach((p) => pushToUppy(p.file));
+
+      if (missing.length === 0 && invalid.length === 0) return;
+
+      // Stash the rest for resolution. Invalid files are reported but not stashed
+      // (they need a user rename before anything else can help).
+      const heldNames = new Set([
+        ...missing.flatMap((m) => m.affectedFiles),
+      ]);
+      setPendingFiles((prev) => [
+        ...prev,
+        ...parsedFiles.filter((p) => heldNames.has(p.file.name)),
+      ]);
+      setPreflightMissing((prev) => mergeMissing(prev, missing));
+      setPreflightInvalid((prev) => [...prev, ...invalid]);
+    },
+    [dataProvider, notify, projectConfig, pushToUppy],
+  );
+
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
+    void intakeFiles(Array.from(e.dataTransfer.files));
+  };
 
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach((file) => {
-      if (
-        file.name.toLowerCase().endsWith(".tif") ||
-        file.name.toLowerCase().endsWith(".tiff")
-      ) {
-        uppy.addFile({
-          name: file.name,
-          type: file.type,
-          data: file,
-          source: "Local",
-          isRemote: false,
-        });
-      } else {
-        notify(`File ${file.name} is not a valid GeoTIFF file`, {
-          type: "warning",
-        });
+  // Handler for the resolution panel's "Resolve all & upload" button.
+  const handleResolve = useCallback(
+    async (choices: ResolutionChoice[]) => {
+      if (!projectId || !projectSlug) return;
+      setResolving(true);
+      try {
+        await executeResolution(
+          choices,
+          projectId,
+          projectSlug,
+          dataProvider as any,
+        );
+        // Reload config so the newly-attached UUIDs show up in the junctions.
+        await refetchProjectConfig();
+        // Re-classify the held files against the refreshed config and push the
+        // ones that are now ready to Uppy. The config refetch may race the
+        // setState, so we re-parse here using the freshly-fetched config.
+        const fresh = await dataProvider
+          .getProjectConfig(projectSlug)
+          .then((r: any) => r.data as ProjectConfig)
+          .catch(() => projectConfig);
+        const { ready, missing, invalid } = await classifyMissingSlugs(
+          pendingFiles.map((p) => ({ filename: p.file.name, parsed: p.parsed })),
+          fresh ?? projectConfig!,
+          dataProvider as any,
+        );
+        const readyNames = new Set(ready.map((r) => r.filename));
+        pendingFiles
+          .filter((p) => readyNames.has(p.file.name))
+          .forEach((p) => pushToUppy(p.file));
+        // Keep any files whose slugs are still missing (shouldn't happen after a
+        // successful resolve, but don't silently drop them).
+        const stillHeld = new Set(missing.flatMap((m) => m.affectedFiles));
+        setPendingFiles((prev) => prev.filter((p) => stillHeld.has(p.file.name)));
+        setPreflightMissing(missing);
+        setPreflightInvalid(invalid);
+      } catch (err) {
+        notify(
+          `Resolution failed: ${err instanceof Error ? err.message : String(err)}`,
+          { type: "error" },
+        );
+        throw err;
+      } finally {
+        setResolving(false);
       }
-    });
+    },
+    [
+      dataProvider,
+      notify,
+      pendingFiles,
+      projectConfig,
+      projectId,
+      projectSlug,
+      pushToUppy,
+      refetchProjectConfig,
+    ],
+  );
+
+  const handleCancelResolve = () => {
+    setPendingFiles([]);
+    setPreflightMissing([]);
+    setPreflightInvalid([]);
   };
 
   return (
@@ -498,11 +553,14 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
       {/* Upload Area */}
       <Box
         sx={{
-          border: `2px dashed ${isDragOver ? "primary.main" : "#ccc"}`,
+          border: "2px dashed",
+          borderColor: isDragOver ? "primary.main" : "divider",
           borderRadius: 2,
           p: 2,
           textAlign: "center",
-          backgroundColor: isDragOver ? "primary.50" : "#fafafa",
+          backgroundColor: isDragOver
+            ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.15 : 0.08)
+            : "background.default",
           transition: "all 0.2s ease-in-out",
           cursor: "pointer",
           minHeight: 100,
@@ -519,16 +577,8 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
           accept=".tif,.tiff"
           multiple
           onChange={(e) => {
-            const files = Array.from(e.target.files);
-            files.forEach((file) => {
-              uppy.addFile({
-                name: file.name,
-                type: file.type,
-                data: file,
-                source: "Local",
-                isRemote: false,
-              });
-            });
+            const files = Array.from(e.target.files ?? []);
+            void intakeFiles(files);
             e.target.value = ""; // Reset input
           }}
           style={{ display: "none" }}
@@ -548,7 +598,7 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "white",
+                color: "primary.contrastText",
                 transition: "transform 0.2s ease-in-out",
                 "&:hover": {
                   transform: "scale(1.1)",
@@ -567,62 +617,27 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
         </label>
       </Box>
 
-      {/* Instructions below */}
-      <Box sx={{ mt: 2, textAlign: "center" }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ lineHeight: 1.3 }}
-          >
-            <strong>Filename format:</strong> {instructionText}
-          </Typography>
-          <Tooltip
-            title={
-              <Box sx={{ p: 1 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                  Filename Examples for this project:
-                </Typography>
-                {supportsCropForm && (
-                  <>
-                    <Typography variant="body2" sx={{ mb: 1.5 }}>
-                      <strong>Crop-Specific Layers (2 parts):</strong>
-                    </Typography>
-                    <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                      • {`{crop}_{crop_variable}.tif`}
-                    </Typography>
-                  </>
-                )}
-                {supportsClimateForm && (
-                  <>
-                    <Typography variant="body2" sx={{ mt: supportsCropForm ? 1.5 : 0, mb: 1 }}>
-                      <strong>General/Climate Layers (6-7 parts):</strong>
-                    </Typography>
-                    <Typography variant="body2" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
-                      • {formatString.includes(' OR ') ? formatString.split(' OR ')[1] : formatString}
-                    </Typography>
-                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                      Slots shown as <code>null</code> above are fixed — this project does not use that axis. The remaining bracketed slots are filled from its enabled selections.
-                    </Typography>
-                  </>
-                )}
-                {!supportsCropForm && !supportsClimateForm && (
-                  <Typography variant="body2">
-                    This project has no crops + variables enabled yet. Configure the project first.
-                  </Typography>
-                )}
-              </Box>
-            }
-            arrow
-            placement="right"
-          >
-            <InfoIcon sx={{ fontSize: 18, color: 'info.main', cursor: 'help' }} />
-          </Tooltip>
-        </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-          Existing files with the same name will be replaced
-        </Typography>
-      </Box>
+      {/* Per-project filename hint. The canonical 6-part form is shown in full
+          with slug chips so the user can assemble a filename by inspection.
+          Axes the project doesn't use render as literal `null` / `nan`. */}
+      <FilenameHint
+        config={projectConfig}
+        hasCropSpecificVariables={hasCropSpecificVariables}
+        hasGeneralVariables={hasGeneralVariables}
+      />
+
+      {/* Pre-flight resolution panel. Only renders when the drop had one or more
+          unresolved slugs. Clean files upload immediately; these are blocked
+          until the user creates/attaches the missing entries. */}
+      {(preflightMissing.length > 0 || preflightInvalid.length > 0) && (
+        <ResolutionPanel
+          missing={preflightMissing}
+          invalid={preflightInvalid}
+          onResolve={handleResolve}
+          onCancel={handleCancelResolve}
+          resolving={resolving}
+        />
+      )}
 
       {/* Action button - positioned between drop area and file list */}
       {actionButton}
@@ -634,3 +649,225 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
     </Box>
   );
 };
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Merge a fresh batch of missing slugs into existing state, deduping by
+ *  (field, slug) and unioning the affectedFiles lists. */
+function mergeMissing(prev: MissingSlug[], next: MissingSlug[]): MissingSlug[] {
+  const byKey = new Map<string, MissingSlug>();
+  for (const m of [...prev, ...next]) {
+    const key = `${m.field}:${m.slug}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      const merged = new Set([...existing.affectedFiles, ...m.affectedFiles]);
+      byKey.set(key, { ...existing, affectedFiles: [...merged] });
+    } else {
+      byKey.set(key, m);
+    }
+  }
+  return [...byKey.values()];
+}
+
+interface FilenameHintProps {
+  config: ProjectConfig | null;
+  hasCropSpecificVariables: boolean;
+  hasGeneralVariables: boolean;
+}
+
+/**
+ * Renders the filename format for the current project as a chip breakdown.
+ * The canonical climate form (6 parts, stable position order) is always shown.
+ * For axes the project doesn't use, we display the literal `null` sentinel so
+ * scripts renaming files know exactly what to write regardless of project.
+ */
+function FilenameHint({
+  config,
+  hasCropSpecificVariables,
+  hasGeneralVariables,
+}: FilenameHintProps) {
+  if (!config) {
+    return (
+      <Box sx={{ mt: 2, textAlign: "center" }}>
+        <Typography variant="caption" color="text.secondary">
+          Loading project configuration…
+        </Typography>
+      </Box>
+    );
+  }
+
+  const firstSlug = (arr: { slug: string }[], fallback = "null") =>
+    arr[0]?.slug ?? fallback;
+
+  const hasWaterModels = config.water_models.length > 0;
+  const hasClimateModels = config.climate_models.length > 0;
+  const hasScenarios = config.scenarios.length > 0;
+  const generalVars = config.variables.filter((v) => !v.is_crop_specific);
+  const cropVars = config.variables.filter((v) => v.is_crop_specific);
+
+  const climateExample = [
+    firstSlug(config.crops, "crop"),
+    hasWaterModels ? firstSlug(config.water_models) : "null",
+    hasClimateModels ? firstSlug(config.climate_models) : "null",
+    hasScenarios ? firstSlug(config.scenarios) : "null",
+    hasGeneralVariables ? firstSlug(generalVars) : "null",
+    "2080",
+  ].join("_") + ".tif";
+
+  const cropExample =
+    hasCropSpecificVariables && cropVars.length > 0 && config.crops.length > 0
+      ? `${firstSlug(config.crops)}_${firstSlug(cropVars)}.tif`
+      : null;
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          Filename format
+        </Typography>
+        <Tooltip
+          title={
+            <Box sx={{ p: 1, maxWidth: 320 }}>
+              <Typography variant="caption" component="div" sx={{ mb: 1 }}>
+                The positional order is fixed regardless of which axes this
+                project uses — that way a rename script doesn't depend on the
+                project config. Slots for axes this project doesn't use should
+                be written as <code>null</code> or <code>nan</code>
+                (case-insensitive).
+              </Typography>
+              {cropExample && (
+                <Typography variant="caption" component="div">
+                  For crop-specific variables, the 2-part form
+                  <code>{" {crop}_{crop_variable}.tif"}</code> is also accepted.
+                </Typography>
+              )}
+            </Box>
+          }
+          arrow
+          placement="right"
+        >
+          <InfoIcon sx={{ fontSize: 16, color: "info.main", cursor: "help" }} />
+        </Tooltip>
+      </Stack>
+
+      <Box sx={{ fontFamily: "monospace", fontSize: "0.85rem", mb: 1.5 }}>
+        <Typography component="span" color="text.secondary">
+          {"{crop}"}
+        </Typography>
+        <Sep />
+        <Slot used={hasWaterModels} label="water_model" />
+        <Sep />
+        <Slot used={hasClimateModels} label="climate_model" />
+        <Sep />
+        <Slot used={hasScenarios} label="scenario" />
+        <Sep />
+        <Slot used={hasGeneralVariables} label="variable" />
+        <Sep />
+        <Typography component="span" color="text.secondary">
+          {"{year}"}
+        </Typography>
+        <Typography component="span" color="text.secondary">
+          .tif
+        </Typography>
+      </Box>
+
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+        Example: <code>{climateExample}</code>
+      </Typography>
+
+      <Stack spacing={0.75}>
+        {config.crops.length > 0 && (
+          <AxisChips label="crop" items={config.crops} />
+        )}
+        {hasWaterModels && (
+          <AxisChips label="water_model" items={config.water_models} />
+        )}
+        {hasClimateModels && (
+          <AxisChips label="climate_model" items={config.climate_models} />
+        )}
+        {hasScenarios && (
+          <AxisChips label="scenario" items={config.scenarios} />
+        )}
+        {hasGeneralVariables && (
+          <AxisChips label="variable" items={generalVars} />
+        )}
+      </Stack>
+
+      {cropExample && (
+        <Box sx={{ mt: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            Crop-specific short form:{" "}
+            <code>{"{crop}_{crop_variable}.tif"}</code>
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            Example: <code>{cropExample}</code>
+          </Typography>
+        </Box>
+      )}
+
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block", mt: 1.5, fontStyle: "italic" }}
+      >
+        Existing files with the same name will be replaced.
+      </Typography>
+    </Box>
+  );
+}
+
+const Sep = () => (
+  <Typography component="span" color="text.disabled" sx={{ mx: 0.25 }}>
+    _
+  </Typography>
+);
+
+function Slot({ used, label }: { used: boolean; label: string }) {
+  if (used) {
+    return (
+      <Typography component="span" color="text.secondary">
+        {`{${label}}`}
+      </Typography>
+    );
+  }
+  return (
+    <Typography component="span" sx={{ color: "text.disabled", fontStyle: "italic" }}>
+      null
+    </Typography>
+  );
+}
+
+interface AxisChipsProps {
+  label: string;
+  items: { slug: string; name: string }[];
+}
+
+function AxisChips({ label, items }: AxisChipsProps) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ minWidth: 110, fontFamily: "monospace" }}
+      >
+        {label}:
+      </Typography>
+      {items.slice(0, 20).map((item) => (
+        <Chip
+          key={item.slug}
+          label={item.slug}
+          size="small"
+          variant="outlined"
+          sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}
+        />
+      ))}
+      {items.length > 20 && (
+        <Typography variant="caption" color="text.secondary">
+          +{items.length - 20} more
+        </Typography>
+      )}
+    </Stack>
+  );
+}

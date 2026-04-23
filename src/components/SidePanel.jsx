@@ -146,11 +146,11 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
     }
   }, [isFirstTimeInfo, activePanel]);
 
-  const showArrows = !backdrop && (
-    nextUnselected !== null && (nextUnselected !== 'variables'
-      || !(selectedCropVariable && selectedCrop)
-      || (selectedVariable && (!selectedGlobalWaterModel || !selectedClimateModel || !selectedScenario)))
-  );
+  // getNextUnselected() already skips axes the project doesn't have, so the
+  // arrow simply tracks its result. (The previous override also checked water
+  // model / climate model / scenario unconditionally, which flashed the arrow
+  // back for projects that don't even render those buttons.)
+  const showArrows = !backdrop && nextUnselected !== null;
   const showTwoArrows = (nextUnselected === 'cropSpecific' && !selectedVariable);
 
   return (

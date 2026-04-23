@@ -29,12 +29,15 @@ import { createStyleGradient } from '../../utils/styleUtils';
 const StylesContext = createContext<{ styles: any[], stylesMap: Map<string, any> }>({ styles: [], stylesMap: new Map() });
 
 // Context to share preloaded reference-table data (crops, water models, etc.)
+// `projects` is included so map-deep-link builders can resolve a layer's
+// project_id → slug for the new /projects/<slug>?... URL shape.
 type RefMaps = {
     crops: Map<string, any>;
     waterModels: Map<string, any>;
     climateModels: Map<string, any>;
     scenarios: Map<string, any>;
     variables: Map<string, any>;
+    projects: Map<string, any>;
 };
 const RefContext = createContext<RefMaps>({
     crops: new Map(),
@@ -42,6 +45,7 @@ const RefContext = createContext<RefMaps>({
     climateModels: new Map(),
     scenarios: new Map(),
     variables: new Map(),
+    projects: new Map(),
 });
 
 import { Card, Typography, Box, Chip, Stack, Divider, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Button as MuiButton } from '@mui/material';
@@ -1148,6 +1152,7 @@ export const LayerList = () => {
     const { data: climateModelsData } = useGetList('climate-models', refQuery);
     const { data: scenariosData } = useGetList('scenarios', refQuery);
     const { data: variablesData } = useGetList('variables', refQuery);
+    const { data: projectsData } = useGetList('projects', refQuery);
 
     // Create a Map for O(1) lookups by style ID
     const stylesMap = new Map((stylesData || []).map(style => [style.id, style]));
@@ -1159,6 +1164,7 @@ export const LayerList = () => {
         climateModels: new Map((climateModelsData || []).map((r: any) => [r.id, r])),
         scenarios: new Map((scenariosData || []).map((r: any) => [r.id, r])),
         variables: new Map((variablesData || []).map((r: any) => [r.id, r])),
+        projects: new Map((projectsData || []).map((r: any) => [r.id, r])),
     };
 
     const PostPagination = props => (
@@ -1372,7 +1378,13 @@ const ViewsCell = ({ record }: { record: any }) => {
         if (variable?.slug) params.set('variable', variable.slug);
         if (record.year) params.set('year', record.year.toString());
     }
-    const mapUrl = `/?${params.toString()}`;
+    // Public map lives at /projects/<slug> since multi-project landed; only fall
+    // back to `/` for layers that aren't bound to a project (legacy data).
+    const projectSlug = record.project_id ? refs.projects.get(record.project_id)?.slug : undefined;
+    const qs = params.toString();
+    const mapUrl = projectSlug
+        ? `/projects/${projectSlug}${qs ? `?${qs}` : ''}`
+        : `/${qs ? `?${qs}` : ''}`;
 
     return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

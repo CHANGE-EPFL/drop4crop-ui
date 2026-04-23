@@ -7,13 +7,43 @@ import {
     NumberField,
     TopToolbar,
     EditButton,
+    useGetList,
     useRecordContext,
 } from 'react-admin';
-import { Box, Typography, Button, Link as MuiLink } from '@mui/material';
+import { Box, Chip, Typography, Button, Link as MuiLink } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import LayersIcon from '@mui/icons-material/Layers';
 import ProjectCardPreview from './ProjectCardPreview';
 import ProjectConfigEditor from './ProjectConfigEditor';
 import UploadDialog from '../layers/uploader/UploadDialog';
+
+/** Shows how many layers are currently associated with this project.
+ *  Uses a minimum-cost list query (perPage: 1) and reads the `total` meta. */
+const ProjectLayerCount = () => {
+    const record = useRecordContext();
+    const { total, isLoading } = useGetList(
+        'layers',
+        {
+            pagination: { page: 1, perPage: 1 },
+            filter: record?.id ? { project_id: record.id } : undefined,
+        },
+        { enabled: !!record?.id },
+    );
+    if (!record?.id) return null;
+    return (
+        <Chip
+            icon={<LayersIcon sx={{ fontSize: 16 }} />}
+            label={
+                isLoading
+                    ? 'Layers: …'
+                    : `${(total ?? 0).toLocaleString()} layer${total === 1 ? '' : 's'}`
+            }
+            size="small"
+            variant="outlined"
+            color="primary"
+        />
+    );
+};
 
 const CardPreviewField = () => {
     const record = useRecordContext();
@@ -74,7 +104,8 @@ const ProjectUploadAction = () => {
 };
 
 const ShowActions = () => (
-    <TopToolbar sx={{ gap: 1 }}>
+    <TopToolbar sx={{ gap: 1, alignItems: 'center' }}>
+        <ProjectLayerCount />
         <ProjectUploadAction />
         <EditButton />
     </TopToolbar>

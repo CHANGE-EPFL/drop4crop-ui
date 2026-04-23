@@ -1,25 +1,6 @@
-#progressbar,
-#statusbar,
-#dragdrop {
-    margin: 20px 0;
-}
-
-#progressbar .uppy-ProgressBar-inner {
-    background-color: #4caf50;
-    /* Custom color for progress bar */
-}
-
-#dragdrop {
-    border: 2px dashed #4caf50;
-    padding: 20px;
-    background-color: #f9f9f9;
-    text-align: center;
-}
-
-#statusbar {
-    margin-top: 20px;
-    text-align: center;
-}
+/* Legacy selectors (#progressbar, #statusbar, #dragdrop) targeted a DOM
+   that no longer exists — the uploader renders through MUI components now.
+   Only keep the Uppy library class overrides that can still match. */
 
 .uppy-DragDrop-container {
     display: flex;
