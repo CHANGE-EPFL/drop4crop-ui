@@ -49,9 +49,13 @@ export const LayerManagerProvider = ({ children }) => {
         cropVariables,
     } = useContext(AppContext);
 
+    const historicalYear = project?.config?.project?.historical_year;
+
     const getLayer = async (props) => {
         try {
-            const scenario = props.year === 2000 ? "historical" : props.scenario;
+            const scenario = (historicalYear != null && props.year === historicalYear)
+                ? "historical"
+                : props.scenario;
 
             // Build STAC search parameters. Only attach axis filters the project
             // actually uses — sending water_model=undefined/null trips STAC into

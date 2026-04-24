@@ -1,7 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import Slider from '@mui/material/Slider';
 import './BottomBar.css';
 import { AppContext } from '../contexts/AppContext';
+import { useProject } from '../contexts/ProjectContext';
 
 
 const BottomBar = () => {
@@ -10,21 +11,38 @@ const BottomBar = () => {
     selectedTime,
     availableYears,
   } = useContext(AppContext);
+  const { config } = useProject() || {};
+  const yearAxis = config?.project?.year_axis;
+
+  const { min, max, step, marks } = useMemo(() => {
+    if (yearAxis?.mode === 'list' && Array.isArray(yearAxis.values)) {
+      const sorted = [...yearAxis.values].sort((a, b) => a - b);
+      return {
+        min: sorted[0],
+        max: sorted[sorted.length - 1],
+        step: null,
+        marks: sorted.map(v => ({ value: v, label: String(v) })),
+      };
+    }
+    const lo = yearAxis?.min ?? availableYears[0] ?? 2000;
+    const hi = yearAxis?.max ?? availableYears[availableYears.length - 1] ?? 2090;
+    const st = yearAxis?.step ?? 10;
+    const m = [];
+    for (let v = lo; v <= hi; v += st) m.push({ value: v, label: String(v) });
+    return { min: lo, max: hi, step: st, marks: m };
+  }, [yearAxis, availableYears]);
+
   const initialTime = parseInt(selectedTime, 10);
   const [sliderValue, setSliderValue] = useState(initialTime);
-
-  const onTimeChange = (time) => {
-    setSelectedTime(time.target.value);
-  };
 
   const handleSliderChange = (event, value) => {
     if (availableYears.includes(value)) {
       setSliderValue(value);
-      onTimeChange(event, value);
+      setSelectedTime(value);
     }
   };
+
   useEffect(() => {
-    // When availableYears changes, update sliderValue if it's not in the available years
     if (availableYears.length > 0 && !availableYears.includes(sliderValue)) {
       const firstAvailableYear = availableYears[0];
       setSliderValue(firstAvailableYear);
@@ -33,31 +51,17 @@ const BottomBar = () => {
   }, [availableYears, sliderValue, setSelectedTime]);
 
   useEffect(() => {
-    // Sync sliderValue with selectedTime when selectedTime changes from outside
     if (selectedTime !== sliderValue && availableYears.includes(selectedTime)) {
       setSliderValue(selectedTime);
     }
   }, [selectedTime, sliderValue, availableYears]);
 
-  const marks = [
-    { value: 2000, label: '2000' },
-    { value: 2010, label: '2010' },
-    { value: 2020, label: '2020' },
-    { value: 2030, label: '2030' },
-    { value: 2040, label: '2040' },
-    { value: 2050, label: '2050' },
-    { value: 2060, label: '2060' },
-    { value: 2070, label: '2070' },
-    { value: 2080, label: '2080' },
-    { value: 2090, label: '2090' },
-  ];
-
   return (
     <div style={bottomBarStyle}>
       <Slider
-        min={2000}
-        max={2090}
-        step={10}
+        min={min}
+        max={max}
+        step={step}
         marks={marks}
         value={sliderValue}
         onChange={handleSliderChange}

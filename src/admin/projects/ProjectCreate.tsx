@@ -176,6 +176,11 @@ const ProjectCreate = () => {
                         <NumberInput source="year_axis.max" label="Max" />
                         <NumberInput source="year_axis.step" label="Step" />
                     </Box>
+                    <NumberInput
+                        source="historical_year"
+                        label="Historical year"
+                        helperText='When set, this year uses the "historical" scenario instead of the selected one'
+                    />
                 </Box>
                 <ProjectConfigCreateSection ref={configRef} />
                 <TabConfigSection />

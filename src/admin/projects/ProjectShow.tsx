@@ -283,6 +283,15 @@ const ProjectShowContent = () => {
                                 return `${ya.min} – ${ya.max} (step ${ya.step})`;
                             }}
                         />
+                        <FunctionField
+                            source="historical_year"
+                            label="Historical Year"
+                            render={(record: any) =>
+                                record?.historical_year != null
+                                    ? `${record.historical_year} → "historical" scenario`
+                                    : 'None'
+                            }
+                        />
                     </SimpleShowLayout>
                 </Box>
                 <Box sx={{ width: 340, flexShrink: 0 }}>

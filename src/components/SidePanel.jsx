@@ -71,6 +71,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
   const getNextUnselected = () => {
     if (hasCrops && !selectedCrop) return 'crops';
     if (hasCropVariables && !selectedCropVariable && !selectedVariable) return 'cropSpecific';
+    if (selectedCropVariable) return null;
     if (hasVariables && !selectedVariable) return 'variables';
     if (hasGlobalWaterModels && !selectedGlobalWaterModel) return 'globalWaterModels';
     if (hasClimateModels && !selectedClimateModel) return 'climateModels';
@@ -375,7 +376,13 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
         <InfoPanel
           onClick={isFirstTimeInfo ? handleInfoPanelClick : undefined}
           onClose={handleInfoClose}
-          hasTimeline={!!(selectedCrop && selectedGlobalWaterModel && selectedClimateModel && selectedScenario)}
+          hasTimeline={!!(
+          (!hasCrops || selectedCrop) &&
+          (!hasGlobalWaterModels || selectedGlobalWaterModel) &&
+          (!hasClimateModels || selectedClimateModel) &&
+          (!hasScenarios || selectedScenario) &&
+          (selectedVariable || selectedCropVariable)
+        )}
         />
       )}
     </div>

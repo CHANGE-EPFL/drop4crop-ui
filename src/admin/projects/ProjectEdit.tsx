@@ -77,6 +77,11 @@ const YearAxisSection = () => (
             <NumberInput source="year_axis.max" label="Max" helperText="Last year on the slider" />
             <NumberInput source="year_axis.step" label="Step" helperText="Increment between ticks" />
         </Box>
+        <NumberInput
+            source="historical_year"
+            label="Historical year"
+            helperText='When set, this year uses the "historical" scenario instead of the selected one'
+        />
     </Box>
 );
 
