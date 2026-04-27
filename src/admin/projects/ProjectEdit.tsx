@@ -8,6 +8,7 @@ import {
     AutocompleteInput,
     required,
 } from 'react-admin';
+import { useWatch } from 'react-hook-form';
 import { Box, Divider, Paper, Tooltip, Typography } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -104,6 +105,25 @@ const cleanTabConfig = (tc: any): any => {
     return Object.keys(result).length > 0 ? result : null;
 };
 
+const CardLayerInput = () => {
+    const projectId = useWatch({ name: 'id' });
+    return (
+        <ReferenceInput
+            source="card_layer_id"
+            reference="layers"
+            perPage={500}
+            filter={projectId ? { project_id: projectId } : {}}
+        >
+            <AutocompleteInput
+                optionText="layer_name"
+                label="Card preview layer"
+                helperText="Layer rendered on the splash card map (optional)"
+                fullWidth
+            />
+        </ReferenceInput>
+    );
+};
+
 const transform = (data: any) => {
     const ya = data.year_axis;
     const yearAxis = (!ya || (ya.min == null && ya.max == null && ya.step == null))
@@ -142,14 +162,7 @@ const ProjectEdit = () => {
                     </Box>
                 </Box>
                 <Box sx={{ maxWidth: 400, mb: 2 }}>
-                    <ReferenceInput source="card_layer_id" reference="layers" perPage={500}>
-                        <AutocompleteInput
-                            optionText="layer_name"
-                            label="Card preview layer"
-                            helperText="Layer rendered on the splash card map (optional)"
-                            fullWidth
-                        />
-                    </ReferenceInput>
+                    <CardLayerInput />
                     <StylePaletteInput
                         source="card_style_id"
                         helperText="Overrides the layer's default style on the splash card (optional)"

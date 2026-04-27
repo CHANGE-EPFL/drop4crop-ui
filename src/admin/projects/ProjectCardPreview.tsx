@@ -1,4 +1,5 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
+import { useGetOne } from 'react-admin';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock } from '@fortawesome/free-solid-svg-icons';
 import 'leaflet/dist/leaflet.css';
@@ -9,6 +10,18 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
     const lat = project.latitude || 20.0;
     const lon = project.longitude || 0.0;
     const zoom = project.zoom_level || 2;
+
+    const { data: layer } = useGetOne(
+        'layers',
+        { id: project.card_layer_id },
+        { enabled: Boolean(project.card_layer_id) },
+    );
+
+    const overlayUrl = layer?.layer_name
+        ? `/api/layers/xyz/{z}/{x}/{y}?layer=${encodeURIComponent(layer.layer_name)}${
+              project.card_style_id ? `&style_id=${project.card_style_id}` : ''
+          }`
+        : null;
 
     return (
         <div
@@ -60,6 +73,14 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
                     keyboard={false}
                 >
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
+                    {overlayUrl && (
+                        <TileLayer
+                            key={`${layer?.layer_name}-${project.card_style_id ?? 'default'}`}
+                            url={overlayUrl}
+                            opacity={0.85}
+                            noWrap
+                        />
+                    )}
                 </MapContainer>
                 {!project.enabled && (
                     <span
