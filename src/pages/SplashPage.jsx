@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+
+// Lazy-loaded so the ~2MB Cesium bundle only downloads when the easter egg
+// is triggered. Normal splash visitors stay on the slim MapLibre globe.
+const UniverseBackground = React.lazy(() => import('./UniverseBackground'));
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock } from '@fortawesome/free-solid-svg-icons';
@@ -77,11 +81,32 @@ const SplashBackground = () => {
   return <div className="splash-background" aria-hidden="true" ref={containerRef} />;
 };
 
+// Easter egg: 5 clicks on the "4" glyph in the brand within 2 s toggles a
+// real-physics Cesium scene (Earth + Moon + Sun + stars). The glyph keeps
+// the default text cursor and no hover style — invisible to anyone who
+// doesn't already know.
+const EGG_CLICK_THRESHOLD = 5;
+const EGG_WINDOW_MS = 2000;
+
 const SplashPage = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [universeMode, setUniverseMode] = useState(false);
+  const eggClicksRef = useRef([]);
+
+  const handleEggClick = () => {
+    const now = Date.now();
+    eggClicksRef.current = [
+      ...eggClicksRef.current.filter((t) => now - t < EGG_WINDOW_MS),
+      now,
+    ];
+    if (eggClicksRef.current.length >= EGG_CLICK_THRESHOLD) {
+      eggClicksRef.current = [];
+      setUniverseMode((m) => !m);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -223,10 +248,18 @@ const SplashPage = () => {
 
   return (
     <>
-      <SplashBackground />
+      {universeMode ? (
+        <Suspense fallback={<div className="splash-background" aria-hidden="true" />}>
+          <UniverseBackground />
+        </Suspense>
+      ) : (
+        <SplashBackground />
+      )}
       <div className="splash-page">
         <header className="splash-header">
-          <span className="splash-header-brand">drop4crop</span>
+          <span className="splash-header-brand">
+            drop<span className="splash-egg" onClick={handleEggClick}>4</span>crop
+          </span>
           <h1 className="splash-header-title">
             <span>CROPLAND</span>
             <span>SYSTEMS</span>

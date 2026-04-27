@@ -52,6 +52,16 @@
   line-height: 1.2;
 }
 
+/* Easter-egg trigger: must be visually identical to the rest of the brand.
+   No cursor change, no underline, no hover, no color shift — anyone who
+   doesn't already know it's there will never notice. */
+.splash-egg {
+  font: inherit;
+  color: inherit;
+  cursor: inherit;
+  user-select: none;
+}
+
 .splash-header-title {
   margin: 0 0 18px;
   font-size: clamp(2.4rem, 5vw, 4rem);
