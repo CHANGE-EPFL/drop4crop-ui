@@ -182,7 +182,6 @@ const App = () => {
   };
   return (
     <Admin
-      basename="/admin"
       authProvider={authProvider.current}
       dataProvider={dataProvider.current}
       title="drop4crop: Admin"
