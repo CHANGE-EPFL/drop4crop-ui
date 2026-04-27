@@ -62,7 +62,7 @@ const SplashBackground = () => {
 
     const rotate = () => {
       const c = map.getCenter();
-      map.setCenter([c.lng + ROTATION_SPEED, c.lat]);
+      map.setCenter([c.lng - ROTATION_SPEED, c.lat]);
       frameRef.current = requestAnimationFrame(rotate);
     };
     map.on('load', rotate);
