@@ -29,6 +29,7 @@
     "keycloak-js": "26.2.1",
     "leaflet": "1.9.4",
     "leaflet-draw": "1.0.4",
+    "maplibre-gl": "^5.24.0",
     "plotly.js": "3.1.2",
     "ra-data-simple-rest": "5.14.2",
     "ra-keycloak": "2.0.0",

@@ -4,7 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock } from '@fortawesome/free-solid-svg-icons';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import axios from 'axios';
+import maplibregl from 'maplibre-gl';
 import 'leaflet/dist/leaflet.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import './SplashPage.css';
 
 // Grace period before switching from skeleton to error UI. Short blips are
@@ -12,50 +14,67 @@ import './SplashPage.css';
 const ERROR_GRACE_MS = 10_000;
 const SKELETON_COUNT = 3;
 
-// Renders a faded dark CARTO basemap as a frozen backdrop behind the splash
-// cards. Zoom is computed from the container width (256px per world tile).
+const GLOBE_STYLE = {
+  version: 8,
+  projection: { type: 'globe' },
+  sources: {
+    'carto-dark': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+        'https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+        'https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+        'https://d.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+      ],
+      tileSize: 256,
+    },
+  },
+  layers: [
+    { id: 'background', type: 'background', paint: { 'background-color': '#131516' } },
+    { id: 'carto-dark-layer', type: 'raster', source: 'carto-dark' },
+  ],
+};
+
+const ROTATION_SPEED = 0.05;
+
 const SplashBackground = () => {
   const containerRef = useRef(null);
-  const [computedZoom, setComputedZoom] = useState(null);
+  const mapRef = useRef(null);
+  const frameRef = useRef(null);
 
   useEffect(() => {
-    const update = () => {
-      if (!containerRef.current) return;
-      const width = containerRef.current.clientWidth;
-      if (width > 0) setComputedZoom(Math.ceil(Math.log2(width / 256)));
+    if (!containerRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: GLOBE_STYLE,
+      center: [0, 20],
+      zoom: 3.14,
+      interactive: false,
+      attributionControl: false,
+      renderWorldCopies: false,
+      maxTileCacheSize: 32,
+      pixelRatio: 1,
+      fadeDuration: 0,
+      maxZoom: 4,
+    });
+    mapRef.current = map;
+
+    const rotate = () => {
+      const c = map.getCenter();
+      map.setCenter([c.lng + ROTATION_SPEED, c.lat]);
+      frameRef.current = requestAnimationFrame(rotate);
     };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    map.on('load', rotate);
+
+    return () => {
+      cancelAnimationFrame(frameRef.current);
+      map.remove();
+      mapRef.current = null;
+    };
   }, []);
 
-  return (
-    <div className="splash-background" aria-hidden="true" ref={containerRef}>
-      {computedZoom !== null && (
-        <MapContainer
-          center={[0, 0]}
-          zoom={computedZoom}
-          style={{ width: '100%', height: '100%' }}
-          zoomControl={false}
-          attributionControl={false}
-          dragging={false}
-          scrollWheelZoom={false}
-          doubleClickZoom={false}
-          touchZoom={false}
-          keyboard={false}
-          boxZoom={false}
-          maxBounds={[[-85, -180], [85, 180]]}
-          worldCopyJump={false}
-        >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-            noWrap
-          />
-        </MapContainer>
-      )}
-    </div>
-  );
+  return <div className="splash-background" aria-hidden="true" ref={containerRef} />;
 };
 
 const SplashPage = () => {
