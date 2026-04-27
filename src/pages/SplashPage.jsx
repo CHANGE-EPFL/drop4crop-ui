@@ -31,7 +31,7 @@ const GLOBE_STYLE = {
   },
   layers: [
     { id: 'background', type: 'background', paint: { 'background-color': '#131516' } },
-    { id: 'carto-dark-layer', type: 'raster', source: 'carto-dark' },
+    { id: 'carto-dark-layer', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.6 } },
   ],
 };
 
