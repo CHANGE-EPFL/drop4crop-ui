@@ -38,7 +38,7 @@ const InfoPanel = ({ onClick, onClose, hasTimeline }) => {
             <CloseIcon
               sx={{
                 fontSize: '1.2rem',
-                color: '#d1a766',
+                color: '#acd8d8',
                 cursor: 'pointer',
                 '&:hover': {
                   color: '#ffffff'
@@ -96,7 +96,7 @@ const InfoPanel = ({ onClick, onClose, hasTimeline }) => {
       <div
         style={{
           marginTop: "20px",
-          borderTop: "1px solid #d1a766",
+          borderTop: "1px solid #acd8d8",
           paddingTop: "15px",
         }}
       >
@@ -149,11 +149,11 @@ const CitationAction = ({ label, tooltip, href, onClick, disabled }) => {
     padding: "3px 10px",
     fontSize: "11px",
     borderRadius: "12px",
-    border: "1px solid #d1a766",
+    border: "1px solid #acd8d8",
     textDecoration: "none",
     cursor: isDisabled ? "not-allowed" : "pointer",
-    color: isDisabled ? "#666" : "#d1a766",
-    borderColor: isDisabled ? "#444" : "#d1a766",
+    color: isDisabled ? "#666" : "#acd8d8",
+    borderColor: isDisabled ? "#444" : "#acd8d8",
     opacity: isDisabled ? 0.6 : 1,
     backgroundColor: "transparent",
     fontFamily: "inherit",
@@ -192,6 +192,6 @@ const CitationAction = ({ label, tooltip, href, onClick, disabled }) => {
 export default InfoPanel;
 
 const linkStyle = {
-  color: "#d1a766",
+  color: "#acd8d8",
   textDecoration: "none",
 };

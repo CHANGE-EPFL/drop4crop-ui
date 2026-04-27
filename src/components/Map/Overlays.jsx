@@ -35,7 +35,7 @@ export const MapOverlay = ({ layerName, loading }) => {
             <div style={mapOverlayStyle}>
                 <div style={overlayContentStyle}>
                     <CircularProgress sx={{
-                        color: '#d1a766',
+                        color: '#acd8d8',
                     }} />
                 </div>
             </div>
@@ -87,7 +87,7 @@ const mapOverlayStyle = {
 };
 
 const linkStyle = {
-    color: '#d1a766',
+    color: '#acd8d8',
     textDecoration: 'none',
     marginTop: '10px', // Optional: Add some margin for better spacing
     pointerEvents: 'auto', // Make the link interactive

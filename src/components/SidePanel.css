@@ -40,7 +40,7 @@
 
 .projects-back-button:hover {
     background-color: #5a5a5a;
-    color: #d1a766;
+    color: #acd8d8;
 }
 
 .projects-back-button .button-content {
@@ -115,7 +115,7 @@
 .current-selection {
     font-size: 10px;
     margin-top: 2px;
-    color: #d1a766;
+    color: #acd8d8;
     opacity: 0.75;
     height: 14px;
 }
@@ -131,7 +131,7 @@
 
 .side-panel .chips-list .MuiChip-root.active {
     background-color: #616161;
-    color: #d1a766;
+    color: #acd8d8;
     border: 1px solid #616161;
 }
 

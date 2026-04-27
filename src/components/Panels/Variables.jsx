@@ -82,7 +82,7 @@ const VariablePanel = ({
                     <CloseIcon
                         sx={{
                             fontSize: '1.2rem',
-                            color: '#d1a766',
+                            color: '#acd8d8',
                             cursor: 'pointer',
                             '&:hover': {
                                 color: '#ffffff'

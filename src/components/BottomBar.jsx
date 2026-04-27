@@ -74,7 +74,7 @@ const BottomBar = () => {
             backgroundColor: '#4a4a4a', // Keep rail visible
           },
           '& .MuiSlider-thumb': {
-            backgroundColor: '#d1a766', // Thumb color
+            backgroundColor: '#acd8d8', // Thumb color
           },
           '& .MuiSlider-mark': {
             backgroundColor: '#4a4a4a', // Default mark color
@@ -89,7 +89,7 @@ const BottomBar = () => {
             const index = marks.findIndex((mark) => mark.value === year);
             if (index !== -1) {
               acc[`& .MuiSlider-mark[data-index="${index}"]`] = {
-                backgroundColor: '#d1a766', // Mark color for available years
+                backgroundColor: '#acd8d8', // Mark color for available years
               };
               acc[`& .MuiSlider-markLabel[data-index="${index}"]`] = {
                 color: 'white', // Label color for available years
@@ -98,7 +98,7 @@ const BottomBar = () => {
             return acc;
           }, {}),
           [`& .MuiSlider-markLabel[data-index="${marks.findIndex(mark => mark.value === sliderValue)}"]`]: {
-            color: '#d1a766', // Highlighted mark label color for the selected year
+            color: '#acd8d8', // Highlighted mark label color for the selected year
             fontWeight: 'bold', // Bold the selected year label
           },
         }}

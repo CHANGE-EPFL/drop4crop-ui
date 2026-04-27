@@ -52,14 +52,14 @@ const CropSpecificPanel = ({
                             href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008GB003435"
                             target="_blank"
                             rel="noopener"
-                            sx={{ color: '#d1a766' }}
+                            sx={{ color: '#acd8d8' }}
                         >Portmann et al., 2010</Link>) (total area is the sum of irrigated and rainfed
                         areas). Annual crop-specific yield (also referred to year 2000) is obtained
                         from <Link
                             href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2007GB002947"
                             target="_blank"
                             rel="noopener"
-                            sx={{ color: '#d1a766' }}
+                            sx={{ color: '#acd8d8' }}
                         >Monfreda et al. (2008)</Link>, while annual crop production
                         is the product between the crop yield and total areas.
                     </>

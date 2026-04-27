@@ -15,11 +15,11 @@ const CustomAppBar = () => (
             sx={{
                 textTransform: 'none',
                 marginRight: 2,
-                backgroundColor: '#d1a766',
+                backgroundColor: '#acd8d8',
                 color: '#1e2127',
                 fontWeight: 600,
                 '&:hover': {
-                    backgroundColor: '#e8c896',
+                    backgroundColor: '#c4e3e3',
                 },
             }}
         >

@@ -189,21 +189,21 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
                 height: 36,
                 borderRadius: '50%',
                 background: 'rgba(51, 51, 51, 0.9)',
-                border: '1px solid rgba(209, 167, 102, 0.3)',
+                border: '1px solid rgba(172, 216, 216, 0.3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#d1a766',
+                color: '#acd8d8',
                 textDecoration: 'none',
                 transition: 'all 0.3s ease',
               }}
               title="Back to projects"
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#d1a766';
+                e.currentTarget.style.borderColor = '#acd8d8';
                 e.currentTarget.style.background = 'rgba(51, 51, 51, 1)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(209, 167, 102, 0.3)';
+                e.currentTarget.style.borderColor = 'rgba(172, 216, 216, 0.3)';
                 e.currentTarget.style.background = 'rgba(51, 51, 51, 0.9)';
               }}
             >

@@ -7,12 +7,12 @@
 .MuiSlider-markLabel-active {
     font-size: 12px;
     font-weight: bold;
-    color: #d1a766 !important;
+    color: #acd8d8 !important;
     /* Gold color when selected */
 }
 
 .MuiSlider-thumb {
-    background-color: #d1a766;
+    background-color: #acd8d8;
     border: 2px solid #616161;
     box-shadow: none;
     /* Remove shadow on thumb */
@@ -41,6 +41,6 @@
 }
 
 .MuiSlider-root {
-    color: #d1a766;
+    color: #acd8d8;
     /* Thumb color */
 }

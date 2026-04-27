@@ -72,10 +72,10 @@ const CardPreviewField = () => {
             <MuiLink
                 href={`/projects/${record.slug}`}
                 sx={{
-                    color: '#d1a766',
+                    color: '#acd8d8',
                     fontWeight: 600,
                     textDecoration: 'none',
-                    '&:hover': { textDecoration: 'underline', color: '#e8c896' },
+                    '&:hover': { textDecoration: 'underline', color: '#c4e3e3' },
                     display: 'inline-block',
                     mb: 0.5,
                 }}

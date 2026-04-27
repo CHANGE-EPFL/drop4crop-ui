@@ -36,7 +36,7 @@ const CropsPanel = ({
                             href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008GB003435"
                             target="_blank"
                             rel="noopener"
-                            sx={{ color: '#d1a766' }}
+                            sx={{ color: '#acd8d8' }}
                         >Portmann et al., 2010</Link>).
                     </>
                 )}

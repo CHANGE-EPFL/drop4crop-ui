@@ -118,7 +118,7 @@ const DownloadPanel = ({ clearLayers }) => {
                 style={{ position: 'absolute', left: '-9999px' }}
             />
 
-            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#d1a766' }}>
+            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#acd8d8' }}>
                 STAC Server
             </Typography>
 
@@ -128,13 +128,13 @@ const DownloadPanel = ({ clearLayers }) => {
                     fullWidth
                     onClick={() => handleCopyLink(STACLink, "STAC API endpoint copied to clipboard")}
                     sx={{
-                        color: '#d1a766',
+                        color: '#acd8d8',
                         justifyContent: 'flex-start',
                         textTransform: 'none',
                         padding: '4px 8px',
                         fontSize: '0.875rem',
                         '&:hover': {
-                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
+                            backgroundColor: 'rgba(172, 216, 216, 0.08)',
                         }
                     }}
                 >
@@ -143,9 +143,9 @@ const DownloadPanel = ({ clearLayers }) => {
                 </Button>
             </Box>
 
-            <div style={{ borderTop: "1px solid #d1a766", marginBottom: '15px' }} />
+            <div style={{ borderTop: "1px solid #acd8d8", marginBottom: '15px' }} />
 
-            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#d1a766' }}>
+            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#acd8d8' }}>
                 Share Current Layer
             </Typography>
 
@@ -156,16 +156,16 @@ const DownloadPanel = ({ clearLayers }) => {
                     onClick={() => handleCopyLink(buildShareLink(), "Shareable link copied to clipboard")}
                     disabled={!currentLayer}
                     sx={{
-                        color: '#d1a766',
+                        color: '#acd8d8',
                         justifyContent: 'flex-start',
                         textTransform: 'none',
                         padding: '4px 8px',
                         fontSize: '0.875rem',
                         '&:hover': {
-                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
+                            backgroundColor: 'rgba(172, 216, 216, 0.08)',
                         },
                         '&.Mui-disabled': {
-                            color: 'rgba(209, 167, 102, 0.3)',
+                            color: 'rgba(172, 216, 216, 0.3)',
                         }
                     }}
                 >
@@ -189,9 +189,9 @@ const DownloadPanel = ({ clearLayers }) => {
                 }
             />
 
-            <div style={{ borderTop: "1px solid #d1a766", marginBottom: '15px' }} />
+            <div style={{ borderTop: "1px solid #acd8d8", marginBottom: '15px' }} />
 
-            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#d1a766' }}>
+            <Typography variant="subtitle2" style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px', color: '#acd8d8' }}>
                 Download
             </Typography>
 
@@ -204,20 +204,20 @@ const DownloadPanel = ({ clearLayers }) => {
                     rel="noopener noreferrer"
                     disabled={!currentLayer}
                     sx={{
-                        borderColor: '#d1a766',
-                        color: '#d1a766',
+                        borderColor: '#acd8d8',
+                        color: '#acd8d8',
                         backgroundColor: 'transparent',
                         textTransform: 'none',
                         justifyContent: 'flex-start',
                         fontSize: '0.875rem',
                         padding: '8px 16px',
                         '&:hover': {
-                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
-                            borderColor: '#d1a766',
+                            backgroundColor: 'rgba(172, 216, 216, 0.08)',
+                            borderColor: '#acd8d8',
                         },
                         '&.Mui-disabled': {
-                            borderColor: 'rgba(209, 167, 102, 0.3)',
-                            color: 'rgba(209, 167, 102, 0.3)',
+                            borderColor: 'rgba(172, 216, 216, 0.3)',
+                            color: 'rgba(172, 216, 216, 0.3)',
                         }
                     }}
                 >
@@ -230,20 +230,20 @@ const DownloadPanel = ({ clearLayers }) => {
                     onClick={handleSelectArea}
                     disabled={!currentLayer || enableSelection || boundingBox}
                     sx={{
-                        borderColor: '#d1a766',
-                        color: '#d1a766',
+                        borderColor: '#acd8d8',
+                        color: '#acd8d8',
                         backgroundColor: 'transparent',
                         textTransform: 'none',
                         justifyContent: 'flex-start',
                         fontSize: '0.875rem',
                         padding: '8px 16px',
                         '&:hover': {
-                            backgroundColor: 'rgba(209, 167, 102, 0.08)',
-                            borderColor: '#d1a766',
+                            backgroundColor: 'rgba(172, 216, 216, 0.08)',
+                            borderColor: '#acd8d8',
                         },
                         '&.Mui-disabled': {
-                            borderColor: 'rgba(209, 167, 102, 0.3)',
-                            color: 'rgba(209, 167, 102, 0.3)',
+                            borderColor: 'rgba(172, 216, 216, 0.3)',
+                            color: 'rgba(172, 216, 216, 0.3)',
                         }
                     }}
                 >
@@ -266,19 +266,19 @@ const DownloadPanel = ({ clearLayers }) => {
                         value={boundingBox ? boundingBox.minx : ''}
                         onChange={(e) => setBoundingBox({ ...boundingBox, minx: e.target.value })}
                         InputLabelProps={{
-                            style: { color: '#d1a766' }, // Match label color
+                            style: { color: '#acd8d8' }, // Match label color
                         }}
                         inputProps={{
-                            style: { color: '#d1a766' }, // Match input text color
+                            style: { color: '#acd8d8' }, // Match input text color
                         }}
                         style={{
-                            borderColor: '#d1a766',
-                            color: '#d1a766',
+                            borderColor: '#acd8d8',
+                            color: '#acd8d8',
                             backgroundColor: 'transparent',
                             width: '100%',
                         }}
                         InputProps={{
-                            style: { borderColor: '#d1a766' }, // Match border color
+                            style: { borderColor: '#acd8d8' }, // Match border color
                         }}
                     />
                     <TextField
@@ -287,19 +287,19 @@ const DownloadPanel = ({ clearLayers }) => {
                         value={boundingBox ? boundingBox.miny : ''}
                         onChange={(e) => setBoundingBox({ ...boundingBox, miny: e.target.value })}
                         InputLabelProps={{
-                            style: { color: '#d1a766' }, // Match label color
+                            style: { color: '#acd8d8' }, // Match label color
                         }}
                         inputProps={{
-                            style: { color: '#d1a766' }, // Match input text color
+                            style: { color: '#acd8d8' }, // Match input text color
                         }}
                         style={{
-                            borderColor: '#d1a766',
-                            color: '#d1a766',
+                            borderColor: '#acd8d8',
+                            color: '#acd8d8',
                             backgroundColor: 'transparent',
                             width: '100%',
                         }}
                         InputProps={{
-                            style: { borderColor: '#d1a766' }, // Match border color
+                            style: { borderColor: '#acd8d8' }, // Match border color
                         }}
                     />
                     <TextField
@@ -308,19 +308,19 @@ const DownloadPanel = ({ clearLayers }) => {
                         value={boundingBox ? boundingBox.maxx : ''}
                         onChange={(e) => setBoundingBox({ ...boundingBox, maxx: e.target.value })}
                         InputLabelProps={{
-                            style: { color: '#d1a766' }, // Match label color
+                            style: { color: '#acd8d8' }, // Match label color
                         }}
                         inputProps={{
-                            style: { color: '#d1a766' }, // Match input text color
+                            style: { color: '#acd8d8' }, // Match input text color
                         }}
                         style={{
-                            borderColor: '#d1a766',
-                            color: '#d1a766',
+                            borderColor: '#acd8d8',
+                            color: '#acd8d8',
                             backgroundColor: 'transparent',
                             width: '100%',
                         }}
                         InputProps={{
-                            style: { borderColor: '#d1a766' }, // Match border color
+                            style: { borderColor: '#acd8d8' }, // Match border color
                         }}
                     />
                     <TextField
@@ -329,19 +329,19 @@ const DownloadPanel = ({ clearLayers }) => {
                         value={boundingBox ? boundingBox.maxy : ''}
                         onChange={(e) => setBoundingBox({ ...boundingBox, maxy: e.target.value })}
                         InputLabelProps={{
-                            style: { color: '#d1a766' }, // Match label color
+                            style: { color: '#acd8d8' }, // Match label color
                         }}
                         inputProps={{
-                            style: { color: '#d1a766' }, // Match input text color
+                            style: { color: '#acd8d8' }, // Match input text color
                         }}
                         style={{
-                            borderColor: '#d1a766',
-                            color: '#d1a766',
+                            borderColor: '#acd8d8',
+                            color: '#acd8d8',
                             backgroundColor: 'transparent',
                             width: '100%',
                         }}
                         InputProps={{
-                            style: { borderColor: '#d1a766' }, // Match border color
+                            style: { borderColor: '#acd8d8' }, // Match border color
                         }}
                     />
                 </Box>

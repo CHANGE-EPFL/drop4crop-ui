@@ -36,12 +36,12 @@ const ClimateModelsPanel = ({
                             href="https://data.isimip.org/"
                             target="_blank"
                             rel="noopener"
-                            sx={{ color: '#d1a766' }}
+                            sx={{ color: '#acd8d8' }}
                         >ISIMIP Repository</Link>, simulation protocol <Link
                             href="https://www.isimip.org/protocol/2b/"
                             target="_blank"
                             rel="noopener"
-                            sx={{ color: '#d1a766' }}
+                            sx={{ color: '#acd8d8' }}
                         >ISIMIP2b</Link> (Input Data &gt; Climate related forcing &gt; Atmospheric
                         forcing). For each simulation year (timeline 2000-2090), a
                         3-year average centered around the year of interest is considered (for

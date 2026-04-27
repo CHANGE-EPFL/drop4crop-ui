@@ -10,7 +10,7 @@ const MarkdownTooltip = ({ children }) => (
         components={{
             p: ({ children }) => <span>{children}</span>,
             a: ({ href, children }) => (
-                <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#d1a766' }}>
+                <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#acd8d8' }}>
                     {children}
                 </a>
             ),
@@ -32,7 +32,7 @@ const PanelTitleWithTooltip = ({ title, tooltip, onClose }) => {
                     arrow
                     style={{ marginLeft: '5px', marginBottom: '4px' }}
                 >
-                    <HelpOutlineIcon sx={{ fontSize: '1rem', color: '#d1a766' }} />
+                    <HelpOutlineIcon sx={{ fontSize: '1rem', color: '#acd8d8' }} />
                 </Tooltip>
             </div>
             {onClose && (
@@ -45,7 +45,7 @@ const PanelTitleWithTooltip = ({ title, tooltip, onClose }) => {
                     <CloseIcon
                         sx={{
                             fontSize: '1.2rem',
-                            color: '#d1a766',
+                            color: '#acd8d8',
                             cursor: 'pointer',
                             '&:hover': {
                                 color: '#ffffff'

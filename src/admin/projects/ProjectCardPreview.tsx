@@ -18,7 +18,7 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
                 height: '100%',
                 borderRadius: 14,
                 overflow: 'hidden',
-                border: '1px solid rgba(209, 167, 102, 0.35)',
+                border: '1px solid rgba(172, 216, 216, 0.35)',
                 background: 'linear-gradient(160deg, rgba(40, 44, 52, 0.92) 0%, rgba(30, 33, 39, 0.96) 100%)',
                 display: 'flex',
                 flexDirection: 'column' as const,
@@ -30,12 +30,12 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
             onMouseEnter={onClick ? (e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
                 e.currentTarget.style.boxShadow = '0 12px 36px rgba(0, 0, 0, 0.4)';
-                e.currentTarget.style.borderColor = 'rgba(209, 167, 102, 0.6)';
+                e.currentTarget.style.borderColor = 'rgba(172, 216, 216, 0.6)';
             } : undefined}
             onMouseLeave={onClick ? (e) => {
                 e.currentTarget.style.transform = '';
                 e.currentTarget.style.boxShadow = '';
-                e.currentTarget.style.borderColor = 'rgba(209, 167, 102, 0.35)';
+                e.currentTarget.style.borderColor = 'rgba(172, 216, 216, 0.35)';
             } : undefined}
         >
             <div
@@ -69,7 +69,7 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
                             zIndex: 1,
-                            color: 'rgba(209, 167, 102, 0.25)',
+                            color: 'rgba(172, 216, 216, 0.25)',
                             fontSize: '2.2rem',
                         }}
                     >
@@ -94,7 +94,7 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
                         fontFamily: "'Arial', 'Helvetica', sans-serif",
                         fontSize: '1.15rem',
                         fontWeight: 600,
-                        color: project.enabled ? '#d1a766' : '#7a7a7a',
+                        color: project.enabled ? '#acd8d8' : '#7a7a7a',
                         margin: '0 0 8px',
                         letterSpacing: '0.3px',
                     }}
@@ -125,9 +125,9 @@ const ProjectCardPreview = ({ project, fullWidth, onClick }: { project: any; ful
                         letterSpacing: '0.5px',
                         ...(project.enabled
                             ? {
-                                  background: 'linear-gradient(135deg, #d1a766 0%, #c49a5c 100%)',
+                                  background: 'linear-gradient(135deg, #acd8d8 0%, #8ec0c0 100%)',
                                   color: '#1e2127',
-                                  boxShadow: '0 4px 15px rgba(209, 167, 102, 0.25)',
+                                  boxShadow: '0 4px 15px rgba(172, 216, 216, 0.25)',
                               }
                             : {
                                   background: 'rgba(74, 74, 74, 0.5)',
