@@ -1,13 +1,17 @@
 .splash-page {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    'header'
+    'main'
+    'footer';
+  padding: 48px 56px 16px;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
+  gap: 32px;
 }
 
 /* Full-viewport faded dark map behind the splash content. */
@@ -31,117 +35,191 @@
   display: none;
 }
 
-/* Sibling overlay — sits above the faded backdrop but below the splash
-   content so card text stays readable. Kept light; the backdrop's map and
-   sidebar already fade into the dark base. */
-.splash-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+/* ---------- Header (top-left title block) ---------- */
+.splash-header {
+  grid-area: header;
+  max-width: 720px;
+  color: #acd8d8;
+  font-family: 'Open Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Logo */
-.splash-logo {
-  width: 160px;
-  height: auto;
-  margin-bottom: 16px;
-  /* Turn the black SVG into gold (#d1a766) */
-  filter: invert(76%) sepia(30%) saturate(500%) hue-rotate(350deg) brightness(90%);
+.splash-header-brand {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin-bottom: 2px;
+  line-height: 1.2;
 }
 
-/* Tagline */
-.splash-tagline {
-  font-family: 'Arial', 'Helvetica', sans-serif;
+.splash-header-title {
+  margin: 0 0 18px;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: 0;
+  color: #ffffff;
+}
+
+.splash-header-title span {
+  display: block;
+}
+
+.splash-header-subtitle {
+  margin: 0;
   font-size: 1.05rem;
-  color: #8a8a8a;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 56px;
-  text-align: center;
+  font-weight: 400;
+  line-height: 1.5;
+  max-width: 700px;
 }
 
-/* Card grid: 2 columns, 3rd card centered below */
-.splash-grid {
+/* ---------- Main (cards row) ---------- */
+.splash-main {
+  grid-area: main;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splash-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 28px;
-  max-width: 780px;
   width: 100%;
+  max-width: 1280px;
+  padding: 80px 0;
+  overflow: visible;
 }
 
-/* Card */
+/* ---------- Card ---------- */
 .splash-card {
-  background: linear-gradient(
-    160deg,
-    rgba(19, 21, 22, 0.92) 0%,
-    rgba(30, 33, 39, 0.96) 100%
-  );
-  border-radius: 14px;
-  border: 1px solid rgba(209, 167, 102, 0.35);
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border: 1px solid rgba(172, 216, 216, 0.18);
   overflow: hidden;
-  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-  cursor: default;
   text-decoration: none;
   color: inherit;
   display: block;
+  cursor: default;
+  transform-origin: center center;
+  transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
+              border-color 0.6s ease,
+              box-shadow 0.6s ease;
+  will-change: transform;
 }
 
 .splash-card.active {
   cursor: pointer;
 }
 
-.splash-card.active:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 48px rgba(19, 21, 22, 0.5), 0 0 30px rgba(209, 167, 102, 0.08);
-  border-color: rgba(209, 167, 102, 0.6);
+.splash-card:hover {
+  transform: scale(1.7);
+  z-index: 100;
+  border-color: rgba(172, 216, 216, 0.55);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.6);
 }
 
-/* Center the 3rd card */
-.splash-card.centered {
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: calc(50% - 14px);
+/* Disabled cards stay visibly darkened, even when expanded. */
+.splash-card.disabled .splash-card-map {
+  filter: brightness(0.5) saturate(0.7);
 }
 
-/* Card visual / thumbnail area */
-.splash-card-visual {
-  height: 190px;
-  background-size: cover;
-  background-position: center;
-  background-color: #131516;
-  position: relative;
-  overflow: hidden;
-  filter: brightness(1.5);
+.splash-card.disabled:hover {
+  border-color: rgba(172, 216, 216, 0.28);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.55);
 }
 
-/* Leaflet map inside the card visual */
-.splash-card-visual .leaflet-container {
+/* Grow the leftmost / rightmost cards inward so they don't crash off-screen. */
+.splash-card:first-child:hover {
+  transform-origin: left center;
+}
+
+.splash-card:last-child:hover {
+  transform-origin: right center;
+}
+
+/* Map fills the card */
+.splash-card-map {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  background: #131516;
 }
 
-/* Gradient overlay on visual — just a bottom fade into the card body */
-.splash-card-visual::after {
-  content: '';
+.splash-card-map .leaflet-container {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 40%,
-    rgba(30, 33, 39, 0.7) 100%
-  );
+  background: #131516;
+  filter: brightness(1.15);
+  cursor: inherit !important;
+}
+
+/* Title overlaid in the top-left of each card */
+.splash-card-title {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  right: auto;
+  width: 65%;
+  margin: 0;
+  z-index: 2;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.4px;
+  line-height: 1.15;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+  transition: color 0.3s ease;
+}
+
+.splash-card:hover .splash-card-title {
+  color: #acd8d8;
+}
+
+.splash-card.disabled .splash-card-title {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.splash-card.disabled:hover .splash-card-title {
+  color: rgba(172, 216, 216, 0.65);
+}
+
+/* Description panel — solid bottom half that fades in on hover */
+.splash-card-detail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  z-index: 2;
+  background: #131516;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.35s ease;
   pointer-events: none;
 }
 
-/* Coming soon cards get a moderate dark overlay */
-.splash-card.disabled .splash-card-visual::after {
-  background: linear-gradient(
-    180deg,
-    rgba(30, 33, 39, 0.3) 0%,
-    rgba(30, 33, 39, 0.75) 100%
-  );
+.splash-card:hover .splash-card-detail {
+  opacity: 1;
+  transition: opacity 0.5s ease 0.3s;
+}
+
+.splash-card-detail-text {
+  margin: 0;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 0.6rem;
+  color: #ffffff;
+  line-height: 1.55;
+}
+
+.splash-card.disabled .splash-card-detail {
+  background: #0e1011;
+}
+
+.splash-card.disabled .splash-card-detail-text {
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Coming soon icon overlay */
@@ -151,115 +229,45 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1;
-  color: rgba(209, 167, 102, 0.25);
-  font-size: 2.2rem;
+  color: rgba(172, 216, 216, 0.35);
+  font-size: 2.4rem;
 }
 
-/* Card body */
-.splash-card-body {
-  padding: 20px 22px 24px;
+/* ---------- Footer (bottom-right logos) ---------- */
+.splash-footer {
+  grid-area: footer;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 24px;
+  margin-right: -32px;
 }
 
-.splash-card-title {
-  font-family: 'Arial', 'Helvetica', sans-serif;
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: #d1a766;
-  margin: 0 0 8px;
-  letter-spacing: 0.3px;
+.splash-footer-logo {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.75;
+  transition: opacity 0.25s ease;
 }
 
-.splash-card.disabled .splash-card-title {
-  color: #7a7a7a;
+.splash-footer-logo:hover {
+  opacity: 1;
 }
 
-.splash-card-description {
-  font-family: 'Arial', 'Helvetica', sans-serif;
-  font-size: 0.88rem;
-  color: #b0b0b0;
-  line-height: 1.55;
-  margin: 0 0 18px;
-  min-height: 2.8em;
+.splash-footer-logo img {
+  height: 60px;
+  width: auto;
+  display: block;
 }
 
-.splash-card.disabled .splash-card-description {
-  color: #666;
-}
-
-/* CTA button */
-.splash-card-btn {
-  display: inline-block;
-  padding: 9px 22px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-}
-
-.splash-card-btn.explore {
-  background: linear-gradient(135deg, #d1a766 0%, #c49a5c 100%);
-  color: #1e2127;
-  box-shadow: 0 4px 15px rgba(209, 167, 102, 0.25);
-}
-
-.splash-card.active:hover .splash-card-btn.explore {
-  background: linear-gradient(135deg, #e8c896 0%, #d1a766 100%);
-  box-shadow: 0 6px 20px rgba(209, 167, 102, 0.35);
-}
-
-.splash-card-btn.coming-soon {
-  background: rgba(74, 74, 74, 0.5);
-  color: #666;
-  cursor: default;
-  box-shadow: none;
-}
-
-/* Skeleton loading state — same card frame, pulsing content bars.
-   Short API blips fade through this without ever hitting the error UI. */
+/* ---------- Skeleton ---------- */
 .splash-card-skeleton {
   cursor: default;
   pointer-events: none;
 }
 
-.splash-card-skeleton .splash-card-visual {
-  background: rgba(209, 167, 102, 0.04);
-  filter: none;
-}
-
-.splash-card-skeleton .splash-card-visual::after {
-  display: none;
-}
-
-.splash-skeleton-bar {
-  background: rgba(209, 167, 102, 0.06);
-  border-radius: 6px;
-  margin-bottom: 10px;
-  height: 12px;
-}
-
-.splash-skeleton-bar-title {
-  height: 16px;
-  width: 65%;
-}
-
-.splash-skeleton-bar-desc {
-  width: 100%;
-}
-
-.splash-skeleton-bar-desc-short {
-  width: 80%;
-  margin-bottom: 20px;
-}
-
-.splash-skeleton-bar-btn {
-  width: 90px;
-  height: 28px;
-  border-radius: 20px;
-  background: rgba(209, 167, 102, 0.1);
+.splash-card-skeleton .splash-card-map {
+  background: rgba(172, 216, 216, 0.05);
 }
 
 .splash-skeleton-shimmer {
@@ -275,7 +283,7 @@
   background: linear-gradient(
     100deg,
     transparent 30%,
-    rgba(209, 167, 102, 0.08) 50%,
+    rgba(172, 216, 216, 0.08) 50%,
     transparent 70%
   );
   transform: translateX(-100%);
@@ -283,22 +291,15 @@
 }
 
 @keyframes splash-skeleton-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 @keyframes splash-skeleton-sweep {
-  100% {
-    transform: translateX(100%);
-  }
+  100% { transform: translateX(100%); }
 }
 
-/* Unavailable state — calm, matches the splash aesthetic, no alarm icon. */
+/* ---------- Unavailable state ---------- */
 .splash-unavailable {
   max-width: 520px;
   text-align: center;
@@ -310,7 +311,7 @@
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 1.75rem;
   font-weight: 500;
-  color: #d1a766;
+  color: #acd8d8;
   letter-spacing: 0.5px;
   margin: 0 0 16px;
 }
@@ -318,49 +319,47 @@
 .splash-unavailable-body {
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 1rem;
-  color: #9a9a9a;
+  color: rgba(172, 216, 216, 0.75);
   line-height: 1.6;
   margin: 0 0 32px;
 }
 
 .splash-unavailable-retry {
+  display: inline-block;
+  padding: 9px 22px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid rgba(172, 216, 216, 0.55);
+  background: transparent;
+  color: #acd8d8;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.splash-unavailable-retry:hover {
+  background: rgba(172, 216, 216, 0.12);
 }
 
 @keyframes splash-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
   .splash-page {
-    padding: 40px 16px 32px;
+    padding: 32px 24px;
   }
 
-  .splash-logo {
-    width: 120px;
-  }
-
-  .splash-tagline {
-    font-size: 0.9rem;
-    margin-bottom: 36px;
-  }
-
-  .splash-grid {
+  .splash-row {
     grid-template-columns: 1fr;
-    max-width: 400px;
+    max-width: 480px;
   }
 
-  .splash-card.centered {
-    grid-column: auto;
-    justify-self: auto;
-    width: 100%;
+  .splash-footer {
+    justify-content: center;
   }
 }

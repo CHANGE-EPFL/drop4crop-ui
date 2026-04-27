@@ -132,21 +132,12 @@ const SplashPage = () => {
   let content;
   if (loading && !failed) {
     content = (
-      <div className="splash-grid splash-grid-skeleton" aria-busy="true" aria-label="Loading projects">
-        {Array.from({ length: SKELETON_COUNT }).map((_, i) => {
-          const isLast = SKELETON_COUNT % 2 === 1 && i === SKELETON_COUNT - 1;
-          return (
-            <div key={i} className={`splash-card splash-card-skeleton ${isLast ? 'centered' : ''}`}>
-              <div className="splash-card-visual splash-skeleton-shimmer" />
-              <div className="splash-card-body">
-                <div className="splash-skeleton-bar splash-skeleton-bar-title splash-skeleton-shimmer" />
-                <div className="splash-skeleton-bar splash-skeleton-bar-desc splash-skeleton-shimmer" />
-                <div className="splash-skeleton-bar splash-skeleton-bar-desc-short splash-skeleton-shimmer" />
-                <div className="splash-skeleton-bar splash-skeleton-bar-btn splash-skeleton-shimmer" />
-              </div>
-            </div>
-          );
-        })}
+      <div className="splash-row splash-row-skeleton" aria-busy="true" aria-label="Loading projects">
+        {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+          <div key={i} className="splash-card splash-card-skeleton">
+            <div className="splash-card-map splash-skeleton-shimmer" />
+          </div>
+        ))}
       </div>
     );
   } else if (failed) {
@@ -158,7 +149,7 @@ const SplashPage = () => {
         </p>
         <button
           type="button"
-          className="splash-card-btn explore splash-unavailable-retry"
+          className="splash-unavailable-retry"
           onClick={() => setAttempt((n) => n + 1)}
         >
           Try again
@@ -167,20 +158,15 @@ const SplashPage = () => {
     );
   } else {
     content = (
-      <div className="splash-grid">
-        {projects.map((project, index) => {
-          const isLast = projects.length > 2 && projects.length % 2 === 1 && index === projects.length - 1;
-          const cardClass = [
-            'splash-card',
-            project.enabled ? 'active' : 'disabled',
-            isLast ? 'centered' : '',
-          ]
+      <div className="splash-row">
+        {projects.map((project) => {
+          const cardClass = ['splash-card', project.enabled ? 'active' : 'disabled']
             .filter(Boolean)
             .join(' ');
 
-          const cardContent = (
+          const cardInner = (
             <>
-              <div className="splash-card-visual">
+              <div className="splash-card-map">
                 <MapContainer
                   center={[project.latitude || 20, project.longitude || 0]}
                   zoom={project.zoom_level || 2}
@@ -201,33 +187,25 @@ const SplashPage = () => {
                   </span>
                 )}
               </div>
-              <div className="splash-card-body">
-                <h3 className="splash-card-title">{project.title}</h3>
-                <p className="splash-card-description">{project.description}</p>
-                <span
-                  className={`splash-card-btn ${project.enabled ? 'explore' : 'coming-soon'}`}
-                >
-                  {project.enabled ? 'Explore' : 'Coming Soon'}
-                </span>
-              </div>
+              <h3 className="splash-card-title">{project.title}</h3>
+              {project.description && (
+                <div className="splash-card-detail">
+                  <p className="splash-card-detail-text">{project.description}</p>
+                </div>
+              )}
             </>
           );
 
           if (project.enabled) {
             return (
-              <Link
-                key={project.id}
-                to={`/projects/${project.slug}`}
-                className={cardClass}
-              >
-                {cardContent}
+              <Link key={project.id} to={`/projects/${project.slug}`} className={cardClass}>
+                {cardInner}
               </Link>
             );
           }
-
           return (
             <div key={project.id} className={cardClass}>
-              {cardContent}
+              {cardInner}
             </div>
           );
         })}
@@ -238,8 +216,38 @@ const SplashPage = () => {
   return (
     <>
       <SplashBackground />
-      <div className="splash-overlay" aria-hidden="true" />
-      <div className="splash-page">{content}</div>
+      <div className="splash-page">
+        <header className="splash-header">
+          <span className="splash-header-brand">drop4crop</span>
+          <h1 className="splash-header-title">
+            <span>CROPLAND</span>
+            <span>SYSTEMS</span>
+            <span>ANALYTICS</span>
+          </h1>
+          <p className="splash-header-subtitle">
+            Modeled insights on crop water use, sustainability, suitability, and climate interactions
+          </p>
+        </header>
+        <main className="splash-main">{content}</main>
+        <footer className="splash-footer">
+          <a
+            href="https://www.epfl.ch/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="splash-footer-logo"
+          >
+            <img src="/EPFLwhite.png" alt="EPFL" />
+          </a>
+          <a
+            href="https://www.epfl.ch/labs/change/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="splash-footer-logo"
+          >
+            <img src="/CHANGE.svg" alt="CHANGE Lab" />
+          </a>
+        </footer>
+      </div>
     </>
   );
 };
