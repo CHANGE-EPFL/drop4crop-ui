@@ -4,12 +4,15 @@ import {
     TextInput,
     NumberInput,
     BooleanInput,
+    ReferenceInput,
+    AutocompleteInput,
     required,
 } from 'react-admin';
 import { Box, Divider, Paper, Tooltip, Typography } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import TuneIcon from '@mui/icons-material/Tune';
 import MapPreview from './MapPreview';
+import StylePaletteInput from './StylePaletteInput';
 import ProjectConfigEditor from './ProjectConfigEditor';
 
 const YEAR_AXIS_TOOLTIP =
@@ -122,15 +125,36 @@ const ProjectEdit = () => {
                     fullWidth
                 />
                 <TextInput source="description" multiline rows={3} fullWidth />
-                <MapPreview />
-                <NumberInput source="latitude" step={0.1} />
-                <NumberInput source="longitude" step={0.1} />
-                <NumberInput
-                    source="zoom_level"
-                    min={1}
-                    max={18}
-                    helperText="Map zoom level for splash page preview (1-18)"
-                />
+                <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexWrap: 'wrap', mb: 2 }}>
+                    <Box sx={{ flex: '0 0 auto' }}>
+                        <MapPreview />
+                    </Box>
+                    <Box sx={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: 1, mt: 4 }}>
+                        <NumberInput source="latitude" step={0.1} fullWidth />
+                        <NumberInput source="longitude" step={0.1} fullWidth />
+                        <NumberInput
+                            source="zoom_level"
+                            min={1}
+                            max={18}
+                            helperText="Map zoom level for splash page preview (1-18)"
+                            fullWidth
+                        />
+                    </Box>
+                </Box>
+                <Box sx={{ maxWidth: 400, mb: 2 }}>
+                    <ReferenceInput source="card_layer_id" reference="layers" perPage={500}>
+                        <AutocompleteInput
+                            optionText="layer_name"
+                            label="Card preview layer"
+                            helperText="Layer rendered on the splash card map (optional)"
+                            fullWidth
+                        />
+                    </ReferenceInput>
+                    <StylePaletteInput
+                        source="card_style_id"
+                        helperText="Overrides the layer's default style on the splash card (optional)"
+                    />
+                </Box>
                 <BooleanInput source="enabled" />
                 <NumberInput
                     source="sort_order"

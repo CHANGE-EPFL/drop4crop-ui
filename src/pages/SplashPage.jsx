@@ -145,7 +145,7 @@ const SplashPage = () => {
       <div className="splash-unavailable">
         <h1 className="splash-unavailable-title">We'll be right back</h1>
         <p className="splash-unavailable-body">
-          Drop4Crop is momentarily unavailable. Please try again in a few moments.
+          drop4crop is momentarily unavailable. Please try again in a few moments.
         </p>
         <button
           type="button"
@@ -180,6 +180,14 @@ const SplashPage = () => {
                   keyboard={false}
                 >
                   <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
+                  {project.card_layer_name && (
+                    <TileLayer
+                      key={`${project.slug}-${project.card_layer_name}`}
+                      url={`/api/projects/${project.slug}/card-tile/{z}/{x}/{y}?layer=${encodeURIComponent(project.card_layer_name)}`}
+                      opacity={0.85}
+                      noWrap
+                    />
+                  )}
                 </MapContainer>
                 {!project.enabled && (
                   <span className="splash-card-coming-soon-icon">

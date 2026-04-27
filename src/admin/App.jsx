@@ -161,7 +161,7 @@ const App = () => {
           color: "#666",
         }}
       >
-        <p>Loading Drop4Crop Admin...</p>
+        <p>Loading drop4crop Admin...</p>
         <p style={{ fontSize: "14px", marginTop: "10px", color: "#999" }}>
           Initializing authentication...
         </p>
@@ -182,9 +182,10 @@ const App = () => {
   };
   return (
     <Admin
+      basename="/admin"
       authProvider={authProvider.current}
       dataProvider={dataProvider.current}
-      title="Drop4Crop: Admin"
+      title="drop4crop: Admin"
       layout={Layout}
       theme={theme}
       darkTheme={darkTheme}

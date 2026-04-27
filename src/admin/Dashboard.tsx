@@ -816,7 +816,7 @@ const Dashboard = () => {
             {/* Header */}
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-                    Drop4Crop
+                    drop4crop
                 </Typography>
             </Box>
 

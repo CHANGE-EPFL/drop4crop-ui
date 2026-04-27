@@ -1,4 +1,5 @@
 import { useWatch, useFormContext } from 'react-hook-form';
+import { useGetOne } from 'react-admin';
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { Box, Typography } from '@mui/material';
 import { useEffect, useRef } from 'react';
@@ -9,7 +10,6 @@ const MapSyncToForm = () => {
     const map = useMap();
     const skipNextSync = useRef(false);
 
-    // When user drags/zooms the map, update the form fields
     useMapEvents({
         moveend: () => {
             if (skipNextSync.current) {
@@ -24,7 +24,6 @@ const MapSyncToForm = () => {
         },
     });
 
-    // When form fields change (e.g. typed manually), update the map
     const latitude = useWatch({ name: 'latitude' });
     const longitude = useWatch({ name: 'longitude' });
     const zoomLevel = useWatch({ name: 'zoom_level' });
@@ -54,10 +53,26 @@ const MapPreview = () => {
     const latitude = useWatch({ name: 'latitude' });
     const longitude = useWatch({ name: 'longitude' });
     const zoomLevel = useWatch({ name: 'zoom_level' });
+    const cardLayerId = useWatch({ name: 'card_layer_id' });
+    const cardStyleId = useWatch({ name: 'card_style_id' });
 
     const lat = parseFloat(latitude) || 20.0;
     const lon = parseFloat(longitude) || 0.0;
     const zoom = parseInt(zoomLevel) || 2;
+
+    // Resolve the chosen layer's `layer_name` (the tile endpoint identifies
+    // layers by name, not UUID). Skipped when no layer is selected.
+    const { data: layer } = useGetOne(
+        'layers',
+        { id: cardLayerId },
+        { enabled: Boolean(cardLayerId) },
+    );
+
+    const overlayUrl = layer?.layer_name
+        ? `/api/layers/xyz/{z}/{x}/{y}?layer=${encodeURIComponent(layer.layer_name)}${
+              cardStyleId ? `&style_id=${cardStyleId}` : ''
+          }`
+        : null;
 
     return (
         <Box sx={{ mt: 2, mb: 2 }}>
@@ -66,6 +81,7 @@ const MapPreview = () => {
             </Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                 Drag and zoom the map to set the card preview. The coordinates and zoom update automatically.
+                When a card layer is selected below, it renders here with the chosen style override.
             </Typography>
             <Box
                 sx={{
@@ -85,6 +101,14 @@ const MapPreview = () => {
                     attributionControl={false}
                 >
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
+                    {overlayUrl && (
+                        <TileLayer
+                            key={`${layer?.layer_name}-${cardStyleId ?? 'default'}`}
+                            url={overlayUrl}
+                            opacity={0.85}
+                            noWrap
+                        />
+                    )}
                     <MapSyncToForm />
                 </MapContainer>
             </Box>
