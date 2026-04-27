@@ -113,7 +113,7 @@ const MapView = forwardRef((props, ref) => {
   }
 
   return (
-    <div ref={containerRef} style={{ height: "100vh", width: "100%" }}>
+    <div ref={containerRef} style={{ height: "100vh", width: "100%", position: "relative" }}>
       <MapContainer
         center={[0, 0]}
         // Set the default zoom to the computed zoom.
@@ -167,6 +167,14 @@ const MapView = forwardRef((props, ref) => {
           />
         )}
       </MapContainer>
+      <a
+        href="https://www.epfl.ch/labs/change/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="map-change-logo"
+      >
+        <img src="/CHANGE.svg" alt="CHANGE Lab" />
+      </a>
     </div>
   );
 });
