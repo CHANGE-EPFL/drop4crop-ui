@@ -255,7 +255,7 @@ const SplashPage = () => {
       ) : (
         <SplashBackground />
       )}
-      <div className="splash-page">
+      <div className={`splash-page${universeMode ? ' splash-page--universe' : ''}`}>
         <header className="splash-header">
           <span className="splash-header-brand">
             drop<span className="splash-egg" onClick={handleEggClick}>4</span>crop

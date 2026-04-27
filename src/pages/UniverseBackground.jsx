@@ -2,10 +2,13 @@ import { useEffect, useRef } from 'react';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// Generates a single 2048×2048 cubemap face packed with small, sharp stars.
-// Cesium's default starfield is a low-res cubemap — at our close camera
-// distance it visibly blurs/smears. A procedural high-res face keeps
-// individual stars pixel-crisp at any zoom.
+const EARTH_RADIUS_M = 6_371_000;
+const MOON_RADIUS_M = 1_737_400;
+const SUN_RADIUS_M = 696_340_000;
+const FILL_FRACTION = 0.65;
+const CLICK_RADIUS_PX = 70;
+const SPIN_RATE = 0.05;
+
 const generateStarFace = (size = 2048) => {
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -18,7 +21,6 @@ const generateStarFace = (size = 2048) => {
     const x = Math.random() * size;
     const y = Math.random() * size;
     const brightness = 0.35 + Math.random() * 0.65;
-    // Most stars are sub-pixel; a few are slightly larger for variety.
     const isBright = Math.random() < 0.04;
     const radius = isBright ? 1.3 + Math.random() * 0.7 : 0.5;
     ctx.fillStyle = `rgba(255,255,255,${brightness})`;
@@ -29,10 +31,34 @@ const generateStarFace = (size = 2048) => {
   return canvas.toDataURL('image/png');
 };
 
+const computeCameraDistance = (bodyRadius, fov, aspect) => {
+  const tanHalf = Math.tan(fov / 2);
+  const minHalfFov =
+    aspect > 1 ? Math.atan(tanHalf / aspect) : Math.atan(tanHalf * aspect);
+  return bodyRadius / Math.sin(minHalfFov * FILL_FRACTION);
+};
+
+const toFixedFrame = (icrfPos, time) => {
+  const out = new Cesium.Cartesian3();
+  const m =
+    Cesium.Transforms.computeIcrfToFixedMatrix(time) ||
+    Cesium.Transforms.computeTemeToPseudoFixedMatrix(time);
+  return m
+    ? Cesium.Matrix3.multiplyByVector(m, icrfPos, out)
+    : Cesium.Cartesian3.clone(icrfPos, out);
+};
+
+const dist2D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
 const UniverseBackground = () => {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
-  const animationIdRef = useRef(null);
+  const stateRef = useRef({
+    target: 'earth',
+    angle: 0,
+    flying: false,
+    lastTimestamp: performance.now(),
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -50,15 +76,10 @@ const UniverseBackground = () => {
       navigationHelpButton: false,
       navigationInstructionsInitiallyVisible: false,
       shouldAnimate: true,
-      // Use plain ellipsoid surface — no imagery — so we get a globe shape
-      // without depending on Cesium Ion / Bing tile fetches. We layer the
-      // CARTO tiles on top below.
       baseLayer: false,
     });
     viewerRef.current = viewer;
 
-    // Layer the same CARTO dark_nolabels basemap onto the Cesium globe so
-    // Earth's surface visually matches the rest of the splash page.
     viewer.imageryLayers.addImageryProvider(
       new Cesium.UrlTemplateImageryProvider({
         url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
@@ -67,17 +88,11 @@ const UniverseBackground = () => {
       }),
     );
 
-    // Real-physics moon, sun, and starfield are on by default in Cesium's
-    // scene. We just confirm they're visible and clock-driven so the moon
-    // sits where it actually is right now.
     viewer.scene.skyAtmosphere.show = true;
     viewer.scene.sun.show = true;
     viewer.scene.moon.show = true;
     viewer.scene.globe.enableLighting = true;
 
-    // Replace Cesium's low-res default starfield with a sharper procedural
-    // one. Each cube face uses an independent random pattern so seams stay
-    // hidden inside the field of stars.
     viewer.scene.skyBox = new Cesium.SkyBox({
       sources: {
         positiveX: generateStarFace(),
@@ -89,48 +104,229 @@ const UniverseBackground = () => {
       },
     });
     viewer.scene.skyBox.show = true;
+
     viewer.clockViewModel.currentTime = Cesium.JulianDate.now();
-    // 30 minutes per real second — moon visibly drifts across the scene
-    // over a minute or so without flying past too quickly.
     viewer.clockViewModel.multiplier = 60 * 30;
     viewer.clockViewModel.shouldAnimate = true;
 
-    // Hide all default UI chrome that the Viewer constructor still injects.
     if (viewer.cesiumWidget?.creditContainer) {
       viewer.cesiumWidget.creditContainer.style.display = 'none';
     }
 
-    // Disable user interaction — this is a background.
-    const c = viewer.scene.screenSpaceCameraController;
-    c.enableRotate = false;
-    c.enableTranslate = false;
-    c.enableZoom = false;
-    c.enableTilt = false;
-    c.enableLook = false;
+    const ctrl = viewer.scene.screenSpaceCameraController;
+    ctrl.enableRotate = false;
+    ctrl.enableTranslate = false;
+    ctrl.enableZoom = false;
+    ctrl.enableTilt = false;
+    ctrl.enableLook = false;
 
-    // Park the camera close enough that Earth fills a similar portion of
-    // the viewport as the non-universe MapLibre globe (zoom ~3). Looking
-    // straight at the equator from the side (not top-down) so the moon's
-    // orbital plane sweeps through the frame as time advances.
-    //
-    // Earth radius is ~6,371 km. At ~25,000 km altitude with a default 60°
-    // FOV, Earth fills roughly the central two-thirds of the frame.
-    const EARTH_RADIUS_M = 6_371_000;
-    const CAMERA_ALTITUDE_M = 25_000_000; // 25,000 km from surface
-    const CAMERA_DISTANCE_M = EARTH_RADIUS_M + CAMERA_ALTITUDE_M;
+    const state = stateRef.current;
 
-    // Camera is fixed in space, looking at Earth from the equatorial plane.
-    // Earth itself doesn't rotate (Cesium's default frame is Earth-fixed),
-    // so the *only* motion is the moon drifting through frame as the sim
-    // clock advances and the day/night terminator slowly sweeping the globe.
+    const canvas = viewer.scene.canvas;
+    const fov = viewer.camera.frustum.fov;
+    const aspect = canvas.clientWidth / canvas.clientHeight;
+    const initialDist = computeCameraDistance(EARTH_RADIUS_M, fov, aspect);
     viewer.camera.lookAt(
       Cesium.Cartesian3.ZERO,
-      new Cesium.Cartesian3(CAMERA_DISTANCE_M, 0, 0),
-      Cesium.Cartesian3.UNIT_Z,
+      new Cesium.Cartesian3(initialDist, 0, 0),
     );
 
+    // ---- Earth spin + responsive camera distance ----
+    const onPreRender = () => {
+      if (state.flying || state.target !== 'earth') return;
+
+      const now = performance.now();
+      const dt = (now - state.lastTimestamp) / 1000;
+      state.lastTimestamp = now;
+      state.angle += SPIN_RATE * dt;
+
+      const c = viewer.scene.canvas;
+      const a = c.clientWidth / c.clientHeight;
+      const f = viewer.camera.frustum.fov;
+      const d = computeCameraDistance(EARTH_RADIUS_M, f, a);
+
+      viewer.camera.lookAt(
+        Cesium.Cartesian3.ZERO,
+        new Cesium.Cartesian3(
+          d * Math.cos(state.angle),
+          d * Math.sin(state.angle),
+          0,
+        ),
+      );
+    };
+    viewer.scene.preRender.addEventListener(onPreRender);
+
+    // ---- Body position helpers ----
+    const getBodyInfo = (bodyType) => {
+      const time = viewer.clock.currentTime;
+      const icrf =
+        bodyType === 'moon'
+          ? Cesium.Simon1994PlanetaryPositions.computeMoonPositionInEarthInertialFrame(time)
+          : Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(time);
+      const fixed = toFixedFrame(icrf, time);
+      const screen = Cesium.SceneTransforms.worldToWindowCoordinates(
+        viewer.scene,
+        fixed,
+      );
+      return { fixed, screen };
+    };
+
+    // ---- Fly to a celestial body ----
+    const flyToBody = (bodyFixed, bodyRadius, bodyName) => {
+      state.flying = true;
+      viewer.clockViewModel.shouldAnimate = false;
+
+      const c = viewer.scene.canvas;
+      const a = c.clientWidth / c.clientHeight;
+      const f = viewer.camera.frustum.fov;
+      const viewDist = computeCameraDistance(bodyRadius, f, a);
+
+      const dir = Cesium.Cartesian3.normalize(
+        bodyFixed,
+        new Cesium.Cartesian3(),
+      );
+      const offset = Cesium.Cartesian3.multiplyByScalar(
+        dir,
+        viewDist,
+        new Cesium.Cartesian3(),
+      );
+      const dest = Cesium.Cartesian3.subtract(
+        bodyFixed,
+        offset,
+        new Cesium.Cartesian3(),
+      );
+
+      if (bodyName === 'sun') {
+        viewer.entities.add({
+          id: 'sun-sphere',
+          position: bodyFixed,
+          ellipsoid: {
+            radii: new Cesium.Cartesian3(
+              SUN_RADIUS_M,
+              SUN_RADIUS_M,
+              SUN_RADIUS_M,
+            ),
+            material: Cesium.Color.fromCssColorString('#FDB813'),
+          },
+        });
+        viewer.scene.sun.show = false;
+        viewer.scene.light = new Cesium.DirectionalLight({ direction: dir });
+      }
+
+      viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      viewer.camera.flyTo({
+        destination: dest,
+        orientation: {
+          direction: Cesium.Cartesian3.clone(dir),
+          up: Cesium.Cartesian3.UNIT_Z,
+        },
+        duration: 3,
+        complete: () => {
+          if (!viewerRef.current) return;
+          state.target = bodyName;
+          state.flying = false;
+          viewer.scene.canvas.style.cursor = 'zoom-out';
+        },
+      });
+    };
+
+    // ---- Fly back to Earth ----
+    const flyToEarth = () => {
+      state.flying = true;
+
+      if (state.target === 'sun') {
+        viewer.entities.removeById('sun-sphere');
+        viewer.scene.sun.show = true;
+        viewer.scene.light = new Cesium.SunLight();
+      }
+
+      const c = viewer.scene.canvas;
+      const a = c.clientWidth / c.clientHeight;
+      const f = viewer.camera.frustum.fov;
+      const d = computeCameraDistance(EARTH_RADIUS_M, f, a);
+
+      const dest = new Cesium.Cartesian3(
+        d * Math.cos(state.angle),
+        d * Math.sin(state.angle),
+        0,
+      );
+      const dir = Cesium.Cartesian3.normalize(
+        Cesium.Cartesian3.negate(dest, new Cesium.Cartesian3()),
+        new Cesium.Cartesian3(),
+      );
+
+      viewer.camera.flyTo({
+        destination: dest,
+        orientation: {
+          direction: dir,
+          up: Cesium.Cartesian3.UNIT_Z,
+        },
+        duration: 2.5,
+        complete: () => {
+          if (!viewerRef.current) return;
+          state.target = 'earth';
+          state.flying = false;
+          state.lastTimestamp = performance.now();
+          viewer.clockViewModel.shouldAnimate = true;
+
+          const c2 = viewer.scene.canvas;
+          const a2 = c2.clientWidth / c2.clientHeight;
+          const f2 = viewer.camera.frustum.fov;
+          const d2 = computeCameraDistance(EARTH_RADIUS_M, f2, a2);
+          viewer.camera.lookAt(
+            Cesium.Cartesian3.ZERO,
+            new Cesium.Cartesian3(
+              d2 * Math.cos(state.angle),
+              d2 * Math.sin(state.angle),
+              0,
+            ),
+          );
+          viewer.scene.canvas.style.cursor = 'default';
+        },
+      });
+    };
+
+    // ---- Click + hover handlers ----
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    handler.setInputAction((click) => {
+      if (state.flying) return;
+
+      if (state.target !== 'earth') {
+        flyToEarth();
+        return;
+      }
+
+      const moon = getBodyInfo('moon');
+      const sun = getBodyInfo('sun');
+      const pos = click.position;
+
+      if (moon.screen && dist2D(pos, moon.screen) < CLICK_RADIUS_PX) {
+        flyToBody(moon.fixed, MOON_RADIUS_M, 'moon');
+      } else if (sun.screen && dist2D(pos, sun.screen) < CLICK_RADIUS_PX) {
+        flyToBody(sun.fixed, SUN_RADIUS_M, 'sun');
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    handler.setInputAction((movement) => {
+      if (state.flying) return;
+      if (state.target !== 'earth') {
+        viewer.scene.canvas.style.cursor = 'zoom-out';
+        return;
+      }
+
+      const moon = getBodyInfo('moon');
+      const sun = getBodyInfo('sun');
+      const pos = movement.endPosition;
+      const near =
+        (moon.screen && dist2D(pos, moon.screen) < CLICK_RADIUS_PX) ||
+        (sun.screen && dist2D(pos, sun.screen) < CLICK_RADIUS_PX);
+      viewer.scene.canvas.style.cursor = near ? 'zoom-in' : 'default';
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
     return () => {
-      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+      viewer.scene.preRender.removeEventListener(onPreRender);
+      handler.destroy();
       viewer.destroy();
       viewerRef.current = null;
     };
@@ -138,7 +334,7 @@ const UniverseBackground = () => {
 
   return (
     <div
-      className="splash-background"
+      className="splash-background splash-background--interactive"
       aria-hidden="true"
       ref={containerRef}
       style={{ background: '#000' }}
