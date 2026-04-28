@@ -40,20 +40,55 @@ const GLOBE_STYLE = {
 };
 
 const ROTATION_SPEED = 0.05;
+const GLOBE_FILL = 1.20;
+const CENTER_LAT = 20;
 
-const SplashBackground = () => {
+const computeGlobeZoom = (width, height) => {
+  const minDim = Math.min(width, height);
+  const cosLat = Math.cos((CENTER_LAT * Math.PI) / 180);
+  return Math.log2((GLOBE_FILL * minDim * Math.PI * cosLat) / 512);
+};
+
+const buildGlobeStyle = (globeConfig) => {
+  const style = {
+    ...GLOBE_STYLE,
+    sources: { ...GLOBE_STYLE.sources },
+    layers: [...GLOBE_STYLE.layers],
+  };
+  if (globeConfig?.globe_layer_name) {
+    style.sources['data-overlay'] = {
+      type: 'raster',
+      tiles: [
+        `/api/site-settings/globe-tile/{z}/{x}/{y}?layer=${encodeURIComponent(globeConfig.globe_layer_name)}`,
+      ],
+      tileSize: 256,
+    };
+    style.layers.push({
+      id: 'data-overlay-layer',
+      type: 'raster',
+      source: 'data-overlay',
+      paint: { 'raster-opacity': 0.85 },
+    });
+  }
+  return style;
+};
+
+const SplashBackground = ({ globeConfig }) => {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const frameRef = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || globeConfig === undefined) return;
+
+    const { clientWidth: w, clientHeight: h } = containerRef.current;
+    const initialZoom = Math.min(computeGlobeZoom(w, h), 4);
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: GLOBE_STYLE,
-      center: [0, 20],
-      zoom: 3.14,
+      style: buildGlobeStyle(globeConfig),
+      center: [0, CENTER_LAT],
+      zoom: initialZoom,
       interactive: false,
       attributionControl: false,
       renderWorldCopies: false,
@@ -71,12 +106,20 @@ const SplashBackground = () => {
     };
     map.on('load', rotate);
 
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width === 0 || height === 0) return;
+      map.setZoom(Math.min(computeGlobeZoom(width, height), 4));
+    });
+    ro.observe(containerRef.current);
+
     return () => {
       cancelAnimationFrame(frameRef.current);
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [globeConfig]);
 
   return <div className="splash-background" aria-hidden="true" ref={containerRef} />;
 };
@@ -94,6 +137,7 @@ const SplashPage = () => {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [universeMode, setUniverseMode] = useState(false);
+  const [globeConfig, setGlobeConfig] = useState(undefined);
   const eggClicksRef = useRef([]);
 
   const handleEggClick = () => {
@@ -146,6 +190,21 @@ const SplashPage = () => {
         setProjects([]);
         setLoading(false);
         setFailed(true);
+      });
+
+    axios
+      .get('/api/site-settings/config')
+      .then((res) => {
+        if (cancelled) return;
+        const d = res.data;
+        setGlobeConfig(
+          d?.globe_layer_name
+            ? { globe_layer_name: d.globe_layer_name }
+            : null,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setGlobeConfig(null);
       });
 
     return () => {
@@ -250,10 +309,10 @@ const SplashPage = () => {
     <>
       {universeMode ? (
         <Suspense fallback={<div className="splash-background" aria-hidden="true" />}>
-          <UniverseBackground />
+          <UniverseBackground globeConfig={globeConfig} />
         </Suspense>
       ) : (
-        <SplashBackground />
+        <SplashBackground globeConfig={globeConfig} />
       )}
       <div className={`splash-page${universeMode ? ' splash-page--universe' : ''}`}>
         <header className="splash-header">

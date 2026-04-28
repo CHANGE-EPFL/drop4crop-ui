@@ -19,6 +19,8 @@ export const MyMenu = () => (
         </SubMenu>
         <Menu.ResourceItem name="styles" />
         <hr style={{ width: '70%' }} />
+        <Menu.ResourceItem name="site-settings" />
+        <hr style={{ width: '70%' }} />
         <Menu.ResourceItem name="statistics" />
         <Menu.ResourceItem name="cache" />
     </Menu>

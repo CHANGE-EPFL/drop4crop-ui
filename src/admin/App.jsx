@@ -18,6 +18,7 @@ import climateModels from "./climate-models";
 import scenarios from "./scenarios";
 import variables from "./variables";
 import showcaseItems from "./showcase-items";
+import siteSettings from "./site-settings";
 import axios from "axios";
 import { defaultTheme, defaultDarkTheme } from "react-admin";
 import Dashboard from "./Dashboard";
@@ -207,6 +208,7 @@ const App = () => {
                   <Resource name="styles" {...styles} />
                   <Resource name="statistics" {...statistics} />
                   <Resource name="cache" {...cache} />
+                  <Resource name="site-settings" {...siteSettings} />
                 </>
               ) : null}
             </>
