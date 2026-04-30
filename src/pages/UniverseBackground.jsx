@@ -8,6 +8,10 @@ const SUN_RADIUS_M = 696_340_000;
 const FILL_FRACTION = 0.75;
 const CLICK_RADIUS_PX = 120;
 const SPIN_RATE = 0.10;
+const MOON_VISUAL_RADIUS = EARTH_RADIUS_M * 0.1125;
+const MOON_ORBIT_DIST = EARTH_RADIUS_M * 1.6;
+const MOON_ORBIT_RATE = 0.038;
+const MOON_Z_OFFSET = EARTH_RADIUS_M * 0.45;
 
 const MOON_TEXTURE =
   'https://upload.wikimedia.org/wikipedia/commons/2/26/Solarsystemscope_texture_2k_moon.jpg';
@@ -435,6 +439,7 @@ const UniverseBackground = ({ globeConfig }) => {
   const stateRef = useRef({
     target: 'earth',
     angle: 0,
+    moonAngle: 0,
     lastTimestamp: performance.now(),
     bodyCenter: null,
     bodyRadius: 0,
@@ -488,7 +493,7 @@ const UniverseBackground = ({ globeConfig }) => {
 
     viewer.scene.skyAtmosphere.show = true;
     viewer.scene.sun.show = true;
-    viewer.scene.moon.show = true;
+    viewer.scene.moon.show = false;
     viewer.scene.globe.enableLighting = true;
 
     viewer.scene.skyBox = new Cesium.SkyBox({
@@ -503,7 +508,7 @@ const UniverseBackground = ({ globeConfig }) => {
     });
     viewer.scene.skyBox.show = true;
 
-    viewer.clockViewModel.currentTime = Cesium.JulianDate.now();
+    viewer.clockViewModel.currentTime = Cesium.JulianDate.fromDate(new Date('2024-03-20T12:00:00Z'));
     viewer.clockViewModel.multiplier = 60 * 65;
     viewer.clockViewModel.shouldAnimate = true;
 
@@ -529,6 +534,26 @@ const UniverseBackground = ({ globeConfig }) => {
       new Cesium.Cartesian3(initialDist, 0, 0),
     );
 
+    const moonPos = new Cesium.Cartesian3(
+      MOON_ORBIT_DIST, 0, -MOON_Z_OFFSET,
+    );
+    const moonAppearance = new Cesium.MaterialAppearance({
+      materialSupport: Cesium.MaterialAppearance.MaterialSupport.TEXTURED,
+      material: Cesium.Material.fromType('Image', { image: MOON_TEXTURE }),
+    });
+    const moonPrimitive = viewer.scene.primitives.add(new Cesium.Primitive({
+      geometryInstances: new Cesium.GeometryInstance({
+        geometry: new Cesium.EllipsoidGeometry({
+          radii: new Cesium.Cartesian3(
+            MOON_VISUAL_RADIUS, MOON_VISUAL_RADIUS, MOON_VISUAL_RADIUS,
+          ),
+          vertexFormat: moonAppearance.vertexFormat,
+        }),
+      }),
+      appearance: moonAppearance,
+      modelMatrix: Cesium.Matrix4.fromTranslation(moonPos),
+    }));
+
     const easeInOut = (t) =>
       t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
@@ -538,6 +563,14 @@ const UniverseBackground = ({ globeConfig }) => {
       const dt = (now - state.lastTimestamp) / 1000;
       state.lastTimestamp = now;
       state.angle -= SPIN_RATE * dt;
+
+      if (state.target === 'earth' && !state.transition) {
+        state.moonAngle += MOON_ORBIT_RATE * dt;
+        moonPos.x = MOON_ORBIT_DIST * Math.cos(state.moonAngle);
+        moonPos.y = MOON_ORBIT_DIST * Math.sin(state.moonAngle);
+        moonPos.z = -(MOON_Z_OFFSET + EARTH_RADIUS_M * 0.1 * Math.sin(state.moonAngle * 0.7));
+        moonPrimitive.modelMatrix = Cesium.Matrix4.fromTranslation(moonPos);
+      }
 
       const c = viewer.scene.canvas;
       const a = c.clientWidth / c.clientHeight;
@@ -589,12 +622,18 @@ const UniverseBackground = ({ globeConfig }) => {
 
     // ---- Body position helpers ----
     const getBodyInfo = (bodyType) => {
+      if (bodyType === 'moon') {
+        const pos = Cesium.Cartesian3.clone(moonPos);
+        const screen = Cesium.SceneTransforms.worldToWindowCoordinates(
+          viewer.scene,
+          pos,
+        );
+        return { fixed: pos, screen };
+      }
       const time = viewer.clock.currentTime;
-      const icrf =
-        bodyType === 'moon'
-          ? Cesium.Simon1994PlanetaryPositions.computeMoonPositionInEarthInertialFrame(time)
-          : Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(time);
+      const icrf = Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(time);
       const fixed = toFixedFrame(icrf, time);
+      fixed.z = fixed.z * 0.3 - Cesium.Cartesian3.magnitude(fixed) * 0.02;
       const screen = Cesium.SceneTransforms.worldToWindowCoordinates(
         viewer.scene,
         fixed,
@@ -631,18 +670,6 @@ const UniverseBackground = ({ globeConfig }) => {
         viewer.scene.light = new Cesium.DirectionalLight({ direction: dir });
       }
 
-      if (bodyName === 'moon') {
-        viewer.entities.add({
-          id: 'moon-sphere',
-          position: bodyFixed,
-          ellipsoid: {
-            radii: new Cesium.Cartesian3(MOON_RADIUS_M, MOON_RADIUS_M, MOON_RADIUS_M),
-            material: new Cesium.ImageMaterialProperty({ image: MOON_TEXTURE }),
-          },
-        });
-        viewer.scene.moon.show = false;
-      }
-
       state.bodyCenter = Cesium.Cartesian3.clone(bodyFixed);
       state.bodyRadius = bodyRadius;
 
@@ -675,11 +702,6 @@ const UniverseBackground = ({ globeConfig }) => {
         viewer.scene.sun.show = true;
         viewer.scene.light = new Cesium.SunLight();
       }
-      if (state.target === 'moon') {
-        viewer.entities.removeById('moon-sphere');
-        viewer.scene.moon.show = true;
-      }
-
       state.transition = {
         startTime: performance.now(),
         duration: 2500,
@@ -714,7 +736,7 @@ const UniverseBackground = ({ globeConfig }) => {
       const pos = click.position;
 
       if (moon.screen && dist2D(pos, moon.screen) < CLICK_RADIUS_PX) {
-        flyToBody(moon.fixed, MOON_RADIUS_M, 'moon');
+        flyToBody(moon.fixed, MOON_VISUAL_RADIUS, 'moon');
       } else if (sun.screen && dist2D(pos, sun.screen) < CLICK_RADIUS_PX) {
         flyToBody(sun.fixed, SUN_RADIUS_M, 'sun');
       }
