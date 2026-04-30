@@ -1,7 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
-import Link from '@mui/material/Link';
 
 const CropSpecificPanel = ({
     cropVariables,
@@ -45,25 +44,7 @@ const CropSpecificPanel = ({
                 title={tabConfig?.label || "Crop Specific Variable"}
                 tooltip={tabConfig?.help_text
                     ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
-                    : (
-                    <>
-                        Crop-specific irrigated and rainfed harvested areas are taken from MIRCA2000 dataset (
-                        <Link
-                            href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008GB003435"
-                            target="_blank"
-                            rel="noopener"
-                            sx={{ color: '#acd8d8' }}
-                        >Portmann et al., 2010</Link>) (total area is the sum of irrigated and rainfed
-                        areas). Annual crop-specific yield (also referred to year 2000) is obtained
-                        from <Link
-                            href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2007GB002947"
-                            target="_blank"
-                            rel="noopener"
-                            sx={{ color: '#acd8d8' }}
-                        >Monfreda et al. (2008)</Link>, while annual crop production
-                        is the product between the crop yield and total areas.
-                    </>
-                )}
+                    : null}
                 onClose={handleClose}
             />
             <div className="chips-group">
@@ -71,7 +52,7 @@ const CropSpecificPanel = ({
                     {cropVariables.map(cropVariable => (
                         <Chip
                             key={cropVariable.id}
-                            label={`${cropVariable.name} [${cropVariable.unit}]`}
+                            label={cropVariable.name}
                             clickable
                             className={selectedCropVariable && selectedCropVariable.id === cropVariable.id ? 'active' : ''}
                             disabled={!cropVariable.enabled}

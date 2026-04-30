@@ -41,25 +41,22 @@ const generateStarFace = (size = 2048) => {
 // --- Animated sun corona + flares (2D canvas overlay) ---
 
 const startSunAnimation = (container) => {
-  const dpr = window.devicePixelRatio || 1;
   const w = container.clientWidth;
   const h = container.clientHeight;
 
   const overlay = document.createElement('canvas');
-  overlay.width = w * dpr;
-  overlay.height = h * dpr;
+  overlay.width = w;
+  overlay.height = h;
   overlay.style.cssText =
     'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:10';
   container.appendChild(overlay);
 
   const ctx = overlay.getContext('2d');
-  ctx.scale(dpr, dpr);
 
   const bloom = document.createElement('canvas');
-  bloom.width = w * dpr;
-  bloom.height = h * dpr;
+  bloom.width = w;
+  bloom.height = h;
   const bctx = bloom.getContext('2d');
-  bctx.scale(dpr, dpr);
 
   const cx = w / 2;
   const cy = h / 2;
@@ -96,7 +93,7 @@ const startSunAnimation = (container) => {
       ? (age / 0.12) * peak
       : peak * Math.pow(1 - (age - 0.12) / 0.88, 1.6);
 
-  const NUM_RAYS = 14;
+  const NUM_RAYS = 10;
   const rays = Array.from({ length: NUM_RAYS }, (_, i) => ({
     baseAngle: (i / NUM_RAYS) * Math.PI * 2,
     len: 0.3 + Math.random() * 0.5,
@@ -235,15 +232,22 @@ const startSunAnimation = (container) => {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = bright;
-      ctx.strokeStyle = tempColor(arc.temperature, 0.8);
-      ctx.lineWidth = arc.width;
+
+      ctx.strokeStyle = tempColor(arc.temperature, 0.3);
+      ctx.lineWidth = arc.width * 3;
       ctx.lineCap = 'round';
-      ctx.shadowBlur = arc.width * 3;
-      ctx.shadowColor = tempColor(arc.temperature, 0.5);
       ctx.beginPath();
       ctx.moveTo(sx, sy);
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, ex, ey);
       ctx.stroke();
+
+      ctx.strokeStyle = tempColor(arc.temperature, 0.8);
+      ctx.lineWidth = arc.width;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, ex, ey);
+      ctx.stroke();
+
       ctx.restore();
 
       return true;
@@ -277,7 +281,7 @@ const startSunAnimation = (container) => {
       const p3x = bx + cos * len;
       const p3y = by + sin * len;
 
-      const STEPS = 8;
+      const STEPS = 6;
       const leftX = [], leftY = [], rightX = [], rightY = [];
       for (let i = 0; i <= STEPS; i++) {
         const s = i / STEPS;
@@ -307,7 +311,7 @@ const startSunAnimation = (container) => {
       bctx.closePath();
       bctx.fill();
 
-      if (age > 0.15 && age < 0.75 && embers.length < 30 && Math.random() < 0.12) {
+      if (age > 0.15 && age < 0.75 && embers.length < 15 && Math.random() < 0.12) {
         for (let k = 0; k < 1 + Math.random() * 2; k++) {
           embers.push({
             x: p3x + (Math.random() - 0.5) * 4,
@@ -328,9 +332,7 @@ const startSunAnimation = (container) => {
     // --- Bloom composite ---
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(bloom, 0, 0, w, h);
-    ctx.filter = 'blur(8px)';
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.7;
     ctx.drawImage(bloom, 0, 0, w, h);
     ctx.restore();
 
@@ -351,8 +353,11 @@ const startSunAnimation = (container) => {
         ? age / 0.15
         : Math.pow(1 - (age - 0.15) / 0.85, 2);
 
-      ctx.shadowBlur = 4;
-      ctx.shadowColor = tempColor(e.temperature, bright * 0.7);
+      ctx.fillStyle = tempColor(e.temperature, bright * 0.4);
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.radius * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = tempColor(e.temperature, bright);
       ctx.beginPath();
       ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
@@ -360,7 +365,6 @@ const startSunAnimation = (container) => {
 
       return true;
     });
-    ctx.shadowBlur = 0;
     ctx.restore();
 
     // --- Enhanced pulsing limb glow ---

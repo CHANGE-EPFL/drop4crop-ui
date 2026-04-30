@@ -19,9 +19,10 @@ import DownloadPanel from './Panels/Download';
 import InfoPanel from './Panels/Info';
 import CropSpecificPanel from './Panels/CropSpecific';
 
-// Helper to render variable abbreviation with subscript
 const renderAbbreviation = (variable) => {
   if (!variable) return '';
+  const hasAbbr = variable.abbreviation && variable.abbreviation.trim();
+  if (!hasAbbr) return variable.name || '';
   if (variable.subscript) {
     return <>{variable.abbreviation}<sub>{variable.subscript}</sub></>;
   }
@@ -222,7 +223,7 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
                 <div className="button-content">
                   <GrassIcon />
                   <span>{tabConfig.crop_specific?.label || 'Crop Specific'}</span>
-                  <span className="current-selection">{selectedCropVariable ? `${selectedCropVariable.abbreviation} ` : ''}</span>
+                  <span className="current-selection">{selectedCropVariable ? (selectedCropVariable.abbreviation || selectedCropVariable.name || '') : ''}</span>
                 </div>
               </button>
             )}

@@ -1,20 +1,27 @@
 import React, { useState, useMemo } from 'react';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
-// Helper to render variable label with subscript
 const renderVariableLabel = (variable) => {
-    if (variable.subscript) {
-        return (
-            <span>
-                {variable.name} ({variable.abbreviation}<sub>{variable.subscript}</sub>)
-            </span>
-        );
+    const hasName = variable.name && variable.name.trim();
+    const hasAbbr = variable.abbreviation && variable.abbreviation.trim();
+
+    if (hasName && hasAbbr) {
+        if (variable.subscript) {
+            return <span>{variable.name} ({variable.abbreviation}<sub>{variable.subscript}</sub>)</span>;
+        }
+        return `${variable.name} (${variable.abbreviation})`;
     }
-    return `${variable.name} (${variable.abbreviation})`;
+    if (hasName) return variable.name;
+    if (hasAbbr) {
+        if (variable.subscript) {
+            return <span>{variable.abbreviation}<sub>{variable.subscript}</sub></span>;
+        }
+        return variable.abbreviation;
+    }
+    return variable.slug || variable.id;
 };
 
 const VariablePanel = ({
@@ -67,11 +74,7 @@ const VariablePanel = ({
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <PanelTitleWithTooltip title={tabConfig?.label || "Variable"} tooltip={tabConfig?.help_text
                         ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
-                        : (
-                        <>
-                            Definition and details about the listed variables can be found in [<i>future link to our publication</i>].
-                        </>
-                    )} />
+                        : null} />
                 </div>
                 <Tooltip
                     title="Close panel"

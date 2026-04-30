@@ -27,12 +27,7 @@ const ScenarioPanel = ({
                 title={tabConfig?.label || "Scenario"}
                 tooltip={tabConfig?.help_text
                     ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
-                    : (
-                    <>
-                        Representative Concentration Pathways (RCP) as formally
-                        adopted by the Intergovernmental Panel Climate Change (IPCC).
-                    </>
-                )}
+                    : null}
                 onClose={handleClose}
             />
             <div className="chips-list">

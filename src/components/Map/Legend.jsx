@@ -279,14 +279,16 @@ const createLegendContainer = (
   return legendContainer;
 };
 
-// Helper to format variable abbreviation with subscript as HTML.
-// Renders strictly from variable properties: abbreviation + optional subscript + unit.
 const formatAbbreviationHtml = (variable) => {
   if (!variable) return "Legend";
-  const displayName = variable.subscript
-    ? `${variable.abbreviation}<sub>${variable.subscript}</sub>`
-    : variable.abbreviation;
-  return `${displayName} [${variable.unit}]`;
+  const hasAbbr = variable.abbreviation && variable.abbreviation.trim();
+  const hasUnit = variable.unit && variable.unit.trim();
+  const base = hasAbbr
+    ? (variable.subscript
+        ? `${variable.abbreviation}<sub>${variable.subscript}</sub>`
+        : variable.abbreviation)
+    : (variable.name || "Legend");
+  return hasUnit ? `${base} [${variable.unit}]` : base;
 };
 
 export const LegendControl = ({

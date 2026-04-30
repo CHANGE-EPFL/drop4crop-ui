@@ -25,15 +25,17 @@ const PanelTitleWithTooltip = ({ title, tooltip, onClose }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 <Typography variant="h6" style={{ fontSize: '1rem' }}>{title}</Typography>
-                <Tooltip
-                    title={tooltip}
-                    placement="right"
-                    disableFocusListener disableTouchListener enterDelay={10}
-                    arrow
-                    style={{ marginLeft: '5px', marginBottom: '4px' }}
-                >
-                    <HelpOutlineIcon sx={{ fontSize: '1rem', color: '#acd8d8' }} />
-                </Tooltip>
+                {tooltip && (
+                    <Tooltip
+                        title={tooltip}
+                        placement="right"
+                        disableFocusListener disableTouchListener enterDelay={10}
+                        arrow
+                        style={{ marginLeft: '5px', marginBottom: '4px' }}
+                    >
+                        <HelpOutlineIcon sx={{ fontSize: '1rem', color: '#acd8d8' }} />
+                    </Tooltip>
+                )}
             </div>
             {onClose && (
                 <Tooltip

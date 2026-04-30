@@ -9,8 +9,8 @@ const VariableForm = ({ isEdit = false }: VariableFormProps) => {
         <>
             {isEdit && <TextInput source="id" disabled />}
             <TextInput source="slug" validate={[required()]} fullWidth helperText="URL-friendly identifier matching layer filenames" />
-            <TextInput source="name" validate={[required()]} fullWidth />
-            <TextInput source="abbreviation" validate={[required()]} fullWidth helperText="Short label for UI display (e.g., VWC, WF, ET)" />
+            <TextInput source="name" fullWidth helperText="Display name (optional — leave blank to show only abbreviation)" />
+            <TextInput source="abbreviation" fullWidth helperText="Short label for UI display (e.g., VWC, WF, ET). Optional — leave blank to show only name." />
             <TextInput source="subscript" fullWidth helperText="Optional subscript (e.g., b for blue, g for green)" />
             <TextInput source="unit" validate={[required()]} fullWidth />
             <BooleanInput source="is_crop_specific" defaultValue={false} />

@@ -1,7 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
-import Link from '@mui/material/Link';
 
 const GlobalWaterModelsPanel = ({
     globalWaterModels,
@@ -28,31 +27,7 @@ const GlobalWaterModelsPanel = ({
                 title={tabConfig?.label || "Global Water Model"}
                 tooltip={tabConfig?.help_text
                     ? <MarkdownTooltip>{tabConfig.help_text}</MarkdownTooltip>
-                    : (
-                    <>
-                        Potential evapotranspiration (<i>potevap</i>), total groundwater
-                        recharge (<i>qr</i>), surface runoff (<i>qs</i>), soil moisture
-                        content at root zone (<i>rootmoist</i>) used in the crop-specific
-                        evapotranspiration model (<i>future link to our publication</i>) are
-                        derived from the corresponding Global Water Model,
-                        in <Link
-                            href="https://data.isimip.org/"
-                            target="_blank"
-                            rel="noopener"
-                            sx={{ color: '#acd8d8' }}
-                        >ISIMIP Repository</Link>, simulation protocol <Link
-                            href="https://www.isimip.org/protocol/2b/"
-                            target="_blank"
-                            rel="noopener"
-                            sx={{ color: '#acd8d8' }}
-                        >ISIMIP2b</Link> (Output Data &gt; Water (global)).
-                        For each simulation year (timeline 2000-2090), a long-term
-                        average centered around the year of interest is considered. In
-                        particular, 3-year average for <i>potevap</i>, 5-year average
-                        for <i>qs</i> and <i>rootmoist</i>, 10-year average for <i>qr</i> (for
-                        details see <i>future link to our publication</i>).
-                    </>
-                )}
+                    : null}
                 onClose={handleClose}
             />
             <div className="chips-list">

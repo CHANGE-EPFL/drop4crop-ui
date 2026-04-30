@@ -13,6 +13,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    TablePagination,
     Paper,
     IconButton,
     Dialog,
@@ -45,6 +46,8 @@ export const CacheManagement = () => {
     const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
     const [clearLayerDialogOpen, setClearLayerDialogOpen] = useState(false);
     const [selectedLayer, setSelectedLayer] = useState(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(25);
 
     const fetchCacheData = async () => {
         setLoading(true);
@@ -154,7 +157,7 @@ export const CacheManagement = () => {
                         </Box>
                     </Box>
                     {aggregatedCache.length > 0 ? (
-                        <TableContainer component={Paper} sx={{ mt: 2 }}>
+                        <><TableContainer component={Paper} sx={{ mt: 2 }}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
@@ -166,7 +169,7 @@ export const CacheManagement = () => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {aggregatedCache.map((item, index) => (
+                                    {aggregatedCache.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                                         <TableRow
                                             key={index}
                                             hover
@@ -265,6 +268,18 @@ export const CacheManagement = () => {
                                 </TableBody>
                             </Table>
                         </TableContainer>
+                        <TablePagination
+                            component="div"
+                            count={aggregatedCache.length}
+                            page={page}
+                            onPageChange={(_, p) => setPage(p)}
+                            rowsPerPage={rowsPerPage}
+                            onRowsPerPageChange={(e) => {
+                                setRowsPerPage(parseInt(e.target.value, 10));
+                                setPage(0);
+                            }}
+                            rowsPerPageOptions={[10, 25, 50, 100]}
+                        /></>
                     ) : (
                         <Alert severity="info" sx={{ mt: 2 }}>
                             No cached layers found. Layers are cached when accessed.
