@@ -215,9 +215,8 @@
 
 .map-change-logo {
     position: absolute;
-    bottom: 30px;
-    right: 10px;
-    transform: translateX(50%);
+    bottom: 38px;
+    right: 50px;
     z-index: 1000;
     opacity: 0.55;
     transition: opacity 0.25s ease;
