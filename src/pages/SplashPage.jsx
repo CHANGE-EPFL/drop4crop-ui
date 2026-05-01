@@ -128,7 +128,7 @@ const SplashBackground = ({ globeConfig }) => {
 // real-physics Cesium scene (Earth + Moon + Sun + stars). The glyph keeps
 // the default text cursor and no hover style — invisible to anyone who
 // doesn't already know.
-const EGG_CLICK_THRESHOLD = 5;
+const EGG_CLICK_THRESHOLD = 4;
 const EGG_WINDOW_MS = 2000;
 
 const SplashPage = () => {
