@@ -16,6 +16,7 @@ export const MyMenu = () => (
             <Menu.ResourceItem name="climate-models" />
             <Menu.ResourceItem name="scenarios" />
             <Menu.ResourceItem name="variables" />
+            <Menu.ResourceItem name="variable-groups" />
         </SubMenu>
         <Menu.ResourceItem name="styles" />
         <hr style={{ width: '70%' }} />

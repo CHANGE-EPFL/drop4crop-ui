@@ -216,7 +216,8 @@
 .map-change-logo {
     position: absolute;
     bottom: 30px;
-    right: 50px;
+    right: 10px;
+    transform: translateX(50%);
     z-index: 1000;
     opacity: 0.55;
     transition: opacity 0.25s ease;
@@ -228,7 +229,7 @@
 }
 
 .map-change-logo img {
-    height: 60px;
+    height: 51px;
     width: auto;
     display: block;
 }

@@ -17,6 +17,7 @@ import waterModels from "./water-models";
 import climateModels from "./climate-models";
 import scenarios from "./scenarios";
 import variables from "./variables";
+import variableGroups from "./variable-groups";
 import showcaseItems from "./showcase-items";
 import siteSettings from "./site-settings";
 import axios from "axios";
@@ -203,6 +204,7 @@ const App = () => {
                   <Resource name="climate-models" {...climateModels} />
                   <Resource name="scenarios" {...scenarios} />
                   <Resource name="variables" {...variables} />
+                  <Resource name="variable-groups" {...variableGroups} />
                   <Resource name="showcase-items" {...showcaseItems} />
                   <Resource name="layers" {...layers} />
                   <Resource name="styles" {...styles} />

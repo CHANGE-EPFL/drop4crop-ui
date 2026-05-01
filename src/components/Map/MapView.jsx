@@ -14,6 +14,22 @@ import { MapOverlay } from './Overlays';
 import { MapClickHandler } from './Queries';
 import { LegendControl } from './Legend';
 import { AppContext } from '../../contexts/AppContext';
+import { useProject } from '../../contexts/ProjectContext';
+
+function ProjectExtent() {
+  const map = useMap();
+  const { config } = useProject() || {};
+  const applied = useRef(false);
+  useEffect(() => {
+    if (applied.current || !config) return;
+    const p = config.project;
+    if (p?.use_card_as_extent && p.latitude != null && p.longitude != null && p.zoom_level != null) {
+      map.setView([p.latitude, p.longitude], p.zoom_level);
+    }
+    applied.current = true;
+  }, [config, map]);
+  return null;
+}
 
 function UpdateMapZoom({ computedZoom, resetView, onResetDone }) {
   const map = useMap();
@@ -130,6 +146,7 @@ const MapView = forwardRef((props, ref) => {
           resetView={resetView}
           onResetDone={() => setResetView(false)}
         />
+        <ProjectExtent />
         <DragCursorHandler />
         <MapOverlay layerName={layerName} loading={loadingLayer} />
         <TileLayer

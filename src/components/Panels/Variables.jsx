@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
 const renderVariableLabel = (variable) => {
@@ -24,6 +25,35 @@ const renderVariableLabel = (variable) => {
     return variable.slug || variable.id;
 };
 
+const GroupHelpIcon = ({ helpText }) => {
+    if (!helpText) return null;
+    return (
+        <Tooltip
+            title={<MarkdownTooltip>{helpText}</MarkdownTooltip>}
+            placement="right"
+            disableFocusListener disableTouchListener enterDelay={10}
+            arrow
+        >
+            <HelpOutlineIcon sx={{ fontSize: '0.9rem', color: '#acd8d8', marginLeft: '5px', cursor: 'help' }} />
+        </Tooltip>
+    );
+};
+
+const VariableChips = ({ vars, selectedVariable, handleChipClick }) => (
+    <div className="chips-list">
+        {vars.map(variable => (
+            <Chip
+                key={variable.id}
+                label={renderVariableLabel(variable)}
+                clickable
+                className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
+                disabled={!variable.enabled}
+                onClick={() => handleChipClick(variable)}
+            />
+        ))}
+    </div>
+);
+
 const VariablePanel = ({
     variables,
     selectedVariable,
@@ -40,32 +70,70 @@ const VariablePanel = ({
 
     const handleChipClick = (variable) => {
         if (selectedVariable && selectedVariable.id === variable.id) {
-            setSelectedVariable(undefined);  // Deselect if the same variable is clicked
+            setSelectedVariable(undefined);
         } else {
-            // Clear the layer immediately when switching from crop-specific to time-based variable
-            // This prevents the old layer from persisting during the transition
             if (selectedCropVariable) {
-                setLayerName(null);  // Clear map layer immediately
-                setSelectedCropVariable(undefined);  // Deselect the Crop variable, as we cannot have both at the same time
+                setLayerName(null);
+                setSelectedCropVariable(undefined);
             }
-            setSelectedVariable(variable);  // Select the variable
+            setSelectedVariable(variable);
             setActivePanel(null);
         }
     };
 
-    // Dynamically group variables by group_name
-    const groups = useMemo(() => {
-        const result = {};
+    const { tieredGroups, flatGroups } = useMemo(() => {
+        const tiered = {};
+        const flat = {};
+
         variables.forEach(v => {
-            const group = v.group_name || 'Other';
-            if (!result[group]) result[group] = [];
-            result[group].push(v);
+            if (v.tier1_group) {
+                if (!tiered[v.tier1_group]) {
+                    tiered[v.tier1_group] = {
+                        helpText: v.tier1_help_text || null,
+                        sortOrder: v.tier1_sort_order ?? 0,
+                        tier2s: {},
+                        directVars: [],
+                    };
+                }
+                if (!tiered[v.tier1_group].helpText && v.tier1_help_text) {
+                    tiered[v.tier1_group].helpText = v.tier1_help_text;
+                }
+
+                if (v.group_name) {
+                    if (!tiered[v.tier1_group].tier2s[v.group_name]) {
+                        tiered[v.tier1_group].tier2s[v.group_name] = {
+                            helpText: v.group_help_text || null,
+                            sortOrder: v.group_sort_order ?? 0,
+                            vars: [],
+                        };
+                    }
+                    if (!tiered[v.tier1_group].tier2s[v.group_name].helpText && v.group_help_text) {
+                        tiered[v.tier1_group].tier2s[v.group_name].helpText = v.group_help_text;
+                    }
+                    tiered[v.tier1_group].tier2s[v.group_name].vars.push(v);
+                } else {
+                    tiered[v.tier1_group].directVars.push(v);
+                }
+            } else {
+                const group = v.group_name || 'Other';
+                if (!flat[group]) flat[group] = { helpText: v.group_help_text || null, vars: [] };
+                if (!flat[group].helpText && v.group_help_text) flat[group].helpText = v.group_help_text;
+                flat[group].vars.push(v);
+            }
         });
-        // Sort variables within each group by sort_order
-        Object.values(result).forEach(groupVars => {
-            groupVars.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+        const sortVars = (vars) => vars.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+        Object.values(tiered).forEach(t1 => {
+            sortVars(t1.directVars);
+            Object.values(t1.tier2s).forEach(t2 => sortVars(t2.vars));
         });
-        return result;
+        Object.values(flat).forEach(g => sortVars(g.vars));
+
+        const sortedTiered = Object.entries(tiered)
+            .sort(([, a], [, b]) => a.sortOrder - b.sortOrder);
+
+        return { tieredGroups: sortedTiered, flatGroups: Object.entries(flat) };
     }, [variables]);
 
     return (
@@ -97,21 +165,43 @@ const VariablePanel = ({
             </div>
 
             <>
-                {Object.entries(groups).map(([groupName, groupVars]) => (
-                    <div className="chips-group" key={groupName}>
-                        <h5>{groupName}</h5>
-                        <div className="chips-list">
-                            {groupVars.map(variable => (
-                                <Chip
-                                    key={variable.id}
-                                    label={renderVariableLabel(variable)}
-                                    clickable
-                                    className={selectedVariable && selectedVariable.id === variable.id ? 'active' : ''}
-                                    disabled={!variable.enabled}
-                                    onClick={() => handleChipClick(variable)}
-                                />
-                            ))}
+                {/* Tiered groups: tier1 sections containing tier2 sub-groups */}
+                {tieredGroups.map(([tier1Name, tier1Data], idx) => (
+                    <div key={tier1Name} style={idx > 0 || flatGroups.length > 0 ? { borderTop: '1px solid #555', marginTop: '0.6rem', paddingTop: '0.4rem' } : undefined}>
+                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
+                            <h4 style={{ margin: 0, color: '#acd8d8', fontSize: '0.95rem', fontWeight: 500 }}>{tier1Name}</h4>
+                            <GroupHelpIcon helpText={tier1Data.helpText} />
                         </div>
+
+                        {/* Variables directly under tier1 (no tier2 sub-group) */}
+                        {tier1Data.directVars.length > 0 && (
+                            <VariableChips vars={tier1Data.directVars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
+                        )}
+
+                        {/* Tier2 sub-groups */}
+                        {Object.entries(tier1Data.tier2s)
+                            .sort(([, a], [, b]) => a.sortOrder - b.sortOrder)
+                            .map(([t2Name, t2Data]) => (
+                                <div className="chips-group" key={t2Name}>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <h5 style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>{t2Name}</h5>
+                                        <GroupHelpIcon helpText={t2Data.helpText} />
+                                    </div>
+                                    <VariableChips vars={t2Data.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
+                                </div>
+                            ))
+                        }
+                    </div>
+                ))}
+
+                {/* Flat groups: current behaviour for variables without tier1 */}
+                {flatGroups.map(([groupName, groupData]) => (
+                    <div className="chips-group" key={groupName}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <h5>{groupName}</h5>
+                            <GroupHelpIcon helpText={groupData.helpText} />
+                        </div>
+                        <VariableChips vars={groupData.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
                     </div>
                 ))}
             </>

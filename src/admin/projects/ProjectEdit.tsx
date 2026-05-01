@@ -169,6 +169,11 @@ const ProjectEdit = () => {
                     />
                 </Box>
                 <BooleanInput source="enabled" />
+                <BooleanInput
+                    source="use_card_as_extent"
+                    label="Use card extent as map default"
+                    helperText="When enabled, the public map opens at this project's lat/lon/zoom instead of the full-world view"
+                />
                 <NumberInput
                     source="sort_order"
                     helperText="Lower numbers appear first on the splash page"

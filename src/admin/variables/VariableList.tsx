@@ -4,6 +4,7 @@ import {
     TextField,
     NumberField,
     BooleanField,
+    ReferenceField,
 } from 'react-admin';
 
 const VariableList = () => {
@@ -17,6 +18,9 @@ const VariableList = () => {
                 <BooleanField source="is_crop_specific" />
                 <BooleanField source="has_time" label="Has time" />
                 <TextField source="group_name" />
+                <ReferenceField source="group_id" reference="variable-groups" link="edit" emptyText="—">
+                    <TextField source="name" />
+                </ReferenceField>
                 <NumberField source="sort_order" />
             </Datagrid>
         </List>

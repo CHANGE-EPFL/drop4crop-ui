@@ -183,6 +183,12 @@ const ProjectCreate = () => {
                     />
                 </Box>
                 <BooleanInput source="enabled" defaultValue={true} />
+                <BooleanInput
+                    source="use_card_as_extent"
+                    defaultValue={false}
+                    label="Use card extent as map default"
+                    helperText="When enabled, the public map opens at this project's lat/lon/zoom instead of the full-world view"
+                />
                 <NumberInput
                     source="sort_order"
                     defaultValue={0}

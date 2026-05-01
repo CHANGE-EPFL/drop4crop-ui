@@ -1,4 +1,4 @@
-import { BooleanInput, NumberInput, TextInput, required } from 'react-admin';
+import { BooleanInput, NumberInput, TextInput, ReferenceInput, AutocompleteInput, required } from 'react-admin';
 
 interface VariableFormProps {
     isEdit?: boolean;
@@ -19,7 +19,10 @@ const VariableForm = ({ isEdit = false }: VariableFormProps) => {
                 defaultValue={true}
                 helperText="Whether this variable varies over time. Controls the year slider in the public UI."
             />
-            <TextInput source="group_name" fullWidth helperText="UI grouping name (e.g., Water Footprint, Evapotranspiration)" />
+            <TextInput source="group_name" fullWidth helperText="Legacy grouping name (use Group dropdown below instead)" />
+            <ReferenceInput source="group_id" reference="variable-groups" perPage={100}>
+                <AutocompleteInput optionText="name" label="Group" helperText="Variable group for UI hierarchy" fullWidth />
+            </ReferenceInput>
             <NumberInput source="sort_order" defaultValue={0} />
         </>
     );
