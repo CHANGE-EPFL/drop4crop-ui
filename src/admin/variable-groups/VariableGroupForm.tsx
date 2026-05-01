@@ -14,7 +14,7 @@ const VariableGroupForm = ({ isEdit = false }: VariableGroupFormProps) => {
     return (
         <>
             {isEdit && <TextInput source="id" disabled />}
-            <TextInput source="name" validate={[required()]} fullWidth helperText="Group display name (e.g., Soil factors, Partial Suitability Index)" />
+            <TextInput source="name" validate={[required()]} fullWidth helperText="Group display name (e.g., Soil factors). Use <br> for a new line." />
             <TextInput
                 source="help_text"
                 multiline

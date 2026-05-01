@@ -3,6 +3,7 @@ import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import ReactMarkdown from 'react-markdown';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
 const renderVariableLabel = (variable) => {
@@ -169,7 +170,9 @@ const VariablePanel = ({
                 {tieredGroups.map(([tier1Name, tier1Data], idx) => (
                     <div key={tier1Name} style={idx > 0 || flatGroups.length > 0 ? { borderTop: '1px solid #555', marginTop: '0.6rem', paddingTop: '0.4rem' } : undefined}>
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
-                            <h4 style={{ margin: 0, color: '#acd8d8', fontSize: '0.95rem', fontWeight: 500 }}>{tier1Name}</h4>
+                            <h4 style={{ margin: 0, color: '#acd8d8', fontSize: '0.95rem', fontWeight: 500 }}>
+                                <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{tier1Name}</ReactMarkdown>
+                            </h4>
                             <GroupHelpIcon helpText={tier1Data.helpText} />
                         </div>
 
@@ -184,7 +187,9 @@ const VariablePanel = ({
                             .map(([t2Name, t2Data]) => (
                                 <div className="chips-group" key={t2Name}>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <h5 style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>{t2Name}</h5>
+                                        <h5 style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
+                                            <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{t2Name}</ReactMarkdown>
+                                        </h5>
                                         <GroupHelpIcon helpText={t2Data.helpText} />
                                     </div>
                                     <VariableChips vars={t2Data.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
