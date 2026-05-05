@@ -104,7 +104,7 @@ const SplashBackground = ({ globeConfig }) => {
       map.setCenter([c.lng - ROTATION_SPEED, c.lat]);
       frameRef.current = requestAnimationFrame(rotate);
     };
-    map.on('load', rotate);
+    map.once('style.load', rotate);
 
     const ro = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
