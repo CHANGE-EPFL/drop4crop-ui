@@ -4,6 +4,12 @@
 // position order is fixed regardless of which axes the project uses, so that
 // scripted renames/generators don't need to know about project config. Unused
 // middle slots carry the sentinel `null` or `nan` (case-insensitive).
+//
+// When the caller passes `axes`, we ALSO accept a project-specific minimised
+// form that omits the literal `null`/`nan` slots for axes the project doesn't
+// use — so a project that only uses crop+variable+year accepts
+// `{crop}_{variable}_{year}.tif` rather than `{crop}_null_null_null_{variable}_{year}.tif`.
+// The position order of the remaining slots still matches the canonical form.
 
 export type ParsedFilename =
     | {
@@ -30,7 +36,26 @@ function parseNullableSlot(slot: string): string | null {
     return NULLABLE_SENTINELS.has(slot.toLowerCase()) ? null : slot;
 }
 
-export function parseFilename(filename: string): ParsedFilename {
+/** Returns a parsed year if `s` is a 4-digit integer or a null sentinel.
+ *  Returns `undefined` when the token is neither — caller can fall through
+ *  to a different filename shape. */
+function parseYearSlot(s: string): number | null | undefined {
+    if (NULLABLE_SENTINELS.has(s)) return null;
+    if (!/^\d{4}$/.test(s)) return undefined;
+    const parsed = Number.parseInt(s, 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/** Which axes the project uses. Drives project-specific minimised filename
+ *  parsing — only the axes that are `true` here appear in the minimised form. */
+export interface ProjectAxes {
+    water_model: boolean;
+    climate_model: boolean;
+    scenario: boolean;
+    year: boolean;
+}
+
+export function parseFilename(filename: string, axes?: ProjectAxes): ParsedFilename {
     const lower = filename.toLowerCase();
     let stem: string;
     if (lower.endsWith(".tif")) {
@@ -102,6 +127,49 @@ export function parseFilename(filename: string): ParsedFilename {
             variable: `${base}_perc`,
             year,
         };
+    }
+
+    // Project-specific minimised form. The shape is:
+    //   {crop}_[water_model]_[climate_model]_[scenario]_{variable}_[year].tif
+    // where the bracketed slots only appear when the project uses that axis.
+    // Total expected parts = 1 (crop) + (axes used) + 1 (variable) + (year ? 1 : 0).
+    // Only matches when `axes` is provided AND the count differs from the canonical 6,
+    // so the canonical form always still parses without project context.
+    if (axes) {
+        const middleCount =
+            (axes.water_model ? 1 : 0) +
+            (axes.climate_model ? 1 : 0) +
+            (axes.scenario ? 1 : 0);
+        const expected = 1 + middleCount + 1 + (axes.year ? 1 : 0);
+        // 2-part filenames stay in the crop-specific branch (existing semantics).
+        // 6-part filenames always go through the canonical block above.
+        if (parts.length === expected && parts.length >= 3 && parts.length !== 6) {
+            let i = 0;
+            const crop = parts[i++];
+            const water_model = axes.water_model ? parseNullableSlot(parts[i++]) : null;
+            const climate_model = axes.climate_model ? parseNullableSlot(parts[i++]) : null;
+            const scenario = axes.scenario ? parseNullableSlot(parts[i++]) : null;
+            const variableSlot = parts[i++];
+            const variable = parseNullableSlot(variableSlot);
+            let year: number | null = null;
+            if (axes.year) {
+                const y = parseYearSlot(parts[i++]);
+                if (y === undefined) {
+                    return { ok: false, error: `Invalid year in filename: ${parts[i - 1]}` };
+                }
+                year = y;
+            }
+            return {
+                ok: true,
+                kind: "climate",
+                crop,
+                water_model,
+                climate_model,
+                scenario,
+                variable,
+                year,
+            };
+        }
     }
 
     if (parts.length >= 2 && parts.length <= 5) {

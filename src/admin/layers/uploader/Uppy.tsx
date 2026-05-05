@@ -15,7 +15,7 @@ import "@uppy/dashboard/css/style.min.css";
 import "./UppyUploader.css"; // Import custom CSS
 
 import { parseFilename, extractSlugs } from "./parseFilename";
-import type { ParsedFilename, SlugField } from "./parseFilename";
+import type { ParsedFilename, ProjectAxes, SlugField } from "./parseFilename";
 import { useProjectConfig } from "./useProjectConfig";
 import type { ProjectConfig } from "./useProjectConfig";
 import {
@@ -239,6 +239,19 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
     (v) => !v.is_crop_specific
   );
 
+  // Project axes drive project-specific minimised filename parsing. Only the
+  // axes that are `true` here appear in the minimised form — so a project that
+  // doesn't use water_model/climate_model/scenario lets the user upload
+  // `barley_deltae_2080.tif` instead of `barley_null_null_null_deltae_2080.tif`.
+  const projectAxes: ProjectAxes | undefined = projectConfig
+    ? {
+        water_model: (projectConfig.water_models ?? []).length > 0,
+        climate_model: (projectConfig.climate_models ?? []).length > 0,
+        scenario: (projectConfig.scenarios ?? []).length > 0,
+        year: projectConfig.project?.year_axis != null,
+      }
+    : undefined;
+
   // Get the token using the auth provider
   const token = authProvider?.getToken() || "dev-token";
   const headers = {
@@ -447,7 +460,7 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
           notify(`File ${f.name} is not a valid GeoTIFF file`, { type: "warning" });
           return false;
         })
-        .map((f) => ({ file: f, parsed: parseFilename(f.name) }));
+        .map((f) => ({ file: f, parsed: parseFilename(f.name, projectAxes) }));
 
       const { invalid, ready, missing } = await classifyMissingSlugs(
         parsedFiles.map((p) => ({ filename: p.file.name, parsed: p.parsed })),
@@ -505,8 +518,24 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
           .getProjectConfig(projectSlug)
           .then((r: any) => r.data as ProjectConfig)
           .catch(() => projectConfig);
+        // Newly-attached entities can change which axes the project uses, so
+        // re-derive axes and re-parse each held filename with them. Without
+        // this, a freshly-attached water_model wouldn't unblock minimised
+        // filenames that depend on it being part of the expected position layout.
+        const freshAxes: ProjectAxes | undefined = fresh
+          ? {
+              water_model: (fresh.water_models ?? []).length > 0,
+              climate_model: (fresh.climate_models ?? []).length > 0,
+              scenario: (fresh.scenarios ?? []).length > 0,
+              year: fresh.project?.year_axis != null,
+            }
+          : projectAxes;
+        const reparsed = pendingFiles.map((p) => ({
+          file: p.file,
+          parsed: parseFilename(p.file.name, freshAxes),
+        }));
         const { ready, missing, invalid } = await classifyMissingSlugs(
-          pendingFiles.map((p) => ({ filename: p.file.name, parsed: p.parsed })),
+          reparsed.map((p) => ({ filename: p.file.name, parsed: p.parsed })),
           fresh ?? projectConfig!,
           dataProvider as any,
         );
@@ -534,6 +563,7 @@ export const UppyUploader = ({ onUploadProgress, actionButton, projectId, projec
       dataProvider,
       notify,
       pendingFiles,
+      projectAxes,
       projectConfig,
       projectId,
       projectSlug,
@@ -717,6 +747,33 @@ function FilenameHint({
     hasTimeline ? "2080" : "null",
   ].join("_") + ".tif";
 
+  // Project-specific minimised template — only the axes the project uses appear,
+  // in the same canonical order as the full form. Skipped axes ({crop} and
+  // {variable} are always present; the year only shows when the project has a
+  // year axis).
+  const minimisedSlots: string[] = ["{crop}"];
+  if (hasWaterModels) minimisedSlots.push("{water_model}");
+  if (hasClimateModels) minimisedSlots.push("{climate_model}");
+  if (hasScenarios) minimisedSlots.push("{scenario}");
+  if (hasGeneralVariables) minimisedSlots.push("{variable}");
+  if (hasTimeline) minimisedSlots.push("{year}");
+  const minimisedTemplate = minimisedSlots.join("_") + ".tif";
+
+  const minimisedExampleSlots: string[] = [firstSlug(config.crops, "crop")];
+  if (hasWaterModels) minimisedExampleSlots.push(firstSlug(config.water_models));
+  if (hasClimateModels) minimisedExampleSlots.push(firstSlug(config.climate_models));
+  if (hasScenarios) minimisedExampleSlots.push(firstSlug(config.scenarios));
+  if (hasGeneralVariables) minimisedExampleSlots.push(firstSlug(generalVars));
+  if (hasTimeline) minimisedExampleSlots.push("2080");
+  const minimisedExample = minimisedExampleSlots.join("_") + ".tif";
+
+  // Show the minimised form only when it's actually shorter than the canonical 6-part
+  // form. Equal length means all axes are used and minimisation is a no-op. We also
+  // require >=3 parts here because 2-part is reserved for the crop-specific form.
+  const minimisedSlotsCount = minimisedSlots.length;
+  const showMinimised =
+    hasGeneralVariables && minimisedSlotsCount >= 3 && minimisedSlotsCount < 6;
+
   const cropExample =
     hasCropSpecificVariables && cropVars.length > 0 && config.crops.length > 0
       ? `${firstSlug(config.crops)}_${firstSlug(cropVars)}.tif`
@@ -806,15 +863,15 @@ function FilenameHint({
         </Box>
       )}
 
-      {!hasWaterModels && !hasClimateModels && !hasScenarios && !hasTimeline && hasGeneralVariables && (
+      {showMinimised && (
         <Box sx={{ mt: 1.5 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-            Since all middle axes and year are disabled, the short form is also
-            accepted:{" "}
-            <code>{"{crop}_{variable}.tif"}</code>
+            For this project, the minimised form is also accepted (literal{" "}
+            <code>null</code> slots dropped for axes the project doesn't use):{" "}
+            <code>{minimisedTemplate}</code>
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-            Example: <code>{firstSlug(config.crops, "crop")}_{firstSlug(generalVars)}.tif</code>
+            Example: <code>{minimisedExample}</code>
           </Typography>
         </Box>
       )}
