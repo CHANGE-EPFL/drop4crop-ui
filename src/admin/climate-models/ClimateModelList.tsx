@@ -4,6 +4,7 @@ import {
     TextField,
     NumberField,
 } from 'react-admin';
+import { LayerCountField } from '../shared/LayerCountField';
 
 const ClimateModelList = () => {
     return (
@@ -11,6 +12,7 @@ const ClimateModelList = () => {
             <Datagrid rowClick="edit">
                 <TextField source="slug" />
                 <TextField source="name" />
+                <LayerCountField label="Layers" />
                 <NumberField source="sort_order" />
             </Datagrid>
         </List>

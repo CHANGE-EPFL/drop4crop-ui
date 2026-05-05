@@ -6,6 +6,7 @@ import {
     BooleanField,
     ReferenceField,
 } from 'react-admin';
+import { LayerCountField } from '../shared/LayerCountField';
 
 const VariableList = () => {
     return (
@@ -13,6 +14,7 @@ const VariableList = () => {
             <Datagrid rowClick="edit">
                 <TextField source="slug" />
                 <TextField source="name" />
+                <LayerCountField label="Layers" />
                 <TextField source="abbreviation" />
                 <TextField source="unit" />
                 <BooleanField source="is_crop_specific" />
