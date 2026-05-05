@@ -9,7 +9,7 @@ const FILL_FRACTION = 0.75;
 const CLICK_RADIUS_PX = 120;
 const SPIN_RATE = 0.10;
 const MOON_VISUAL_RADIUS = EARTH_RADIUS_M * 0.1125;
-const MOON_ORBIT_DIST = EARTH_RADIUS_M * 4.0;
+const MOON_ORBIT_DIST = EARTH_RADIUS_M * 5.0;
 const MOON_ORBIT_RATE = 0.038;
 const MOON_Z_OFFSET = EARTH_RADIUS_M * 0.45;
 
@@ -538,8 +538,26 @@ const UniverseBackground = ({ globeConfig }) => {
       MOON_ORBIT_DIST, 0, -MOON_Z_OFFSET,
     );
     const moonAppearance = new Cesium.MaterialAppearance({
-      materialSupport: Cesium.MaterialAppearance.MaterialSupport.TEXTURED,
+      materialSupport: Cesium.MaterialAppearance.MaterialSupport.ALL,
       material: Cesium.Material.fromType('Image', { image: MOON_TEXTURE }),
+      fragmentShaderSource: `
+        in vec3 v_positionEC;
+        in vec3 v_normalEC;
+        in vec2 v_st;
+        void main() {
+          vec3 normalEC = normalize(v_normalEC);
+          czm_materialInput materialInput;
+          materialInput.normalEC = normalEC;
+          materialInput.positionToEyeEC = -v_positionEC;
+          materialInput.st = v_st;
+          czm_material material = czm_getMaterial(materialInput);
+          vec3 lightDirEC = normalize(czm_lightDirectionEC);
+          float diffuse = max(dot(normalEC, lightDirEC), 0.0);
+          float ambient = 0.04;
+          vec3 color = material.diffuse * (diffuse + ambient);
+          out_FragColor = vec4(color, material.alpha);
+        }
+      `,
     });
     const moonPrimitive = viewer.scene.primitives.add(new Cesium.Primitive({
       geometryInstances: new Cesium.GeometryInstance({
