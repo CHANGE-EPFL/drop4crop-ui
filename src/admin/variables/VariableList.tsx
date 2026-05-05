@@ -19,8 +19,7 @@ const VariableList = () => {
                 <TextField source="unit" />
                 <BooleanField source="is_crop_specific" />
                 <BooleanField source="has_time" label="Has time" />
-                <TextField source="group_name" />
-                <ReferenceField source="group_id" reference="variable-groups" link="edit" emptyText="—">
+                <ReferenceField source="group_id" reference="variable-groups" link="edit" emptyText="—" label="Group">
                     <TextField source="name" />
                 </ReferenceField>
                 <NumberField source="sort_order" />

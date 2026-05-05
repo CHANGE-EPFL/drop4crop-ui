@@ -3,6 +3,7 @@ import {
     Datagrid,
     TextField,
     NumberField,
+    BooleanField,
     ReferenceField,
 } from 'react-admin';
 
@@ -16,6 +17,10 @@ const VariableGroupList = () => {
                 <ReferenceField source="parent_id" reference="variable-groups" link="edit" emptyText="—">
                     <TextField source="name" />
                 </ReferenceField>
+                <ReferenceField source="required_crop_id" reference="crops" link={false} emptyText="—">
+                    <TextField source="name" />
+                </ReferenceField>
+                <BooleanField source="display_stacked" label="Stacked" />
             </Datagrid>
         </List>
     );

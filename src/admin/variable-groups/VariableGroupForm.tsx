@@ -3,6 +3,7 @@ import {
     ReferenceInput,
     AutocompleteInput,
     TextInput,
+    BooleanInput,
     required,
 } from 'react-admin';
 
@@ -36,6 +37,23 @@ const VariableGroupForm = ({ isEdit = false }: VariableGroupFormProps) => {
                     fullWidth
                 />
             </ReferenceInput>
+            <ReferenceInput
+                source="required_crop_id"
+                reference="crops"
+                perPage={100}
+            >
+                <AutocompleteInput
+                    optionText="name"
+                    label="Required crop"
+                    helperText="If set, selecting a variable from this group auto-switches the crop. Child groups inherit from parent."
+                    fullWidth
+                />
+            </ReferenceInput>
+            <BooleanInput
+                source="display_stacked"
+                label="Stack chips vertically"
+                helperText="Show each variable on its own line instead of flowing horizontally"
+            />
         </>
     );
 };

@@ -19,9 +19,8 @@ const VariableForm = ({ isEdit = false }: VariableFormProps) => {
                 defaultValue={true}
                 helperText="Whether this variable varies over time. Controls the year slider in the public UI."
             />
-            <TextInput source="group_name" fullWidth helperText="Legacy grouping name (use Group dropdown below instead)" />
             <ReferenceInput source="group_id" reference="variable-groups" perPage={100}>
-                <AutocompleteInput optionText="name" label="Group" helperText="Variable group for UI hierarchy" fullWidth />
+                <AutocompleteInput optionText={(record: any) => `${record.name} (${record.parent_id ? 'tier 2' : 'tier 1'})`} label="Group" helperText="Assigns this variable to a group in the public UI" fullWidth />
             </ReferenceInput>
             <NumberInput source="sort_order" defaultValue={0} />
         </>

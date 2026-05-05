@@ -23,6 +23,7 @@ export default {
     create: VariableGroupCreate,
     edit: VariableGroupEdit,
     list: VariableGroupList,
-    recordRepresentation: 'name',
+    recordRepresentation: (record: any) =>
+        `${record.name} (${record.parent_id ? 'tier 2' : 'tier 1'})`,
     icon: AccountTreeIcon,
 };

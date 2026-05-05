@@ -80,6 +80,17 @@ const FrontendAppContent = ({ boundingBoxSelectionRef }) => {
     setSelectedLayer,
   ]);
 
+  // Deselect variable if the crop changes away from its required crop
+  useEffect(() => {
+    if (
+      selectedVariable?.required_crop_slug &&
+      selectedCrop &&
+      selectedCrop.id !== selectedVariable.required_crop_slug
+    ) {
+      setSelectedVariable(undefined);
+    }
+  }, [selectedCrop, selectedVariable, setSelectedVariable]);
+
   // Load layer from URL parameters after groups are loaded
   useEffect(() => {
     // Only apply URL params once and after groups are loaded

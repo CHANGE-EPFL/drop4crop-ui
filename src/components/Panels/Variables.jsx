@@ -42,8 +42,8 @@ const GroupHelpIcon = ({ helpText }) => {
     );
 };
 
-const VariableChips = ({ vars, selectedVariable, handleChipClick }) => (
-    <div className="chips-list">
+const VariableChips = ({ vars, selectedVariable, handleChipClick, stacked }) => (
+    <div className="chips-list" style={stacked ? { flexDirection: 'column', alignItems: 'stretch' } : undefined}>
         {vars.map(variable => (
             <Chip
                 key={variable.id}
@@ -57,6 +57,16 @@ const VariableChips = ({ vars, selectedVariable, handleChipClick }) => (
     </div>
 );
 
+const RequiredCropNote = ({ slug, crops }) => {
+    if (!slug) return null;
+    const cropName = crops?.find(c => c.id === slug)?.name || slug;
+    return (
+        <span style={{ fontSize: '0.75rem', color: '#888', marginLeft: '8px', fontStyle: 'italic' }}>
+            (only available with {cropName})
+        </span>
+    );
+};
+
 const VariablePanel = ({
     variables,
     selectedVariable,
@@ -66,6 +76,8 @@ const VariablePanel = ({
     setSelectedCropVariable,
     setLayerName,
     tabConfig,
+    crops,
+    setSelectedCrop,
 }) => {
     const handleClose = () => {
         setActivePanel(null);
@@ -80,6 +92,10 @@ const VariablePanel = ({
                 setSelectedCropVariable(undefined);
             }
             setSelectedVariable(variable);
+            if (variable.required_crop_slug && crops) {
+                const requiredCrop = crops.find(c => c.id === variable.required_crop_slug);
+                if (requiredCrop) setSelectedCrop(requiredCrop);
+            }
             setActivePanel(null);
         }
     };
@@ -94,6 +110,8 @@ const VariablePanel = ({
                     tiered[v.tier1_group] = {
                         helpText: v.tier1_help_text || null,
                         sortOrder: v.tier1_sort_order ?? 0,
+                        requiredCropSlug: v.required_crop_slug || null,
+                        displayStacked: v.display_stacked || false,
                         tier2s: {},
                         directVars: [],
                     };
@@ -107,6 +125,8 @@ const VariablePanel = ({
                         tiered[v.tier1_group].tier2s[v.group_name] = {
                             helpText: v.group_help_text || null,
                             sortOrder: v.group_sort_order ?? 0,
+                            requiredCropSlug: v.required_crop_slug || null,
+                            displayStacked: v.display_stacked || false,
                             vars: [],
                         };
                     }
@@ -119,7 +139,12 @@ const VariablePanel = ({
                 }
             } else {
                 const group = v.group_name || 'Other';
-                if (!flat[group]) flat[group] = { helpText: v.group_help_text || null, vars: [] };
+                if (!flat[group]) flat[group] = {
+                    helpText: v.group_help_text || null,
+                    requiredCropSlug: v.required_crop_slug || null,
+                    displayStacked: v.display_stacked || false,
+                    vars: [],
+                };
                 if (!flat[group].helpText && v.group_help_text) flat[group].helpText = v.group_help_text;
                 flat[group].vars.push(v);
             }
@@ -171,16 +196,17 @@ const VariablePanel = ({
                 {/* Tiered groups: tier1 sections containing tier2 sub-groups */}
                 {tieredGroups.map(([tier1Name, tier1Data], idx) => (
                     <div key={tier1Name} style={idx > 0 || flatGroups.length > 0 ? { borderTop: '1px solid #555', marginTop: '0.6rem', paddingTop: '0.4rem' } : undefined}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
                             <h4 style={{ margin: 0, color: '#009da9', fontSize: '0.95rem', fontWeight: 500 }}>
                                 <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(tier1Name)}</ReactMarkdown>
                             </h4>
                             <GroupHelpIcon helpText={tier1Data.helpText} />
+                            {tier1Data.requiredCropSlug && <RequiredCropNote slug={tier1Data.requiredCropSlug} crops={crops} />}
                         </div>
 
                         {/* Variables directly under tier1 (no tier2 sub-group) */}
                         {tier1Data.directVars.length > 0 && (
-                            <VariableChips vars={tier1Data.directVars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
+                            <VariableChips vars={tier1Data.directVars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} stacked={tier1Data.displayStacked} />
                         )}
 
                         {/* Tier2 sub-groups */}
@@ -188,13 +214,16 @@ const VariablePanel = ({
                             .sort(([, a], [, b]) => a.sortOrder - b.sortOrder)
                             .map(([t2Name, t2Data]) => (
                                 <div className="chips-group" key={t2Name}>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                                         <h5 style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
                                             <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(t2Name)}</ReactMarkdown>
                                         </h5>
                                         <GroupHelpIcon helpText={t2Data.helpText} />
+                                        {t2Data.requiredCropSlug && !tier1Data.requiredCropSlug && (
+                                            <RequiredCropNote slug={t2Data.requiredCropSlug} crops={crops} />
+                                        )}
                                     </div>
-                                    <VariableChips vars={t2Data.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
+                                    <VariableChips vars={t2Data.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} stacked={t2Data.displayStacked} />
                                 </div>
                             ))
                         }
@@ -204,11 +233,12 @@ const VariablePanel = ({
                 {/* Flat groups: current behaviour for variables without tier1 */}
                 {flatGroups.map(([groupName, groupData]) => (
                     <div className="chips-group" key={groupName}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                             <h5>{groupName}</h5>
                             <GroupHelpIcon helpText={groupData.helpText} />
+                            {groupData.requiredCropSlug && <RequiredCropNote slug={groupData.requiredCropSlug} crops={crops} />}
                         </div>
-                        <VariableChips vars={groupData.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} />
+                        <VariableChips vars={groupData.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} stacked={groupData.displayStacked} />
                     </div>
                 ))}
             </>

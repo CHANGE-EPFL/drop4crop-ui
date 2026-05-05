@@ -1,5 +1,6 @@
 import React from 'react';
 import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
 const CropsPanel = ({
@@ -31,15 +32,19 @@ const CropsPanel = ({
                 onClose={handleClose}
             />
             <div className="chips-list">
-                {crops.map(crop => (
-                    <Chip
-                        key={crop.id}
-                        label={crop.name}
-                        clickable
-                        className={selectedCrop && selectedCrop.id === crop.id ? 'active' : ''}
-                        disabled={!crop.enabled}
-                        onClick={() => handleChipClick(crop)}
-                    />
+                {crops.map((crop, idx) => (
+                    <React.Fragment key={crop.id}>
+                        {idx > 0 && (crop.sort_order - crops[idx - 1].sort_order) > 50 && (
+                            <Divider sx={{ width: '100%', my: 0.5, borderColor: '#555' }} />
+                        )}
+                        <Chip
+                            label={crop.name}
+                            clickable
+                            className={selectedCrop && selectedCrop.id === crop.id ? 'active' : ''}
+                            disabled={!crop.enabled}
+                            onClick={() => handleChipClick(crop)}
+                        />
+                    </React.Fragment>
                 ))}
             </div>
         </div>

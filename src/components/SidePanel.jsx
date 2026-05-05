@@ -351,6 +351,8 @@ const SidePanel = ({ clearLayers, backdrop = false }) => {
           setSelectedCropVariable={setSelectedCropVariable}
           setLayerName={setLayerName}
           tabConfig={tabConfig.variables}
+          crops={crops}
+          setSelectedCrop={setSelectedCrop}
         />
       )}
 
