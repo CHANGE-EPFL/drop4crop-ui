@@ -43,7 +43,7 @@ const GroupHelpIcon = ({ helpText }) => {
 };
 
 const VariableChips = ({ vars, selectedVariable, handleChipClick, stacked }) => (
-    <div className="chips-list" style={stacked ? { flexDirection: 'column', alignItems: 'stretch' } : undefined}>
+    <div className="chips-list" style={stacked ? { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' } : undefined}>
         {vars.map(variable => (
             <Chip
                 key={variable.id}
@@ -61,9 +61,9 @@ const RequiredCropNote = ({ slug, crops }) => {
     if (!slug) return null;
     const cropName = crops?.find(c => c.id === slug)?.name || slug;
     return (
-        <span style={{ fontSize: '0.75rem', color: '#888', marginLeft: '8px', fontStyle: 'italic' }}>
-            (only available with {cropName})
-        </span>
+        <div style={{ fontSize: '0.75rem', color: '#888', fontStyle: 'italic' }}>
+            (only available with the <strong style={{ color: '#aaa' }}>{cropName}</strong> crop type)
+        </div>
     );
 };
 
