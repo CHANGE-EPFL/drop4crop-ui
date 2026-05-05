@@ -44,7 +44,7 @@
 
 .showcase-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #acd8d8 0%, #c4e3e3 50%, #acd8d8 100%);
+  background: linear-gradient(90deg, #009da9 0%, #ccebee 50%, #009da9 100%);
   border-radius: 16px 16px 0 0;
   transition: width 0.1s linear, background 0.3s ease, opacity 0.3s ease;
 }
@@ -76,8 +76,8 @@
 
 .showcase-nav-btn:hover {
   background: rgba(97, 97, 97, 0.9);
-  border-color: #acd8d8;
-  color: #acd8d8;
+  border-color: #009da9;
+  color: #009da9;
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -105,7 +105,7 @@
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 1.2rem;
   font-weight: 600;
-  color: #acd8d8;
+  color: #009da9;
   margin: 0 0 8px 0;
   letter-spacing: 0.5px;
 }
@@ -116,7 +116,7 @@
 }
 
 .showcase-title-clickable:hover {
-  color: #c4e3e3;
+  color: #ccebee;
 }
 
 .showcase-title-icon {
@@ -164,20 +164,20 @@
 
 .showcase-dot:hover {
   background: rgba(97, 97, 97, 0.9);
-  border-color: #acd8d8;
+  border-color: #009da9;
   transform: scale(1.15);
 }
 
 .showcase-dot.active {
-  background: #acd8d8;
-  border-color: #acd8d8;
+  background: #009da9;
+  border-color: #009da9;
   transform: scale(1.15);
   box-shadow: 0 0 6px rgba(172, 216, 216, 0.5);
 }
 
 /* Start Browsing button */
 .showcase-start-btn {
-  background: linear-gradient(135deg, #acd8d8 0%, #8ec0c0 100%);
+  background: linear-gradient(135deg, #009da9 0%, #66c4cb 100%);
   color: #1e2127;
   border: none;
   padding: 10px 24px;
@@ -192,7 +192,7 @@
 }
 
 .showcase-start-btn:hover {
-  background: linear-gradient(135deg, #c4e3e3 0%, #acd8d8 100%);
+  background: linear-gradient(135deg, #ccebee 0%, #009da9 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(172, 216, 216, 0.4);
 }

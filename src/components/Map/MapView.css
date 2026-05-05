@@ -66,12 +66,12 @@
 }
 
 .leaflet-control-attribution a {
-    color: #acd8d8 !important;
+    color: #009da9 !important;
 }
 
 .leaflet-control-scale-line {
     background-color: #333;
-    color: #acd8d8;
+    color: #009da9;
     text-shadow: none;
 }
 
@@ -157,7 +157,7 @@
 
 /* Style the leaflet-draw edit handles */
 .leaflet-editing-icon {
-    background-color: #acd8d8 !important;
+    background-color: #009da9 !important;
     border: 2px solid #333 !important;
     border-radius: 50% !important;
     width: 12px !important;
@@ -202,7 +202,7 @@
 .custom-leaflet-popup .leaflet-popup-close-button {
     display: block;
     /* Ensure the default close button is visible */
-    color: #acd8d8;
+    color: #009da9;
     /* Optional: match the color to your theme */
 }
 

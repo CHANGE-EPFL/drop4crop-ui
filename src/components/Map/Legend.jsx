@@ -259,7 +259,7 @@ const createLegendContainer = (
     <ExpandMoreIcon
       sx={{
         fontSize: '1.2rem',
-        color: '#acd8d8',
+        color: '#009da9',
         '&:hover': {
           color: '#ffffff'
         }
@@ -268,7 +268,7 @@ const createLegendContainer = (
     <ExpandLessIcon
       sx={{
         fontSize: '1.2rem',
-        color: '#acd8d8',
+        color: '#009da9',
         '&:hover': {
           color: '#ffffff'
         }

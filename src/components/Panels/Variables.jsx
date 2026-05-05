@@ -6,6 +6,8 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ReactMarkdown from 'react-markdown';
 import PanelTitleWithTooltip, { MarkdownTooltip } from './Title';
 
+const brToMarkdown = (text) => (text || '').replace(/<br\s*\/?>/gi, '  \n');
+
 const renderVariableLabel = (variable) => {
     const hasName = variable.name && variable.name.trim();
     const hasAbbr = variable.abbreviation && variable.abbreviation.trim();
@@ -35,7 +37,7 @@ const GroupHelpIcon = ({ helpText }) => {
             disableFocusListener disableTouchListener enterDelay={10}
             arrow
         >
-            <HelpOutlineIcon sx={{ fontSize: '0.9rem', color: '#acd8d8', marginLeft: '5px', cursor: 'help' }} />
+            <HelpOutlineIcon sx={{ fontSize: '0.9rem', color: '#009da9', marginLeft: '5px', cursor: 'help' }} />
         </Tooltip>
     );
 };
@@ -154,7 +156,7 @@ const VariablePanel = ({
                     <CloseIcon
                         sx={{
                             fontSize: '1.2rem',
-                            color: '#acd8d8',
+                            color: '#009da9',
                             cursor: 'pointer',
                             '&:hover': {
                                 color: '#ffffff'
@@ -170,8 +172,8 @@ const VariablePanel = ({
                 {tieredGroups.map(([tier1Name, tier1Data], idx) => (
                     <div key={tier1Name} style={idx > 0 || flatGroups.length > 0 ? { borderTop: '1px solid #555', marginTop: '0.6rem', paddingTop: '0.4rem' } : undefined}>
                         <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
-                            <h4 style={{ margin: 0, color: '#acd8d8', fontSize: '0.95rem', fontWeight: 500 }}>
-                                <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{tier1Name}</ReactMarkdown>
+                            <h4 style={{ margin: 0, color: '#009da9', fontSize: '0.95rem', fontWeight: 500 }}>
+                                <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(tier1Name)}</ReactMarkdown>
                             </h4>
                             <GroupHelpIcon helpText={tier1Data.helpText} />
                         </div>
@@ -188,7 +190,7 @@ const VariablePanel = ({
                                 <div className="chips-group" key={t2Name}>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <h5 style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
-                                            <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{t2Name}</ReactMarkdown>
+                                            <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(t2Name)}</ReactMarkdown>
                                         </h5>
                                         <GroupHelpIcon helpText={t2Data.helpText} />
                                     </div>

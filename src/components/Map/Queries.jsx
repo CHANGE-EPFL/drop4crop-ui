@@ -25,7 +25,7 @@ const LayerInfoHeader = ({ crop, variable, cropVariable, year }) => {
     return (
         <div style={{
             fontSize: '0.85em',
-            color: '#acd8d8',
+            color: '#009da9',
             opacity: 0.8,
             marginBottom: '10px',
             paddingBottom: '8px',

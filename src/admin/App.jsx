@@ -138,7 +138,7 @@ const App = () => {
           style={{
             marginTop: "20px",
             padding: "10px 20px",
-            backgroundColor: "#2E7D87",
+            backgroundColor: "#006e76",
             color: "white",
             border: "none",
             borderRadius: "4px",

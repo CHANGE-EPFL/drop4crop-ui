@@ -239,7 +239,7 @@ const BoundingBoxSelection = forwardRef(({ }, ref) => {
 
         // Delete button (X) at top-right corner
         const deleteButton = L.divIcon({
-            html: '<button class="bbox-delete-btn" style="background: #333; color: white; border: 1px solid #acd8d8; border-radius: 4px; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">✕</button>',
+            html: '<button class="bbox-delete-btn" style="background: #333; color: white; border: 1px solid #009da9; border-radius: 4px; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">✕</button>',
             iconSize: [24, 24],
             className: 'bbox-control-button',
         });
@@ -253,8 +253,8 @@ const BoundingBoxSelection = forwardRef(({ }, ref) => {
 
         // Download button in center of rectangle
         const downloadButton = L.divIcon({
-            html: `<button class="bbox-download-btn" style="background: #333; color: #acd8d8; border: 2px solid #acd8d8; border-radius: 8px; cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" title="Download Selection">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#acd8d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            html: `<button class="bbox-download-btn" style="background: #333; color: #009da9; border: 2px solid #009da9; border-radius: 8px; cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" title="Download Selection">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#009da9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
                     <line x1="12" y1="15" x2="12" y2="3"/>
@@ -415,7 +415,7 @@ const BoundingBoxSelection = forwardRef(({ }, ref) => {
         if (enableSelection) {
             drawHandlerRef.current = new L.Draw.Rectangle(map, {
                 shapeOptions: {
-                    color: '#acd8d8', // Set the color to your specified brown color
+                    color: '#009da9', // Set the color to your specified brown color
                     weight: 2,
                     opacity: 1.0,
                     fillOpacity: 0.2,
@@ -479,7 +479,7 @@ const BoundingBoxSelection = forwardRef(({ }, ref) => {
                 new L.LatLng(boundingBox.maxy, boundingBox.maxx)
             );
             const layer = L.rectangle(bounds, {
-                color: '#acd8d8',
+                color: '#009da9',
                 weight: 2,
                 opacity: 1.0,
                 fillOpacity: 0.2,

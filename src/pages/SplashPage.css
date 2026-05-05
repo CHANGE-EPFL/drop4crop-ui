@@ -41,7 +41,7 @@
 .splash-header {
   grid-area: header;
   max-width: 720px;
-  color: #acd8d8;
+  color: #009da9;
   font-family: 'Open Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -194,7 +194,7 @@
 }
 
 .splash-card:hover .splash-card-title {
-  color: #acd8d8;
+  color: #009da9;
 }
 
 .splash-card.disabled .splash-card-title {
@@ -331,7 +331,7 @@
   font-family: 'Arial', 'Helvetica', sans-serif;
   font-size: 1.75rem;
   font-weight: 500;
-  color: #acd8d8;
+  color: #009da9;
   letter-spacing: 0.5px;
   margin: 0 0 16px;
 }
@@ -352,7 +352,7 @@
   border-radius: 20px;
   border: 1px solid rgba(172, 216, 216, 0.55);
   background: transparent;
-  color: #acd8d8;
+  color: #009da9;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.5px;
