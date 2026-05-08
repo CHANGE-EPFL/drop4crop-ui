@@ -35,6 +35,7 @@ import LayersIcon from '@mui/icons-material/Layers';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ProjectCardPreview from './ProjectCardPreview';
 import ProjectConfigEditor from './ProjectConfigEditor';
+import { createStyleGradient } from '../../utils/styleUtils';
 import UploadDialog from '../layers/uploader/UploadDialog';
 
 const ProjectLayerCount = () => {
@@ -60,6 +61,78 @@ const ProjectLayerCount = () => {
             variant="outlined"
             color="primary"
         />
+    );
+};
+
+const StylePreview = ({ style }: { style: any }) => {
+    if (!style?.style?.length) {
+        return (
+            <Box
+                sx={{
+                    height: 12,
+                    width: 80,
+                    backgroundColor: '#e0e0e0',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                }}
+            />
+        );
+    }
+    if (style.interpolation_type === 'discrete') {
+        const stops = [...style.style].sort((a: any, b: any) => a.value - b.value);
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    height: 12,
+                    width: 80,
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                    border: '1px solid #ddd',
+                }}
+            >
+                {stops.map((stop: any, i: number) => (
+                    <Box
+                        key={i}
+                        sx={{
+                            flex: 1,
+                            backgroundColor: `rgba(${stop.red},${stop.green},${stop.blue},${(stop.opacity || 255) / 255})`,
+                        }}
+                    />
+                ))}
+            </Box>
+        );
+    }
+    return (
+        <Box
+            sx={{
+                height: 12,
+                width: 80,
+                background: createStyleGradient(style.style),
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+            }}
+        />
+    );
+};
+
+const CardStyleOverrideField = () => {
+    const record = useRecordContext();
+    const styleId = record?.card_style_id;
+    const { data: styles } = useGetList('styles', {}, { enabled: !!styleId });
+    const style = styleId ? styles?.find((s: any) => s.id === styleId) : null;
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <ReferenceField
+                source="card_style_id"
+                reference="styles"
+                label="Card Style Override"
+                emptyText="Not set (uses layer default)"
+            >
+                <TextField source="name" />
+            </ReferenceField>
+            {style && <StylePreview style={style} />}
+        </Box>
     );
 };
 
@@ -271,15 +344,6 @@ const ProjectShowContent = () => {
                         <TextField source="description" multiline />
                         <BooleanField source="enabled" />
                         <NumberField source="sort_order" label="Sort Order" />
-                        <FunctionField
-                            source="extent"
-                            label="Map Extent"
-                            render={(record: any) => {
-                                if (!record?.extent) return 'Not set (full world view)';
-                                const [[swLat, swLng], [neLat, neLng]] = record.extent;
-                                return `SW: ${swLat}, ${swLng} / NE: ${neLat}, ${neLng}`;
-                            }}
-                        />
                     </SimpleShowLayout>
 
                     <Divider sx={{ my: 2 }} />
@@ -332,25 +396,25 @@ const ProjectShowContent = () => {
 
                     <Divider sx={{ my: 2 }} />
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>Map</Typography>
-                    <FunctionField
-                        label="Extent"
-                        render={(record: any) => {
-                            if (!record?.extent) return 'Not set (full world view)';
-                            const [[swLat, swLng], [neLat, neLng]] = record.extent;
-                            return `SW: ${swLat}, ${swLng} / NE: ${neLat}, ${neLng}`;
-                        }}
-                    />
                     <SimpleShowLayout>
                         <FunctionField
+                            source="extent"
+                            label="Extent"
+                            render={(record: any) => {
+                                if (!record?.extent) return 'Not set (full world view)';
+                                const [[swLat, swLng], [neLat, neLng]] = record.extent;
+                                return `SW: ${swLat}, ${swLng} / NE: ${neLat}, ${neLng}`;
+                            }}
+                        />
+                        <ReferenceField
                             source="card_layer_id"
+                            reference="layers"
                             label="Card Preview Layer"
-                            render={(record: any) => record?.card_layer_id || 'Not set'}
-                        />
-                        <FunctionField
-                            source="card_style_id"
-                            label="Card Style Override"
-                            render={(record: any) => record?.card_style_id || 'Not set (uses layer default)'}
-                        />
+                            emptyText="Not set"
+                        >
+                            <TextField source="layer_name" />
+                        </ReferenceField>
+                        <CardStyleOverrideField />
                     </SimpleShowLayout>
                 </Box>
             </Box>
