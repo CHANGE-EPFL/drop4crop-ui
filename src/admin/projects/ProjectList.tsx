@@ -21,9 +21,9 @@ const CardGrid = () => {
         <Box
             sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '28px',
-                maxWidth: 780,
+                maxWidth: 1200,
                 mx: 'auto',
                 mt: 4,
                 mb: 2,
@@ -32,19 +32,11 @@ const CardGrid = () => {
                 background: 'background.default',
             }}
         >
-            {sorted.map((project, index) => {
-                const isLast = sorted.length > 2 && sorted.length % 2 === 1 && index === sorted.length - 1;
+            {sorted.map((project) => {
                 return (
                     <Box
                         key={project.id}
-                        sx={{
-                            height: '100%',
-                            ...(isLast ? {
-                                gridColumn: '1 / -1',
-                                justifySelf: 'center',
-                                width: 'calc(50% - 14px)',
-                            } : {}),
-                        }}
+                        sx={{ height: '100%' }}
                     >
                         <ProjectCardPreview
                             project={project}
@@ -67,9 +59,6 @@ const ProjectList = () => {
                     <TextField source="slug" />
                     <BooleanField source="enabled" />
                     <NumberField source="sort_order" label="Order" />
-                    <NumberField source="latitude" options={{ maximumFractionDigits: 2 }} />
-                    <NumberField source="longitude" options={{ maximumFractionDigits: 2 }} />
-                    <NumberField source="zoom_level" label="Zoom" />
                 </Datagrid>
                 <CardGrid />
             </>

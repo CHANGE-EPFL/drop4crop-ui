@@ -6,12 +6,22 @@ const UniverseBackground = React.lazy(() => import('./UniverseBackground'));
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock } from '@fortawesome/free-solid-svg-icons';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import axios from 'axios';
 import maplibregl from 'maplibre-gl';
 import 'leaflet/dist/leaflet.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './SplashPage.css';
+
+const FitExtent = ({ extent }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    if (extent && Array.isArray(extent) && extent.length === 2) {
+      map.fitBounds(extent, { animate: false });
+    }
+  }, [extent, map]);
+  return null;
+};
 
 // Grace period before switching from skeleton to error UI. Short blips are
 // absorbed by the skeleton animation without ever showing an error.
@@ -252,8 +262,8 @@ const SplashPage = () => {
             <>
               <div className="splash-card-map">
                 <MapContainer
-                  center={[project.latitude || 20, project.longitude || 0]}
-                  zoom={project.zoom_level || 2}
+                  center={[20, 0]}
+                  zoom={2}
                   style={{ width: '100%', height: '100%' }}
                   zoomControl={false}
                   attributionControl={false}
@@ -263,6 +273,7 @@ const SplashPage = () => {
                   touchZoom={false}
                   keyboard={false}
                 >
+                  <FitExtent extent={project.extent} />
                   <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
                   {project.card_layer_name && (
                     <TileLayer

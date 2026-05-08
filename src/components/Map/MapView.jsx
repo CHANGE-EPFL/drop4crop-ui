@@ -1,4 +1,5 @@
 import React, { useState, useCallback, forwardRef, useContext, useEffect, useRef } from 'react';
+import L from 'leaflet';
 import {
   MapContainer,
   TileLayer,
@@ -16,18 +17,34 @@ import { LegendControl } from './Legend';
 import { AppContext } from '../../contexts/AppContext';
 import { useProject } from '../../contexts/ProjectContext';
 
+const WORLD_BOUNDS = L.latLngBounds([[-85, -180], [85, 180]]);
+
 function ProjectExtent() {
   const map = useMap();
   const { config } = useProject() || {};
   const applied = useRef(false);
+
   useEffect(() => {
-    if (applied.current || !config) return;
-    const p = config.project;
-    if (p?.use_card_as_extent && p.latitude != null && p.longitude != null && p.zoom_level != null) {
-      map.setView([p.latitude, p.longitude], p.zoom_level);
+    if (!applied.current && config) {
+      const p = config.project;
+      if (p?.extent && Array.isArray(p.extent) && p.extent.length === 2) {
+        map.fitBounds(p.extent, { animate: false, padding: [20, 20] });
+      }
+      applied.current = true;
     }
-    applied.current = true;
+
+    // Snap the user back when they pan off the world edges, but only at
+    // zoom levels where the viewport is narrower than the world.
+    // Registered AFTER fitBounds so the synchronous moveend doesn't trigger it.
+    const constrain = () => {
+      const vb = map.getBounds();
+      if (vb.getEast() - vb.getWest() >= 350) return;
+      map.panInsideBounds(WORLD_BOUNDS, { animate: true });
+    };
+    map.on('moveend', constrain);
+    return () => map.off('moveend', constrain);
   }, [config, map]);
+
   return null;
 }
 
@@ -137,8 +154,6 @@ const MapView = forwardRef((props, ref) => {
         // Do not force a fixed minZoom in the MapContainer props—let the helper update it.
         style={{ height: "100%", width: "100%", backgroundColor: "#262626" }}
         zoomControl={false}
-        // Keep the maxBounds as before.
-        maxBounds={[[-85, -180], [85, 180]]}
         worldCopyJump={false}
       >
         <UpdateMapZoom

@@ -6,13 +6,13 @@ import {
     BooleanField,
     NumberField,
     FunctionField,
+    ReferenceField,
     TopToolbar,
     EditButton,
     useGetList,
     useRecordContext,
     List,
     Datagrid,
-    ReferenceField,
     SearchInput,
     Pagination,
     ReferenceInput,
@@ -22,13 +22,13 @@ import {
 import {
     Box,
     Chip,
+    Divider,
     Typography,
     Button,
     Link as MuiLink,
+    Card,
     Tab,
     Tabs,
-    Stack,
-    Card,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LayersIcon from '@mui/icons-material/Layers';
@@ -262,18 +262,29 @@ const ProjectShowContent = () => {
 
     return (
         <>
-            <Stack direction="row" spacing={3} sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', gap: 3, p: 2 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                     <SimpleShowLayout>
                         <TextField source="id" />
                         <TextField source="title" />
                         <TextField source="slug" />
+                        <TextField source="description" multiline />
                         <BooleanField source="enabled" />
                         <NumberField source="sort_order" label="Sort Order" />
-                        <TextField source="description" />
-                        <NumberField source="latitude" />
-                        <NumberField source="longitude" />
-                        <NumberField source="zoom_level" label="Zoom Level" />
+                        <FunctionField
+                            source="extent"
+                            label="Map Extent"
+                            render={(record: any) => {
+                                if (!record?.extent) return 'Not set (full world view)';
+                                const [[swLat, swLng], [neLat, neLng]] = record.extent;
+                                return `SW: ${swLat}, ${swLng} / NE: ${neLat}, ${neLng}`;
+                            }}
+                        />
+                    </SimpleShowLayout>
+
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Timeline</Typography>
+                    <SimpleShowLayout>
                         <FunctionField
                             source="year_axis"
                             label="Year Axis (Timeline)"
@@ -293,11 +304,56 @@ const ProjectShowContent = () => {
                             }
                         />
                     </SimpleShowLayout>
+
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Tab Labels</Typography>
+                    <SimpleShowLayout>
+                        <FunctionField
+                            source="tab_config"
+                            label="Tab Configuration"
+                            render={(record: any) => {
+                                if (!record?.tab_config) {
+                                    return 'Not set (all tabs use defaults)';
+                                }
+                                const tabs = record.tab_config;
+                                const entries = Object.entries(tabs).map(([key, val]) => {
+                                    const tabVal = val as any;
+                                    const label = tabVal?.label ? `"${tabVal.label}"` : `(default)`;
+                                    const help = tabVal?.help_text ? ` • Help: "${tabVal.help_text}"` : '';
+                                    return `${key}: ${label}${help}`;
+                                });
+                                return <Box sx={{ whiteSpace: 'pre-wrap' }}>{entries.join('\n')}</Box>;
+                            }}
+                        />
+                    </SimpleShowLayout>
                 </Box>
-                <Box sx={{ width: 340, flexShrink: 0 }}>
+                <Box sx={{ width: 380, flexShrink: 0 }}>
                     <CardPreviewField />
+
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Map</Typography>
+                    <FunctionField
+                        label="Extent"
+                        render={(record: any) => {
+                            if (!record?.extent) return 'Not set (full world view)';
+                            const [[swLat, swLng], [neLat, neLng]] = record.extent;
+                            return `SW: ${swLat}, ${swLng} / NE: ${neLat}, ${neLng}`;
+                        }}
+                    />
+                    <SimpleShowLayout>
+                        <FunctionField
+                            source="card_layer_id"
+                            label="Card Preview Layer"
+                            render={(record: any) => record?.card_layer_id || 'Not set'}
+                        />
+                        <FunctionField
+                            source="card_style_id"
+                            label="Card Style Override"
+                            render={(record: any) => record?.card_style_id || 'Not set (uses layer default)'}
+                        />
+                    </SimpleShowLayout>
                 </Box>
-            </Stack>
+            </Box>
 
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mx: 2 }}>
                 <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>

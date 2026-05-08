@@ -145,22 +145,7 @@ const ProjectEdit = () => {
                     fullWidth
                 />
                 <TextInput source="description" multiline rows={3} fullWidth />
-                <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexWrap: 'wrap', mb: 2 }}>
-                    <Box sx={{ flex: '0 0 auto' }}>
-                        <MapPreview />
-                    </Box>
-                    <Box sx={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: 1, mt: 4 }}>
-                        <NumberInput source="latitude" step={0.1} fullWidth />
-                        <NumberInput source="longitude" step={0.1} fullWidth />
-                        <NumberInput
-                            source="zoom_level"
-                            min={1}
-                            max={18}
-                            helperText="Map zoom level for splash page preview (1-18)"
-                            fullWidth
-                        />
-                    </Box>
-                </Box>
+                <MapPreview />
                 <Box sx={{ maxWidth: 400, mb: 2 }}>
                     <CardLayerInput />
                     <StylePaletteInput
@@ -169,11 +154,6 @@ const ProjectEdit = () => {
                     />
                 </Box>
                 <BooleanInput source="enabled" />
-                <BooleanInput
-                    source="use_card_as_extent"
-                    label="Use card extent as map default"
-                    helperText="When enabled, the public map opens at this project's lat/lon/zoom instead of the full-world view"
-                />
                 <NumberInput
                     source="sort_order"
                     helperText="Lower numbers appear first on the splash page"

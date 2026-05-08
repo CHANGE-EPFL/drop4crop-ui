@@ -61,7 +61,7 @@ const RequiredCropNote = ({ slug, crops }) => {
     if (!slug) return null;
     const cropName = crops?.find(c => c.id === slug)?.name || slug;
     return (
-        <div style={{ fontSize: '0.75rem', color: '#888', fontStyle: 'italic' }}>
+        <div style={{ fontSize: '0.75rem', color: '#888', fontStyle: 'italic', marginTop: '0.2rem' }}>
             (only available with the <strong style={{ color: '#aaa' }}>{cropName}</strong> crop type)
         </div>
     );
@@ -196,11 +196,13 @@ const VariablePanel = ({
                 {/* Tiered groups: tier1 sections containing tier2 sub-groups */}
                 {tieredGroups.map(([tier1Name, tier1Data], idx) => (
                     <div key={tier1Name} style={idx > 0 || flatGroups.length > 0 ? { borderTop: '1px solid #555', marginTop: '0.6rem', paddingTop: '0.4rem' } : undefined}>
-                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.4rem', marginBottom: '0.2rem' }}>
-                            <h4 style={{ margin: 0, color: '#009da9', fontSize: '0.95rem', fontWeight: 500 }}>
-                                <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(tier1Name)}</ReactMarkdown>
-                            </h4>
-                            <GroupHelpIcon helpText={tier1Data.helpText} />
+                        <div style={{ marginTop: '0.4rem', marginBottom: '0.2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <h4 style={{ margin: 0, color: '#009da9', fontSize: '0.95rem', fontWeight: 500 }}>
+                                    <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(tier1Name)}</ReactMarkdown>
+                                </h4>
+                                <GroupHelpIcon helpText={tier1Data.helpText} />
+                            </div>
                             {tier1Data.requiredCropSlug && <RequiredCropNote slug={tier1Data.requiredCropSlug} crops={crops} />}
                         </div>
 
@@ -214,11 +216,13 @@ const VariablePanel = ({
                             .sort(([, a], [, b]) => a.sortOrder - b.sortOrder)
                             .map(([t2Name, t2Data]) => (
                                 <div className="chips-group" key={t2Name}>
-                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <h5 style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
-                                            <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(t2Name)}</ReactMarkdown>
-                                        </h5>
-                                        <GroupHelpIcon helpText={t2Data.helpText} />
+                                    <div style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <h5 style={{ margin: 0 }}>
+                                                <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>{brToMarkdown(t2Name)}</ReactMarkdown>
+                                            </h5>
+                                            <GroupHelpIcon helpText={t2Data.helpText} />
+                                        </div>
                                         {t2Data.requiredCropSlug && !tier1Data.requiredCropSlug && (
                                             <RequiredCropNote slug={t2Data.requiredCropSlug} crops={crops} />
                                         )}
@@ -233,9 +237,11 @@ const VariablePanel = ({
                 {/* Flat groups: current behaviour for variables without tier1 */}
                 {flatGroups.map(([groupName, groupData]) => (
                     <div className="chips-group" key={groupName}>
-                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <h5>{groupName}</h5>
-                            <GroupHelpIcon helpText={groupData.helpText} />
+                        <div style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <h5 style={{ margin: 0 }}>{groupName}</h5>
+                                <GroupHelpIcon helpText={groupData.helpText} />
+                            </div>
                             {groupData.requiredCropSlug && <RequiredCropNote slug={groupData.requiredCropSlug} crops={crops} />}
                         </div>
                         <VariableChips vars={groupData.vars} selectedVariable={selectedVariable} handleChipClick={handleChipClick} stacked={groupData.displayStacked} />
